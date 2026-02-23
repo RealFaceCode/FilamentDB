@@ -103,6 +103,19 @@ def _env_csv_list(value: Optional[str], fallback: list[str]) -> list[str]:
     return items or list(fallback)
 
 
+def _merge_allowed_hosts(configured_hosts: list[str]) -> list[str]:
+    baseline = ["localhost", "127.0.0.1", "::1", "testserver"]
+    merged: list[str] = []
+    seen: set[str] = set()
+    for host in [*configured_hosts, *baseline]:
+        key = str(host).strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(str(host).strip())
+    return merged
+
+
 APP_ENV = str(os.getenv("APP_ENV", "development")).strip().lower()
 LOG_LEVEL = str(os.getenv("LOG_LEVEL", "info")).strip().upper()
 DEFAULT_COOKIE_SECURE = APP_ENV == "production"
@@ -114,7 +127,7 @@ BASIC_AUTH_PASSWORD = str(os.getenv("BASIC_AUTH_PASSWORD", "")).strip()
 CSRF_PROTECT = _env_truthy(os.getenv("CSRF_PROTECT"), default=True)
 STRICT_CSRF_CHECK = _env_truthy(os.getenv("STRICT_CSRF_CHECK"), default=False)
 FORCE_HTTPS_REDIRECT = _env_truthy(os.getenv("FORCE_HTTPS_REDIRECT"), default=False)
-ALLOWED_HOSTS = _env_csv_list(os.getenv("ALLOWED_HOSTS"), ["localhost", "127.0.0.1", "testserver"])
+ALLOWED_HOSTS = _merge_allowed_hosts(_env_csv_list(os.getenv("ALLOWED_HOSTS"), ["localhost", "127.0.0.1", "testserver"]))
 TRUSTED_ORIGINS = set(_env_csv_list(os.getenv("TRUSTED_ORIGINS"), []))
 MAX_UPLOAD_MB = max(1, int(float(str(os.getenv("MAX_UPLOAD_MB", "25")).strip() or "25")))
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
