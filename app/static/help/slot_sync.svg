@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" fill="none">
+  <rect width="1200" height="520" fill="#0B1120"/>
+  <text x="60" y="72" fill="#E2E8F0" font-size="34" font-family="Arial">Slot-Sync: Lokal erfassen, extern auswerten</text>
+
+  <rect x="70" y="130" width="300" height="120" rx="16" fill="#0EA5E9"/>
+  <text x="95" y="182" fill="white" font-size="22" font-family="Arial">Drucker + AMS (LAN)</text>
+  <text x="95" y="212" fill="#E0F2FE" font-size="15" font-family="Arial">Live Slot-Zustand</text>
+
+  <rect x="450" y="130" width="320" height="120" rx="16" fill="#7C3AED"/>
+  <text x="475" y="182" fill="white" font-size="22" font-family="Arial">local_slot_bridge.py</text>
+  <text x="475" y="212" fill="#EDE9FE" font-size="15" font-family="Arial">MQTT lesen, JSON pushen</text>
+
+  <rect x="850" y="130" width="280" height="120" rx="16" fill="#16A34A"/>
+  <text x="875" y="182" fill="white" font-size="22" font-family="Arial">Externer Server</text>
+  <text x="875" y="212" fill="#DCFCE7" font-size="15" font-family="Arial">/api/slot-state/push</text>
+
+  <path d="M370 190H450" stroke="#7DD3FC" stroke-width="6" stroke-linecap="round"/>
+  <path d="M770 190H850" stroke="#C4B5FD" stroke-width="6" stroke-linecap="round"/>
+
+  <rect x="70" y="300" width="1060" height="150" rx="18" fill="#111827" stroke="#334155"/>
+  <text x="100" y="350" fill="#E2E8F0" font-size="22" font-family="Arial">Status in der UI</text>
+  <text x="100" y="383" fill="#CBD5E1" font-size="17" font-family="Arial">Die Seite /slot-status vergleicht Mapping (Soll) gegen Live-Daten (Ist): OK, Mismatch, Missing, Stale.</text>
+  <text x="100" y="412" fill="#94A3B8" font-size="15" font-family="Arial">So werden Fehlzuordnungen bei gleichen Materialien/Farben sichtbar.</text>
+</svg>

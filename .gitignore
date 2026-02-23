@@ -1,0 +1,49 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Python tooling
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local runtime artifacts
+app.db
+*.db
+tmp/
+%TEMP%/
+_debug_usage_response.html
+test-results/
+artifacts/
+*.log
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+certs/
+*.pem
+*.key
+*.crt
+
+# Tooling / VCS
+.DS_Store
+Thumbs.db
+
+# Docker / local volume leftovers
+postgres_data/
+
+# OS / shell
+*.tmp
+*.bak

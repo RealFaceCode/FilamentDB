@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.pytest_cache/
+.git/
+.gitignore
+.env
+.env.*
+!.env.example
+tmp/
+%TEMP%/
+*.db
+_debug_usage_response.html

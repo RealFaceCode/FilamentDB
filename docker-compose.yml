@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: filament-db-postgres
+    environment:
+      POSTGRES_DB: filament_db
+      POSTGRES_USER: ${POSTGRES_USER:-filament}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-filament} -d filament_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build: .
+    container_name: filament-db-web
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  slot-poller:
+    build: .
+    container_name: filament-db-slot-poller
+    profiles:
+      - slot-poller
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "scripts/device_slot_poller.py"]
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

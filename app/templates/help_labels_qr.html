@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 2xl:grid-cols-4 gap-6">
+  <aside class="2xl:col-span-1 ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{% if lang == 'de' %}Kapitel{% else %}Chapters{% endif %}</h3>
+    <div class="space-y-2">
+      {% for topic in help_topics %}
+      <a href="{{ topic.path }}" class="block text-sm px-3 py-2 rounded-lg border {% if current_help_topic == topic.slug %}border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30{% else %}border-slate-200 dark:border-slate-700{% endif %}">{{ topic.title }}</a>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="2xl:col-span-3 space-y-6">
+    <div class="ui-card ui-card-lg">
+      <h2 class="text-xl font-semibold mb-2">{% if lang == 'de' %}Labels & QR-Workflow{% else %}Labels & QR workflow{% endif %}</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+        {% if lang == 'de' %}
+        Etiketten sorgen für schnelle Identifikation; QR-Scan macht den Statuswechsel pro Spule im Alltag robust.
+        {% else %}
+        Labels enable fast identification; QR scanning makes daily spool status updates robust.
+        {% endif %}
+      </p>
+      <a href="/static/help/screenshots/functions/labels_hd.png" target="_blank" rel="noopener noreferrer" class="block mb-4">
+        <img src="/static/help/screenshots/functions/labels_hd.png" alt="Labels workflow" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 cursor-zoom-in">
+      </a>
+      <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+        {% if lang == 'de' %}
+        <strong>Bild 1:</strong> Label-Ansicht zum Auswählen von Spulen und Erzeugen von Drucklayouts für eindeutige Kennzeichnung.
+        {% else %}
+        <strong>Image 1:</strong> Label view for selecting spools and generating printable label layouts for clear identification.
+        {% endif %}
+      </p>
+      <figure>
+        <a href="/static/help/screenshots/functions/qr_scan_hd.png" target="_blank" rel="noopener noreferrer" class="block">
+          <img src="/static/help/screenshots/functions/qr_scan_hd.png" alt="QR Scan" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 cursor-zoom-in">
+        </a>
+        <figcaption class="text-xs text-slate-500 mt-1">
+          {% if lang == 'de' %}<strong>Bild 2:</strong> QR-Scan-Maske für schnelle Statuswechsel (z. B. „in use“, „empty“, „stored").{% else %}<strong>Image 2:</strong> QR scan screen for fast status updates (e.g. "in use", "empty", "stored").{% endif %}
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="ui-card ui-card-md">
+      <h3 class="font-semibold mb-3">{% if lang == 'de' %}Empfohlener Ablauf{% else %}Recommended flow{% endif %}</h3>
+      <ol class="list-decimal pl-6 space-y-2 text-sm">
+        {% if lang == 'de' %}
+        <li><strong>Bild 1:</strong> Spulen unter <a class="underline" href="/labels">/labels</a> auswählen und Labelbogen erzeugen.</li>
+        <li>Labels drucken und sauber auf die Spulen kleben.</li>
+        <li><strong>Bild 2:</strong> Beim Wechsel/Leerlauf via <a class="underline" href="/qr-scan">/qr-scan</a> Status sofort aktualisieren.</li>
+        {% else %}
+        <li><strong>Image 1:</strong> Select spools at <a class="underline" href="/labels">/labels</a> and generate a label sheet.</li>
+        <li>Print and apply labels physically.</li>
+        <li><strong>Image 2:</strong> Update status on change/empty via <a class="underline" href="/qr-scan">/qr-scan</a>.</li>
+        {% endif %}
+      </ol>
+    </div>
+  </section>
+</div>
+{% endblock %}

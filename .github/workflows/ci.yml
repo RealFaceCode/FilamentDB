@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+psycopg://filament:filament@db:5432/filament_db
+      ENABLE_BASIC_AUTH: "0"
+      CSRF_PROTECT: "1"
+      STRICT_CSRF_CHECK: "0"
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare env file
+        run: |
+          cp .env.example .env
+
+      - name: Start Docker services
+        run: |
+          docker compose up -d --build
+
+      - name: Wait for PostgreSQL health
+        run: |
+          for i in {1..30}; do
+            status=$(docker inspect --format='{{json .State.Health.Status}}' filament-db-postgres || true)
+            if [ "$status" = '"healthy"' ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "PostgreSQL did not become healthy in time"
+          docker compose logs db
+          exit 1
+
+      - name: Syntax check
+        run: |
+          docker compose exec -T -e ENABLE_BASIC_AUTH=0 -e CSRF_PROTECT=1 -e STRICT_CSRF_CHECK=0 -e ALLOWED_HOSTS=localhost,127.0.0.1,testserver web python -c "import ast,pathlib; files=['app/main.py','scripts/slicer_auto_usage.py','alembic/env.py']; [ast.parse(pathlib.Path(f).read_text(encoding='utf-8'), filename=f) for f in files]; print('syntax-ok')"
+
+      - name: Migration check
+        run: |
+          docker compose exec -T -e ENABLE_BASIC_AUTH=0 -e CSRF_PROTECT=1 -e STRICT_CSRF_CHECK=0 -e ALLOWED_HOSTS=localhost,127.0.0.1,testserver web alembic upgrade head
+          docker compose exec -T -e ENABLE_BASIC_AUTH=0 -e CSRF_PROTECT=1 -e STRICT_CSRF_CHECK=0 -e ALLOWED_HOSTS=localhost,127.0.0.1,testserver web alembic current
+
+      - name: Run regression tests
+        run: |
+          docker compose exec -T -e ENABLE_BASIC_AUTH=0 -e CSRF_PROTECT=1 -e STRICT_CSRF_CHECK=0 -e ALLOWED_HOSTS=localhost,127.0.0.1,testserver web python -m unittest tests/test_labels_custom_layout.py tests/test_usage_undo_capacity.py tests/test_api_auto_usage.py -v
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker compose down -v

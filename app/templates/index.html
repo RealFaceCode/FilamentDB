@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% block content %}
+{% set current_sort = sort|default('spool_index', true) %}
+{% set current_sort_dir = sort_dir|default('desc', true) %}
+{% set current_page = page|default(1, true) %}
+{% set current_page_size = page_size|default(request.query_params.get('page_size', 25)|int, true) %}
+{% set current_total_pages = total_pages|default(1, true) %}
+{% set current_total_count = total_count|default(spools|length, true) %}
+{% set current_page_size_options = page_size_options|default([10, 25, 50, 100], true) %}
+{% set current_list_base = list_base_path|default('/spools', true) %}
+{% set current_return_url = request.url.path %}{% if request.url.query %}{% set current_return_url = current_return_url ~ '?' ~ request.url.query %}{% endif %}
+{% if show_stats|default(true) %}
+<div class="mb-8">
+  <div class="ui-card ui-card-lg">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">{{ t('stats_title') }}</h2>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+      <div class="ui-panel">
+        <p class="text-xs text-slate-500">{{ t('stat_total_spools') }}</p>
+        <p class="text-2xl font-semibold">{{ format_number_compact(stats.total_spools, 0, lang) }}</p>
+      </div>
+      <div class="ui-panel">
+        <p class="text-xs text-slate-500">{{ t('stat_total_weight') }}</p>
+        {% set total_weight_fmt = format_weight_display(stats.total_weight) %}
+        <p class="text-2xl font-semibold">{{ total_weight_fmt.main }}</p>
+        {% if total_weight_fmt.sub %}
+        <p class="text-xs text-slate-500">{{ total_weight_fmt.sub }}</p>
+        {% endif %}
+      </div>
+      <div class="ui-panel">
+        <p class="text-xs text-slate-500">{{ t('stat_total_remaining') }}</p>
+        {% set total_remaining_fmt = format_weight_display(stats.total_remaining) %}
+        <p class="text-2xl font-semibold">{{ total_remaining_fmt.main }}</p>
+        {% if total_remaining_fmt.sub %}
+        <p class="text-xs text-slate-500">{{ total_remaining_fmt.sub }}</p>
+        {% endif %}
+      </div>
+      <div class="ui-panel">
+        <p class="text-xs text-slate-500">{{ t('stat_total_value') }}</p>
+        <p class="text-2xl font-semibold">{{ format_currency_text(stats.total_value, lang) }}</p>
+      </div>
+      <div class="ui-panel">
+        <p class="text-xs text-slate-500">{{ t('stat_empty_spools') }}</p>
+        <p class="text-2xl font-semibold">{{ format_number_compact(stats.empty_spools, 0, lang) }}</p>
+      </div>
+      <div class="p-4 rounded-xl bg-amber-50 border border-amber-200">
+        <p class="text-xs text-amber-700">{{ t('stat_low_stock_spools') }}</p>
+        <p class="text-2xl font-semibold text-amber-800">{{ format_number_compact(stats.low_stock_spools, 0, lang) }}</p>
+      </div>
+    </div>
+
+    <div class="mt-5 pt-5 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-sm font-semibold mb-3">{{ t('top5_materials') }}</h3>
+        <div class="space-y-2">
+          {% for row in top5_materials %}
+          <div class="flex items-center gap-3 text-sm">
+            <div class="w-28 truncate text-slate-600" title="{{ row.name }}">{{ row.name }}</div>
+            <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-2 bg-indigo-500" style="width: {{ row.share_pct }}%"></div>
+            </div>
+            <div class="w-24 text-right text-slate-700">{{ format_weight_text(row.remaining_g) }}</div>
+          </div>
+          {% else %}
+          <p class="text-sm text-slate-500">{{ t('no_spools') }}</p>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold mb-3">{{ t('top5_colors') }}</h3>
+        <div class="space-y-2">
+          {% for row in top5_colors %}
+          <div class="flex items-center gap-3 text-sm">
+            <div class="w-28 truncate text-slate-600" title="{{ row.name }}">{{ row.name }}</div>
+            <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-2 bg-emerald-500" style="width: {{ row.share_pct }}%"></div>
+            </div>
+            <div class="w-24 text-right text-slate-700">{{ format_weight_text(row.remaining_g) }}</div>
+          </div>
+          {% else %}
+          <p class="text-sm text-slate-500">{{ t('no_spools') }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-5 pt-5 border-t border-slate-200">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+        <div class="ui-panel">
+          <p class="text-xs text-slate-500">{{ t('kpi_month_usage') }}</p>
+          {% set month_usage_fmt = format_weight_display(month_usage_g) %}
+          <p class="text-2xl font-semibold">{{ month_usage_fmt.main }}</p>
+          {% if month_usage_fmt.sub %}
+          <p class="text-xs text-slate-500">{{ month_usage_fmt.sub }}</p>
+          {% endif %}
+        </div>
+        <div class="ui-panel">
+          <p class="text-xs text-slate-500">{{ t('kpi_month_cost') }}</p>
+          <p class="text-2xl font-semibold">{{ format_currency_text(month_cost_eur, lang) }}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-sm font-semibold mb-1">{{ t('kpi_usage_trend') }}</h3>
+          <p class="text-xs text-slate-500 mb-3">{{ t('kpi_last_months') }}</p>
+          <div class="space-y-2">
+            {% for row in monthly_usage_trend %}
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">{{ row.label }}</span>
+              <span class="font-medium">{{ format_weight_text(row.usage_g) }}</span>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">{{ t('kpi_no_usage_data') }}</p>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold mb-1">{{ t('kpi_cost_trend') }}</h3>
+          <p class="text-xs text-slate-500 mb-3">{{ t('kpi_last_months') }}</p>
+          <div class="space-y-2">
+            {% for row in monthly_usage_trend %}
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">{{ row.label }}</span>
+              <span class="font-medium">{{ format_currency_text(row.cost_eur, lang) }}</span>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">{{ t('kpi_no_usage_data') }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-5">
+        <div>
+          <h3 class="text-sm font-semibold mb-1">{{ t('kpi_top_material_trend') }}</h3>
+          <p class="text-xs text-slate-500 mb-3">{{ t('kpi_last_months') }}</p>
+          <div class="space-y-2">
+            {% for row in top_material_trend %}
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">{{ row.label }}</span>
+              <span class="font-medium">{{ row.name }} ({{ format_weight_text(row.usage_g) }})</span>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">{{ t('kpi_no_usage_data') }}</p>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold mb-1">{{ t('kpi_top_color_trend') }}</h3>
+          <p class="text-xs text-slate-500 mb-3">{{ t('kpi_last_months') }}</p>
+          <div class="space-y-2">
+            {% for row in top_color_trend %}
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">{{ row.label }}</span>
+              <span class="font-medium">{{ row.name }} ({{ format_weight_text(row.usage_g) }})</span>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">{{ t('kpi_no_usage_data') }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if show_spool_list|default(true) %}
+<div class="ui-card ui-card-lg">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <h2 class="text-lg font-semibold">{{ t('spool_list') }}</h2>
+    <form method="get" action="{{ current_list_base }}" class="flex gap-2" id="spool-search-form">
+      <input type="hidden" name="sort" value="{{ current_sort }}">
+      <input type="hidden" name="dir" value="{{ current_sort_dir }}">
+      <input type="hidden" name="page_size" value="{{ current_page_size }}">
+      <input type="hidden" name="hide_empty" id="hide-empty-hidden" value="{{ 'true' if hide_empty else 'false' }}">
+      <select name="location_id" class="ui-select w-56">
+        <option value="">{{ t('storage_filter_all') }}</option>
+        {% for option in (storage_location_options or []) %}
+          <option value="{{ option.id }}" {% if location_id and option.id == location_id %}selected{% endif %}>{{ option.path_code }}</option>
+        {% endfor %}
+      </select>
+      <select name="lifecycle_status" class="ui-select w-56">
+        <option value="">{{ t('lifecycle_filter_all') }}</option>
+        {% for option in (lifecycle_status_options or []) %}
+          <option value="{{ option.value }}" {% if lifecycle_status and option.value == lifecycle_status %}selected{% endif %}>{{ option.label }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="q" value="{{ q or '' }}" placeholder="{{ t('search_placeholder') }}" class="ui-input w-64">
+      <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+        <input type="checkbox" id="hide-empty-toggle" {% if hide_empty %}checked{% endif %} class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900" onchange="document.getElementById('hide-empty-hidden').value = this.checked ? 'true' : 'false'; document.getElementById('spool-search-form').submit();">
+        <span>{{ t('hide_empty_spools') }}</span>
+      </label>
+      <button class="ui-btn ui-btn-secondary">{{ t('search') }}</button>
+    </form>
+  </div>
+
+  <div class="flex items-center justify-between gap-3 mb-4">
+    <div class="text-xs text-slate-500">{{ format_number_compact(current_total_count, 0, lang) }} {{ t('entries_label') }}</div>
+    <form method="get" action="{{ current_list_base }}" class="flex items-center gap-2">
+      <input type="hidden" name="q" value="{{ q or '' }}">
+      <input type="hidden" name="location_id" value="{{ location_id or '' }}">
+      <input type="hidden" name="lifecycle_status" value="{{ lifecycle_status or '' }}">
+      <input type="hidden" name="hide_empty" value="{{ 'true' if hide_empty else 'false' }}">
+      <input type="hidden" name="sort" value="{{ current_sort }}">
+      <input type="hidden" name="dir" value="{{ current_sort_dir }}">
+      <input type="hidden" name="page" value="1">
+      <label for="page-size-select" class="text-xs text-slate-500">{{ t('rows_per_page') }}</label>
+      <select id="page-size-select" name="page_size" onchange="this.form.submit()" class="ui-select py-1">
+        {% for option in current_page_size_options %}
+          <option value="{{ option }}" {% if option == current_page_size %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="overflow-auto max-h-[70vh]">
+    <table class="ui-table">
+      <thead>
+        <tr class="ui-thead-row">
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='spool_index', dir='asc' if current_sort != 'spool_index' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('spool_index') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='brand', dir='asc' if current_sort != 'brand' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('brand') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='material', dir='asc' if current_sort != 'material' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('material') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='color', dir='asc' if current_sort != 'color' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('color') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='weight', dir='asc' if current_sort != 'weight' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('weight') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='remaining', dir='asc' if current_sort != 'remaining' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('remaining') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='threshold', dir='asc' if current_sort != 'threshold' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('threshold') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='price', dir='asc' if current_sort != 'price' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('price') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='location', dir='asc' if current_sort != 'location' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('location') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='lifecycle', dir='asc' if current_sort != 'lifecycle' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('lifecycle_status') }}</a>
+          </th>
+          <th class="ui-th-sticky">
+            <a href="{{ request.url.include_query_params(sort='status', dir='asc' if current_sort != 'status' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('status') }}</a>
+          </th>
+          <th class="text-right ui-th-sticky">{{ t('actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for spool in spools %}
+        <tr class="ui-row {% if spool.is_low_stock %}ui-row-warn{% endif %}">
+          <td class="ui-td"><span class="ui-badge ui-badge-id">SP-{{ '%04d'|format(spool.id) }}</span></td>
+          <td class="ui-td font-medium">{{ spool.brand }}</td>
+          <td class="ui-td">{{ spool.material }}</td>
+          <td class="ui-td">{{ spool.color }}</td>
+          <td class="ui-td">{{ format_weight_text(spool.weight_g) }}</td>
+          <td class="ui-td">
+            <span class="{% if spool.is_low_stock %}font-semibold text-amber-700 dark:text-amber-300{% endif %}">
+              {{ format_weight_text(spool.remaining_g) }}
+            </span>
+            {% if spool.is_low_stock and spool.low_stock_threshold_effective_g is not none %}
+              <span class="ml-1 text-xs text-amber-600 dark:text-amber-200">(≤ {{ format_weight_text(spool.low_stock_threshold_effective_g) }})</span>
+            {% endif %}
+          </td>
+          <td class="ui-td">
+            {% if spool.low_stock_threshold_effective_g is not none %}
+              <span>{{ format_weight_text(spool.low_stock_threshold_effective_g) }}</span>
+              {% if spool.low_stock_threshold_source == 'spool' %}
+                <span class="ml-1 ui-badge ui-badge-meta">{{ t('threshold_source_spool') }}</span>
+              {% elif spool.low_stock_threshold_source == 'material' %}
+                <span class="ml-1 ui-badge ui-badge-idle">{{ t('threshold_source_material') }}</span>
+              {% endif %}
+            {% else %}
+              <span class="text-slate-400">{{ t('threshold_none') }}</span>
+            {% endif %}
+          </td>
+          <td class="ui-td">{{ format_currency_text(spool.price, lang) }}</td>
+          <td class="ui-td">
+            <div>{{ spool.location_display or spool.location or '-' }}</div>
+            {% if spool.ams_slot %}
+            <div class="text-xs text-slate-500">
+              {{ t('ams_printer') }}: {{ spool.ams_printer or '-' }} · {{ t('ams_slot') }} {{ spool.ams_slot }}
+            </div>
+            {% endif %}
+          </td>
+          <td class="ui-td">
+            {% set lifecycle_value = spool.lifecycle_status or 'new' %}
+            {% set lifecycle_badge_class = 'ui-badge-id' %}
+            {% if lifecycle_value == 'opened' %}
+              {% set lifecycle_badge_class = 'ui-badge-meta' %}
+            {% elif lifecycle_value == 'dry_stored' %}
+              {% set lifecycle_badge_class = 'ui-badge-inuse' %}
+            {% elif lifecycle_value == 'humidity_risk' %}
+              {% set lifecycle_badge_class = 'ui-badge-low' %}
+            {% elif lifecycle_value == 'empty' %}
+              {% set lifecycle_badge_class = 'ui-badge-empty' %}
+            {% elif lifecycle_value == 'archived' %}
+              {% set lifecycle_badge_class = 'ui-badge-idle' %}
+            {% endif %}
+            <span class="ui-badge {{ lifecycle_badge_class }}">{{ t('lifecycle_' ~ lifecycle_value) }}</span>
+          </td>
+          <td class="ui-td">
+            {% if spool.remaining_g <= 0 %}
+              <span class="ui-badge ui-badge-empty">{{ t('empty') }}</span>
+            {% elif spool.is_low_stock %}
+              <span class="ui-badge ui-badge-low">{{ t('low_stock') }}</span>
+            {% elif spool.in_use %}
+              <span class="ui-badge ui-badge-inuse">{{ t('in_use') }}</span>
+            {% else %}
+              <span class="ui-badge ui-badge-idle">{{ t('idle') }}</span>
+            {% endif %}
+          </td>
+          <td class="ui-td text-right">
+            <div class="inline-flex items-center gap-2">
+              <form method="post" action="/spools/{{ spool.id }}/toggle-use">
+                <input type="hidden" name="next_url" value="{{ current_return_url }}">
+                <button class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('toggle_use') }}</button>
+              </form>
+              <a href="/spools/{{ spool.id }}/edit?next_url={{ current_return_url|urlencode }}" class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('edit') }}</a>
+              <a href="/spools/{{ spool.id }}/qr" class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('qr') }}</a>
+              <form method="post" action="/spools/{{ spool.id }}/delete" onsubmit="return confirm('{{ t('confirm_delete') }}');">
+                <input type="hidden" name="next_url" value="{{ current_return_url }}">
+                <button class="ui-btn ui-btn-danger ui-btn-sm">{{ t('delete') }}</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="12" class="py-8 text-center text-slate-500">{{ t('no_spools') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-4 flex items-center justify-between gap-3 text-sm">
+    <div class="text-slate-500">{{ t('page_label') }} {{ current_page }} / {{ current_total_pages }}</div>
+    <div class="flex items-center gap-2">
+      {% if current_page > 1 %}
+        <a class="ui-btn ui-btn-secondary ui-btn-sm" href="{{ request.url.include_query_params(page=current_page-1) }}">{{ t('prev_page') }}</a>
+      {% else %}
+        <span class="ui-btn ui-btn-secondary ui-btn-sm text-slate-400">{{ t('prev_page') }}</span>
+      {% endif %}
+
+      {% if current_page < current_total_pages %}
+        <a class="ui-btn ui-btn-secondary ui-btn-sm" href="{{ request.url.include_query_params(page=current_page+1) }}">{{ t('next_page') }}</a>
+      {% else %}
+        <span class="ui-btn ui-btn-secondary ui-btn-sm text-slate-400">{{ t('next_page') }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

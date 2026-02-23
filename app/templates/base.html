@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or t('app_title') }}</title>
+  <script>
+    function applyTheme(theme) {
+      const prefersDark = globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
+      const useDark = theme === 'dark' || (theme === 'system' && prefersDark);
+      document.documentElement.classList.toggle('dark', useDark);
+    }
+    (function() {
+      const savedTheme = {{ (theme or 'system') | tojson }};
+      applyTheme(savedTheme);
+    })();
+  </script>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: light; }
+    .dark { color-scheme: dark; }
+
+    html:not(.dark) .bg-white { background-color: rgb(255 255 255) !important; }
+    html:not(.dark) .bg-slate-50 { background-color: rgb(248 250 252) !important; }
+    html:not(.dark) .bg-slate-100 { background-color: rgb(241 245 249) !important; }
+    html:not(.dark) .border-slate-200 { border-color: rgb(203 213 225) !important; }
+    html:not(.dark) .text-slate-900 { color: rgb(15 23 42) !important; }
+    html:not(.dark) .text-slate-800 { color: rgb(30 41 59) !important; }
+    html:not(.dark) .text-slate-700 { color: rgb(30 41 59) !important; }
+    html:not(.dark) .text-slate-600 { color: rgb(51 65 85) !important; }
+    html:not(.dark) .text-slate-500 { color: rgb(71 85 105) !important; }
+    html:not(.dark) .hover\:bg-slate-200:hover { background-color: rgb(226 232 240) !important; }
+    html:not(.dark) .hover\:bg-slate-100:hover { background-color: rgb(226 232 240) !important; }
+
+    .dark .bg-white { background-color: rgb(15 23 42) !important; }
+    .dark .bg-slate-50 { background-color: rgb(2 6 23) !important; }
+    .dark .bg-slate-100 { background-color: rgb(30 41 59) !important; }
+    .dark .border-slate-200 { border-color: rgb(51 65 85) !important; }
+    .dark .text-slate-900 { color: rgb(241 245 249) !important; }
+    .dark .text-slate-800 { color: rgb(226 232 240) !important; }
+    .dark .text-slate-700 { color: rgb(203 213 225) !important; }
+    .dark .text-slate-600 { color: rgb(148 163 184) !important; }
+    .dark .text-slate-500 { color: rgb(148 163 184) !important; }
+    .dark .hover\:bg-slate-200:hover { background-color: rgb(51 65 85) !important; }
+    .dark .hover\:bg-slate-100:hover { background-color: rgb(51 65 85) !important; }
+    .dark .bg-indigo-50 { background-color: rgb(30 41 59) !important; }
+    .dark .text-indigo-700 { color: rgb(165 180 252) !important; }
+    .dark .hover\:bg-indigo-100:hover { background-color: rgb(51 65 85) !important; }
+
+    .ui-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.375rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgb(255 255 255 / 0.38);
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      font-weight: 500;
+      transition: background-color .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .ui-btn:hover { transform: translateY(-1px); }
+    .ui-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+    .ui-btn-sm {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      line-height: 1rem;
+    }
+    .ui-btn-primary {
+      background-color: rgb(79 70 229 / 0.7);
+      color: rgb(255 255 255);
+      border-color: rgb(165 180 252 / 0.7);
+    }
+    .ui-btn-primary:hover {
+      background-color: rgb(67 56 202 / 0.82);
+    }
+    .ui-btn-secondary {
+      background-color: rgb(255 255 255 / 0.56);
+      color: rgb(30 41 59);
+      border-color: rgb(148 163 184 / 0.45);
+    }
+    .ui-btn-secondary:hover {
+      background-color: rgb(255 255 255 / 0.7);
+    }
+    .ui-btn-danger {
+      background-color: rgb(254 226 226 / 0.68);
+      color: rgb(190 18 60);
+      border-color: rgb(251 113 133 / 0.45);
+    }
+    .ui-btn-danger:hover {
+      background-color: rgb(255 228 230);
+    }
+    .ui-btn-success {
+      background-color: rgb(4 120 87 / 0.72);
+      color: rgb(255 255 255);
+      border-color: rgb(110 231 183 / 0.45);
+    }
+    .ui-btn-success:hover {
+      background-color: rgb(6 95 70);
+    }
+    .dark .ui-btn-secondary {
+      background-color: rgb(30 41 59 / 0.55);
+      border-color: rgb(148 163 184 / 0.35);
+      color: rgb(226 232 240);
+    }
+    .dark .ui-btn-secondary:hover {
+      background-color: rgb(51 65 85 / 0.72);
+    }
+    .dark .ui-btn-danger {
+      background-color: rgb(136 19 55 / 0.3);
+      border-color: rgb(159 18 57 / 0.5);
+      color: rgb(253 164 175);
+    }
+    .dark .ui-btn-danger:hover {
+      background-color: rgb(136 19 55 / 0.5);
+    }
+    .ui-btn-nav {
+      background-color: rgb(49 46 129 / 0.28);
+      color: rgb(255 255 255);
+      border-color: rgb(224 231 255 / 0.4);
+    }
+    .ui-btn-nav:hover {
+      background-color: rgb(49 46 129 / 0.48);
+      border-color: rgb(99 102 241 / 0.7);
+    }
+
+    .ui-input,
+    .ui-select,
+    .ui-textarea {
+      width: 100%;
+      border: 1px solid rgb(148 163 184 / 0.42);
+      border-radius: 0.75rem;
+      background-color: rgb(255 255 255 / 0.62);
+      color: rgb(30 41 59);
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      padding: 0.5rem 0.75rem;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .ui-input:focus,
+    .ui-select:focus,
+    .ui-textarea:focus {
+      border-color: rgb(99 102 241);
+      box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
+    }
+    .dark .ui-input,
+    .dark .ui-select,
+    .dark .ui-textarea {
+      border-color: rgb(148 163 184 / 0.34);
+      background-color: rgb(15 23 42 / 0.58);
+      color: rgb(226 232 240);
+    }
+    .dark .ui-input::placeholder,
+    .dark .ui-textarea::placeholder {
+      color: rgb(148 163 184);
+    }
+
+    .ui-file-input {
+      width: 100%;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      color: rgb(71 85 105);
+    }
+    .ui-file-input::file-selector-button {
+      margin-right: 0.75rem;
+      border: 0;
+      border-radius: 0.5rem;
+      background-color: rgb(241 245 249);
+      color: rgb(51 65 85);
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      transition: background-color .15s ease;
+    }
+    .ui-file-input::file-selector-button:hover {
+      background-color: rgb(226 232 240);
+    }
+    .dark .ui-file-input {
+      color: rgb(148 163 184);
+    }
+    .dark .ui-file-input::file-selector-button {
+      background-color: rgb(30 41 59);
+      color: rgb(226 232 240);
+    }
+    .dark .ui-file-input::file-selector-button:hover {
+      background-color: rgb(51 65 85);
+    }
+
+    .ui-alert-warning {
+      border: 1px solid rgb(253 230 138);
+      background-color: rgb(255 251 235);
+      color: rgb(146 64 14);
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    .dark .ui-alert-warning {
+      border-color: rgb(180 83 9);
+      background-color: rgb(120 53 15 / 0.3);
+      color: rgb(253 230 138);
+    }
+
+    .ui-toast {
+      pointer-events: auto;
+      max-width: 28rem;
+      border-radius: 0.75rem;
+      border: 1px solid transparent;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.2), 0 4px 6px -4px rgb(15 23 42 / 0.2);
+      transition: all .5s ease;
+    }
+    .ui-toast-success {
+      background-color: rgb(236 253 245);
+      border-color: rgb(167 243 208);
+      color: rgb(6 95 70);
+    }
+    .ui-toast-error {
+      background-color: rgb(255 241 242);
+      border-color: rgb(254 205 211);
+      color: rgb(159 18 57);
+    }
+    .ui-toast-warning {
+      background-color: rgb(255 251 235);
+      border-color: rgb(253 230 138);
+      color: rgb(146 64 14);
+    }
+    .dark .ui-toast-success {
+      background-color: rgb(6 78 59 / 0.4);
+      border-color: rgb(6 95 70);
+      color: rgb(209 250 229);
+    }
+    .dark .ui-toast-error {
+      background-color: rgb(136 19 55 / 0.4);
+      border-color: rgb(159 18 57);
+      color: rgb(255 228 230);
+    }
+    .dark .ui-toast-warning {
+      background-color: rgb(120 53 15 / 0.4);
+      border-color: rgb(180 83 9);
+      color: rgb(254 243 199);
+    }
+
+    .ui-card {
+      background-color: rgb(255 255 255 / 0.58);
+      border: 1px solid rgb(148 163 184 / 0.35);
+      border-radius: 1rem;
+      box-shadow: 0 8px 28px rgb(15 23 42 / 0.08);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .ui-card-lg {
+      padding: 1.5rem;
+    }
+    .ui-card-md {
+      padding: 1.25rem;
+    }
+    .ui-card-sm {
+      padding: 1rem;
+    }
+    .dark .ui-card {
+      background-color: rgb(15 23 42 / 0.56);
+      border-color: rgb(148 163 184 / 0.24);
+      box-shadow: 0 10px 34px rgb(2 6 23 / 0.36);
+    }
+
+    .ui-panel {
+      border: 1px solid rgb(148 163 184 / 0.32);
+      background-color: rgb(255 255 255 / 0.48);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .dark .ui-panel {
+      border-color: rgb(148 163 184 / 0.22);
+      background-color: rgb(2 6 23 / 0.48);
+    }
+
+    .ui-table {
+      min-width: 100%;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    .ui-thead-row {
+      text-align: left;
+      color: rgb(71 85 105);
+      border-bottom: 1px solid rgb(226 232 240);
+    }
+    .dark .ui-thead-row {
+      color: rgb(148 163 184);
+      border-bottom-color: rgb(51 65 85);
+    }
+    .ui-th-sticky {
+      position: sticky;
+      top: 0;
+      background-color: rgb(255 255 255 / 0.72);
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .dark .ui-th-sticky {
+      background-color: rgb(15 23 42 / 0.72);
+    }
+    .ui-row {
+      border-bottom: 1px solid rgb(226 232 240);
+    }
+    .ui-row:last-child {
+      border-bottom: 0;
+    }
+    .dark .ui-row {
+      border-bottom-color: rgb(51 65 85);
+    }
+    .ui-row-warn {
+      background-color: rgb(255 251 235 / 0.6);
+    }
+    .dark .ui-row-warn {
+      background-color: rgb(120 53 15 / 0.25);
+    }
+    .ui-td {
+      padding-top: 0.625rem;
+      padding-bottom: 0.625rem;
+      vertical-align: middle;
+    }
+
+    .ui-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      line-height: 1rem;
+      font-weight: 500;
+    }
+    .ui-badge-id {
+      background-color: rgb(241 245 249);
+      color: rgb(51 65 85);
+    }
+    .dark .ui-badge-id {
+      background-color: rgb(30 41 59);
+      color: rgb(226 232 240);
+    }
+    .ui-badge-meta {
+      background-color: rgb(238 242 255);
+      color: rgb(67 56 202);
+    }
+    .dark .ui-badge-meta {
+      background-color: rgb(49 46 129 / 0.35);
+      color: rgb(199 210 254);
+    }
+    .ui-badge-empty {
+      background-color: rgb(255 228 230);
+      color: rgb(190 18 60);
+    }
+    .dark .ui-badge-empty {
+      background-color: rgb(136 19 55 / 0.35);
+      color: rgb(255 228 230);
+    }
+    .ui-badge-low {
+      background-color: rgb(254 243 199);
+      color: rgb(180 83 9);
+    }
+    .dark .ui-badge-low {
+      background-color: rgb(120 53 15 / 0.35);
+      color: rgb(253 230 138);
+    }
+    .ui-badge-inuse,
+    .ui-badge-reorder-ok {
+      background-color: rgb(209 250 229);
+      color: rgb(6 95 70);
+    }
+    .dark .ui-badge-inuse,
+    .dark .ui-badge-reorder-ok {
+      background-color: rgb(6 78 59 / 0.35);
+      color: rgb(167 243 208);
+    }
+    .ui-badge-idle {
+      background-color: rgb(241 245 249);
+      color: rgb(71 85 105);
+    }
+    .dark .ui-badge-idle {
+      background-color: rgb(30 41 59);
+      color: rgb(148 163 184);
+    }
+    .ui-badge-reorder-needed {
+      background-color: rgb(254 243 199);
+      color: rgb(180 83 9);
+    }
+    .dark .ui-badge-reorder-needed {
+      background-color: rgb(120 53 15 / 0.35);
+      color: rgb(253 230 138);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+  <header class="sticky top-0 z-50 bg-gradient-to-r from-indigo-600/85 to-violet-600/85 text-white border-b border-white/20 backdrop-blur-xl">
+    <div class="max-w-screen-2xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+        <h1 class="text-2xl font-semibold tracking-tight"><a href="/landing" class="hover:underline">{{ t('app_title') }}</a></h1>
+        <p class="text-indigo-100 text-sm">{{ t('app_subtitle') }}</p>
+        </div>
+        <div class="flex items-start gap-3 flex-wrap justify-end">
+          {% if is_authenticated %}
+          <div class="min-w-[250px]">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Bestand</p>
+            <div class="grid grid-cols-2 gap-2">
+              <a href="/dashboard" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_home') }}</a>
+              <a href="/spools" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('spool_list') }}</a>
+              <a href="/spools/new" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('add_spool') }}</a>
+              <a href="/spools/bulk" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('bulk_add') }}</a>
+              <a href="/storage-locations" class="ui-btn ui-btn-sm ui-btn-nav w-full col-span-2">{{ t('nav_storage_locations') }}</a>
+            </div>
+          </div>
+
+          <div class="min-w-[250px]">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Produktion</p>
+            <div class="grid grid-cols-2 gap-2">
+              <a href="/booking" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_booking') }}</a>
+              <a href="/booking/tracking" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_tracking') }}</a>
+              <a href="/slot-status" class="ui-btn ui-btn-sm ui-btn-nav w-full col-span-2">{{ t('nav_slot_status') }}</a>
+            </div>
+          </div>
+
+          <div class="min-w-[250px]">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Analyse & Tools</p>
+            <div class="grid grid-cols-2 gap-2">
+              <a href="/analysis" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('analysis_tab') }}</a>
+              <a href="/thresholds" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('thresholds_tab') }}</a>
+              <a href="/presets" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('manage_presets') }}</a>
+              <a href="/help" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_help') }}</a>
+            </div>
+          </div>
+
+          <details id="settings-menu" class="relative min-w-[250px]">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Einstellungen</p>
+            <summary class="list-none cursor-pointer ui-btn ui-btn-sm ui-btn-nav rounded-full">{{ t('settings') }}</summary>
+            <div class="absolute right-0 mt-2 w-64 rounded-xl border border-slate-200 bg-white/80 text-slate-800 shadow-lg p-3 z-30 backdrop-blur-xl dark:bg-slate-900/70">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{{ t('settings_language') }}</p>
+              <div class="flex gap-2 mb-3">
+                <form method="post" action="/settings">
+                  <input type="hidden" name="lang" value="de">
+                  <input type="hidden" name="theme" value="{{ theme }}">
+                  <input type="hidden" name="project" value="{{ project }}">
+                  <input type="hidden" name="persist_db" value="1">
+                  <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                  <button class="ui-btn ui-btn-sm ui-btn-secondary">DE</button>
+                </form>
+                <form method="post" action="/settings">
+                  <input type="hidden" name="lang" value="en">
+                  <input type="hidden" name="theme" value="{{ theme }}">
+                  <input type="hidden" name="project" value="{{ project }}">
+                  <input type="hidden" name="persist_db" value="1">
+                  <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                  <button class="ui-btn ui-btn-sm ui-btn-secondary">EN</button>
+                </form>
+              </div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{{ t('settings_theme') }}</p>
+              <div class="grid grid-cols-3 gap-2 mb-3">
+                <form method="post" action="/settings">
+                  <input type="hidden" name="lang" value="{{ lang }}">
+                  <input type="hidden" name="theme" value="light">
+                  <input type="hidden" name="project" value="{{ project }}">
+                  <input type="hidden" name="persist_db" value="1">
+                  <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                  <button class="w-full ui-btn ui-btn-sm ui-btn-secondary">{{ t('theme_light') }}</button>
+                </form>
+                <form method="post" action="/settings">
+                  <input type="hidden" name="lang" value="{{ lang }}">
+                  <input type="hidden" name="theme" value="dark">
+                  <input type="hidden" name="project" value="{{ project }}">
+                  <input type="hidden" name="persist_db" value="1">
+                  <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                  <button class="w-full ui-btn ui-btn-sm ui-btn-secondary">{{ t('theme_dark') }}</button>
+                </form>
+                <form method="post" action="/settings">
+                  <input type="hidden" name="lang" value="{{ lang }}">
+                  <input type="hidden" name="theme" value="system">
+                  <input type="hidden" name="project" value="{{ project }}">
+                  <input type="hidden" name="persist_db" value="1">
+                  <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                  <button class="w-full ui-btn ui-btn-sm ui-btn-secondary">{{ t('theme_system') }}</button>
+                </form>
+              </div>
+              {% set project_heading = t('settings_project') %}
+              {% if project_heading == 'settings_project' %}
+                {% set project_heading = 'Projekt' if lang == 'de' else 'Project' %}
+              {% endif %}
+              {% set private_label = t('project_private') %}
+              {% if private_label == 'project_private' %}
+                {% set private_label = 'Privat' if lang == 'de' else 'Private' %}
+              {% endif %}
+              {% set business_label = t('project_business') %}
+              {% if business_label == 'project_business' %}
+                {% set business_label = 'Geschäftlich' if lang == 'de' else 'Business' %}
+              {% endif %}
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{{ project_heading }}</p>
+              <div class="grid grid-cols-2 gap-2 mb-3">
+                <form method="post" action="/settings">
+                  <input type="hidden" name="lang" value="{{ lang }}">
+                  <input type="hidden" name="theme" value="{{ theme }}">
+                  <input type="hidden" name="project" value="private">
+                  <input type="hidden" name="persist_db" value="1">
+                  <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                  <button class="w-full ui-btn ui-btn-sm ui-btn-secondary">{{ private_label }}</button>
+                </form>
+                <form method="post" action="/settings">
+                  <input type="hidden" name="lang" value="{{ lang }}">
+                  <input type="hidden" name="theme" value="{{ theme }}">
+                  <input type="hidden" name="project" value="business">
+                  <input type="hidden" name="persist_db" value="1">
+                  <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                  <button class="w-full ui-btn ui-btn-sm ui-btn-secondary">{{ business_label }}</button>
+                </form>
+              </div>
+            </div>
+          </details>
+          <div class="min-w-[250px]">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Account</p>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-indigo-100/90 truncate max-w-[170px]" title="{{ current_user_email or '' }}">{{ current_user_name or current_user_email or '' }}</span>
+              <form method="post" action="/auth/logout">
+                <input type="hidden" name="next_url" value="/">
+                <button class="ui-btn ui-btn-sm ui-btn-nav">{{ t('auth_logout') }}</button>
+              </form>
+            </div>
+          </div>
+          {% else %}
+          <div class="min-w-[250px]">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Zugang</p>
+            <div class="grid grid-cols-2 gap-2">
+              <a href="/auth/login" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('landing_cta_login') }}</a>
+              <a href="/auth/register" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('landing_cta_register') }}</a>
+              <a href="/help" class="ui-btn ui-btn-sm ui-btn-nav w-full col-span-2">{{ t('nav_help') }}</a>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-screen-2xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <div
+    id="toast-root"
+    class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"
+    data-message='{{ (message or "") | tojson }}'
+    data-error='{{ (error or "") | tojson }}'
+    data-warning='{{ (warning or "") | tojson }}'
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
+
+  <footer class="py-6 text-center text-xs text-slate-500">
+    {{ t('footer_text') }}
+  </footer>
+
+  <script>
+    globalThis.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+      const savedTheme = {{ (theme or 'system') | tojson }};
+      if (savedTheme === 'system') {
+        applyTheme('system');
+      }
+    });
+
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('settings') === '1') {
+        const menu = document.getElementById('settings-menu');
+        if (menu) {
+          menu.open = true;
+        }
+      }
+    })();
+
+    document.addEventListener('click', function (event) {
+      const menu = document.getElementById('settings-menu');
+      if (!menu || !menu.open) {
+        return;
+      }
+      if (!menu.contains(event.target)) {
+        menu.open = false;
+      }
+    });
+
+    (function() {
+      const root = document.getElementById('toast-root');
+      if (!root) {
+        return;
+      }
+
+      const entries = [
+        { kind: 'success', text: JSON.parse(root.dataset.message || '""') },
+        { kind: 'error', text: JSON.parse(root.dataset.error || '""') },
+        { kind: 'warning', text: JSON.parse(root.dataset.warning || '""') },
+      ].filter((item) => (item.text || '').trim().length > 0);
+
+      const classByKind = {
+        success: 'ui-toast-success',
+        error: 'ui-toast-error',
+        warning: 'ui-toast-warning',
+      };
+
+      entries.forEach((entry, index) => {
+        const toast = document.createElement('div');
+        toast.className = `ui-toast opacity-0 translate-y-1 ${classByKind[entry.kind] || classByKind.success}`;
+        toast.textContent = entry.text;
+        root.appendChild(toast);
+
+        setTimeout(() => {
+          toast.classList.remove('opacity-0', 'translate-y-1');
+          toast.classList.add('opacity-100', 'translate-y-0');
+        }, 40 + index * 60);
+
+        setTimeout(() => {
+          toast.classList.remove('opacity-100', 'translate-y-0');
+          toast.classList.add('opacity-0', '-translate-y-1');
+        }, 4200 + index * 120);
+
+        setTimeout(() => {
+          toast.remove();
+        }, 4900 + index * 120);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,3256 @@
+{
+  "3DJake": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Amazon Basics": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Anycubic": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Bambu Lab": {
+    "ABS": [
+      "Azure",
+      "Black",
+      "Blue",
+      "Desert Tan",
+      "Navy Blue",
+      "Olive",
+      "Orange",
+      "Purple",
+      "Red",
+      "Silver",
+      "Tangerine Yellow",
+      "White"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "Black",
+      "Blue",
+      "Green",
+      "Grey",
+      "Red",
+      "White"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "Black",
+      "Blue",
+      "Blue Gray",
+      "Gold",
+      "Gray",
+      "Green",
+      "Lake Blue",
+      "Lime Green",
+      "Nature",
+      "Orange",
+      "Purple",
+      "Red",
+      "Translucent Brown",
+      "Translucent Gray",
+      "Translucent Light Blue",
+      "Translucent Olive",
+      "Translucent Orange",
+      "Translucent Pink",
+      "Translucent Purple",
+      "Translucent Teal",
+      "White",
+      "Yellow"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "Bambu Green",
+      "Beige",
+      "Black",
+      "Blue",
+      "Blue Grey",
+      "Bright Green",
+      "Bronze",
+      "Brown",
+      "Cobalt Blue",
+      "Cocoa Brown",
+      "Cyan",
+      "Dark Gray",
+      "Gold",
+      "Gray",
+      "Hot Pink",
+      "Indigo Purple",
+      "Jade White",
+      "Light Gray",
+      "Magenta",
+      "Maroon Red",
+      "Mistletoe Green",
+      "Orange",
+      "Pink",
+      "Pumpkin Orange",
+      "Purple",
+      "Red",
+      "Silver",
+      "Sunflower Yellow",
+      "Turquoise",
+      "Yellow"
+    ],
+    "PLA Glow": [
+      "Glow Blue",
+      "Glow Green",
+      "Glow Orange",
+      "Glow Pink",
+      "Glow Yellow"
+    ],
+    "PLA Matte": [
+      "Apple Green",
+      "Ash Gray",
+      "Bone White",
+      "Caramel",
+      "Charcoal",
+      "Dark Blue",
+      "Dark Brown",
+      "Dark Chocolate",
+      "Dark Green",
+      "Dark Red",
+      "Desert Tan",
+      "Grass Green",
+      "Ice Blue",
+      "Ivory White",
+      "Latte Brown",
+      "Lemon Yellow",
+      "Lilac Purple",
+      "Mandarin Orange",
+      "Marine Blue",
+      "Nardo Gray",
+      "Plum",
+      "Sakura Pink",
+      "Scarlet Red",
+      "Sky Blue",
+      "Terracotta"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "Clear"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "Black",
+      "Blue",
+      "Gray",
+      "Neon Green",
+      "Red",
+      "White",
+      "Yellow"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "Black",
+      "Blue",
+      "Gray",
+      "Red",
+      "White",
+      "Yellow"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "ColorFabb": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Creality": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Elegoo": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Fillamentum": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "FormFutura": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Geeetech": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Gizmo Dorks": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Hatchbox": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "APPLE SAUCE",
+      "BABY PINK",
+      "BEIGE",
+      "BLACK",
+      "BLUE",
+      "BLUSH PINK",
+      "BRICK RED",
+      "BRONZE",
+      "BROWN",
+      "BUTTER YELLOW",
+      "CARBON",
+      "CEDAR BROWN",
+      "CHERRY RED",
+      "Cool Gray",
+      "COOL MINT",
+      "COPPER",
+      "CORAL",
+      "DARK GREEN",
+      "DARK YELLOW",
+      "DUSTY PLUM",
+      "FLESH",
+      "GOLD",
+      "GRAY",
+      "GRAY BLUE",
+      "GREEN",
+      "GUACAMOLE GREEN",
+      "IRON RED",
+      "IVORY WHITE",
+      "KRAFT",
+      "LAKER GOLD",
+      "LEMON YELLOW",
+      "LEMONADE",
+      "LIGHT BLUE",
+      "LIGHT LAVENDER",
+      "LIGHT ORANGE",
+      "LIGHT PERIWINKLE",
+      "LIGHT PURPLE",
+      "LIME GREEN",
+      "MIDNIGHT PURPLE",
+      "MINT",
+      "Mint Green",
+      "MULTI-COLOR",
+      "NATURAL",
+      "NEON GREEN",
+      "NEON RED",
+      "OLIVE",
+      "OLIVE GREEN",
+      "ORANGE",
+      "PASTEL GREEN",
+      "PEACH",
+      "PEACOCK BLUE",
+      "PEAPOD GREEN",
+      "PECAN BROWN",
+      "PINK",
+      "PLUM",
+      "PURPLE",
+      "RED",
+      "ROBIN EGG BLUE",
+      "ROSE GOLD",
+      "RUST",
+      "SALMON PINK",
+      "SEA BREEZE",
+      "SILVER",
+      "SLATE BLUE",
+      "TERRACOTTA",
+      "TOPAZ GREEN",
+      "VIVID TANGERINE",
+      "WHITE",
+      "YELLOW"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "ICE Filaments": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Jayo": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "MatterHackers": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Overture": {
+    "ABS": [
+      "Black",
+      "Blue",
+      "Dark Red",
+      "Diamond Gray",
+      "Diamond Orange",
+      "Diamond Purple",
+      "Glow Green",
+      "Grass Green",
+      "Gray",
+      "Green",
+      "Natural",
+      "Purple",
+      "White",
+      "Yellow"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "Black",
+      "Blue",
+      "Brown",
+      "Diamond Blue",
+      "Diamond Green",
+      "Diamond Red",
+      "Gray",
+      "Green",
+      "Natural",
+      "Olive Green",
+      "Orange",
+      "Red",
+      "White",
+      "Yellow"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "Glow Green",
+      "Glow in Dark(Green)"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "Black",
+      "Gray"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "Black",
+      "Blue",
+      "Light Gray",
+      "White"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "Army Green",
+      "Black",
+      "Blue",
+      "Brown",
+      "Digital Blue",
+      "Gold",
+      "Grass Green",
+      "Green",
+      "Light Gray",
+      "Magenta",
+      "Orange",
+      "Pink",
+      "Purple",
+      "Red",
+      "Space Gray",
+      "Sparkle Blue",
+      "Starry Blue",
+      "Transparent Blue",
+      "Transparent Green",
+      "Transparent Red",
+      "White",
+      "Yellow"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "Black",
+      "Blue",
+      "Bronze",
+      "Brown",
+      "Chocolate",
+      "Cold White",
+      "Copper",
+      "Digital Blue",
+      "Fresh Red",
+      "Glow in Dark(Green)",
+      "Gray Blue",
+      "Green",
+      "Highlight Yellow",
+      "Lemon Yellow",
+      "Light Blue",
+      "Light Gray",
+      "Light Green",
+      "Light Yellow",
+      "Metallic Gray",
+      "Moonlight Silver",
+      "Olive green",
+      "Orange",
+      "Pink",
+      "Purple",
+      "Red",
+      "Royal Gold",
+      "Silver Metal",
+      "Space Gray",
+      "Sparkle Purple",
+      "White",
+      "Wine",
+      "Yellow"
+    ],
+    "PLA Glow": [
+      "Glow Blue",
+      "Glow in Dark(Green)",
+      "Glow Orange",
+      "Glow Red",
+      "Glow Yellow"
+    ],
+    "PLA Matte": [
+      "Light Blue-Yellow",
+      "Matte Army Green",
+      "Matte Baby Pink",
+      "Matte Bamboo Green",
+      "Matte Beige",
+      "Matte Black",
+      "Matte Black-White",
+      "Matte Blue",
+      "Matte Blue-Red",
+      "Matte Brick Red",
+      "Matte Butter Yellow",
+      "Matte Chocolate",
+      "Matte Grass Green",
+      "Matte Green",
+      "Matte Light Blue",
+      "Matte Light Brown",
+      "Matte Light Gray",
+      "Matte Light Green",
+      "Matte Lilac",
+      "Matte Navy Blue",
+      "Matte Olive Green",
+      "Matte Orange",
+      "Matte Orange-Red",
+      "Matte Pastel Red",
+      "Matte Pink",
+      "Matte Purple",
+      "Matte Red",
+      "Matte Skin",
+      "Matte Turquoise",
+      "Matte White",
+      "Matte Wood",
+      "Matte Yellow"
+    ],
+    "PLA Silk": [
+      "Silk Blue",
+      "Silk Blue-Silver",
+      "Silk Blue-Yellow",
+      "Silk Copper",
+      "Silk Fresh Red",
+      "Silk Gold",
+      "Silk Gold-Silver",
+      "Silk Gray",
+      "Silk Green",
+      "Silk Green-Blue",
+      "Silk Green-Magenta",
+      "Silk Green-Silver",
+      "Silk Magenta-Gold",
+      "Silk Neon Green",
+      "Silk Purple",
+      "Silk Purple-Gold",
+      "Silk Red",
+      "Silk Red-Gold",
+      "Silk Silver",
+      "Silk White"
+    ],
+    "PLA+": [
+      "Black",
+      "Dark Blue",
+      "Green",
+      "Light Brown",
+      "Light Gray",
+      "Orange",
+      "Pink",
+      "Purple",
+      "Red",
+      "Sakura Pink",
+      "White",
+      "Yellow"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "Black",
+      "Blue",
+      "Bright Pink",
+      "Brown",
+      "Digital Blue",
+      "Grass Green",
+      "Gray",
+      "Green",
+      "Light Green",
+      "Luminous Blue",
+      "Luminous Electric Indigo",
+      "Luminous Green",
+      "Luminous Orange",
+      "Neon Green",
+      "Neon Magenta",
+      "Neon Orange",
+      "Neon Red",
+      "Neon Yellow",
+      "Orange",
+      "Pink",
+      "Purple",
+      "Red",
+      "Space Gray",
+      "Translucent Blue",
+      "Translucent Green",
+      "Translucent Orange",
+      "Translucent Purple",
+      "Translucent Red",
+      "White",
+      "Yellow"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Polymaker": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "Arctic Teal",
+      "Army Beige",
+      "Army Blue",
+      "Army Brown",
+      "Army Dark Green",
+      "Army Light Green",
+      "Army Red",
+      "Banana",
+      "Camouflage",
+      "Candy",
+      "Chameleon Sunrise",
+      "Charcoal Black",
+      "Cotton White",
+      "Earth Brown",
+      "Flamingo Pink-Red",
+      "Foggy Orange",
+      "Foggy Purple",
+      "Forest Green",
+      "Fossil Grey",
+      "Glacier Blue",
+      "Ice",
+      "Lava Red",
+      "Lavender Purple",
+      "Marble Limestone",
+      "Marble Slate Grey",
+      "Marble White",
+      "Mint",
+      "Mixed Berries",
+      "Muted Blue",
+      "Muted Green",
+      "Muted Purple",
+      "Muted Red",
+      "Muted White",
+      "Pastel Rainbow",
+      "Peach",
+      "Peanut",
+      "Rose",
+      "Sakura Pink",
+      "Sapphire Blue",
+      "Savannah Yellow",
+      "Shadow Black",
+      "Shadow Orange",
+      "Shadow Red",
+      "Sunrise",
+      "Sunrise Orange",
+      "Watermelon",
+      "Wood Brown"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Proto-Pasta": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "Prusament": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "Jet Black",
+      "Lipstick Red",
+      "Natural",
+      "Olive Green",
+      "Prusa Galaxy Black",
+      "Prusa Orange",
+      "Prusa Pro Green",
+      "Sapphire Blue",
+      "Signal White"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "Jet Black",
+      "Natural",
+      "Prusa Orange",
+      "Prusa Pro Green",
+      "Urban Grey"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "Anthracite Grey",
+      "Carmine Red Transparent",
+      "Chalky Blue",
+      "Clear",
+      "Jet Black",
+      "Jungle Green",
+      "Lipstick Red",
+      "Mango Yellow",
+      "Matte Black",
+      "Neon Green Transparent",
+      "Ocean Blue",
+      "Pistachio Green",
+      "Prusa Galaxy Black",
+      "Prusa Orange",
+      "Prusa Orange Transparent",
+      "Prusa Pro Green",
+      "Shimmering Violet",
+      "Signal White",
+      "Sky Blue",
+      "Terracotta Light",
+      "Ultramarine Blue Transparent",
+      "Urban Grey",
+      "Yellow Gold"
+    ],
+    "PETG-CF": [
+      "Black"
+    ],
+    "PLA": [
+      "Anniversary LE 2021",
+      "Anthracite Grey",
+      "Army Green",
+      "Azure Blue",
+      "Chalky Blue",
+      "Galaxy Green",
+      "Galaxy Purple",
+      "Galaxy Red",
+      "Galaxy Silver",
+      "Gentleman’s Grey",
+      "Gravity Grey",
+      "Gravity Grey Hex",
+      "Jet Black",
+      "Lime Green (Blend)",
+      "Lipstick Red",
+      "Marble Grey",
+      "Ms. Pink (Blend)",
+      "My Silverness (Blend)",
+      "Natural",
+      "Noctua Beige",
+      "Noctua Brown",
+      "Oh My Gold (Blend)",
+      "Opal Green",
+      "Pearl Mouse",
+      "Pearl White (Blend)",
+      "Pineapple Yellow",
+      "Pistachio Green",
+      "Premium Mystic Brown",
+      "Premium Mystic Green",
+      "Pristine White",
+      "Prusa Galaxy Black",
+      "Prusa Orange",
+      "Prusa Pro Green",
+      "Radiant Sky LE 2024",
+      "Royal Blue (Blend)",
+      "Simply Green",
+      "Super Galaxy LE 2023",
+      "Vanilla White",
+      "Viva La Bronze (Blend)"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "Jet Black",
+      "Natural"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "SUNLU": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "_UNKNOWN_"
+    ],
+    "ASA": [
+      "_UNKNOWN_"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "_UNKNOWN_"
+    ],
+    "PETG-CF": [
+      "_UNKNOWN_"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "_UNKNOWN_"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  },
+  "eSUN": {
+    "ABS": [
+      "_UNKNOWN_"
+    ],
+    "ABS-CF": [
+      "Black",
+      "Dark Blue",
+      "Dark Green",
+      "Dark Purple",
+      "Dark Red"
+    ],
+    "ASA": [
+      "Black",
+      "Blue",
+      "Cold White",
+      "Green",
+      "Grey",
+      "Red",
+      "Silver",
+      "Warm White",
+      "Yellow"
+    ],
+    "ASA-CF": [
+      "_UNKNOWN_"
+    ],
+    "BVOH": [
+      "_UNKNOWN_"
+    ],
+    "CF-Nylon": [
+      "_UNKNOWN_"
+    ],
+    "CF-PETG": [
+      "_UNKNOWN_"
+    ],
+    "CF-PLA": [
+      "_UNKNOWN_"
+    ],
+    "Glow-in-the-dark": [
+      "_UNKNOWN_"
+    ],
+    "HIPS": [
+      "_UNKNOWN_"
+    ],
+    "Metal-filled": [
+      "_UNKNOWN_"
+    ],
+    "Nylon (PA)": [
+      "_UNKNOWN_"
+    ],
+    "PA-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA-GF": [
+      "_UNKNOWN_"
+    ],
+    "PA12": [
+      "_UNKNOWN_"
+    ],
+    "PA12-CF": [
+      "_UNKNOWN_"
+    ],
+    "PA6": [
+      "_UNKNOWN_"
+    ],
+    "PA6-CF": [
+      "_UNKNOWN_"
+    ],
+    "PC": [
+      "_UNKNOWN_"
+    ],
+    "PC-ABS": [
+      "_UNKNOWN_"
+    ],
+    "PC-CF": [
+      "_UNKNOWN_"
+    ],
+    "PETG": [
+      "Black",
+      "Blue",
+      "Clear",
+      "Fire Engine Red",
+      "Grey",
+      "Natural",
+      "Red",
+      "Silver",
+      "Solid Black",
+      "Solid Blue",
+      "Solid Gold",
+      "Solid Green",
+      "Solid Grey",
+      "Solid Purple",
+      "Solid Red",
+      "Solid Silver",
+      "Solid White",
+      "Solid Yellow",
+      "Translucent Blue",
+      "Translucent Green",
+      "Translucent Magenta",
+      "Translucent Orange",
+      "Translucent Yellow",
+      "White"
+    ],
+    "PETG-CF": [
+      "Antique Brass",
+      "Black Red",
+      "Blackish Green",
+      "Dark Grey",
+      "Deep Blue"
+    ],
+    "PLA": [
+      "_UNKNOWN_"
+    ],
+    "PLA Glow": [
+      "_UNKNOWN_"
+    ],
+    "PLA Matte": [
+      "_UNKNOWN_"
+    ],
+    "PLA Silk": [
+      "_UNKNOWN_"
+    ],
+    "PLA+": [
+      "Beige",
+      "Black",
+      "Blue",
+      "Brown",
+      "Clear",
+      "Cold White",
+      "Copper",
+      "Dark Green",
+      "Dark Grey",
+      "Dark Red",
+      "Glow Blue",
+      "Glow Green",
+      "Glow Orange",
+      "Glow Pink",
+      "Glow Purple",
+      "Glow Yellow",
+      "Gold",
+      "Gray",
+      "Gray Blue",
+      "Gray Green",
+      "Green",
+      "Grey",
+      "Ivory White",
+      "Light Blue",
+      "Light Green",
+      "Light Orange",
+      "Light Pink",
+      "Light Purple",
+      "Light Yellow",
+      "Navy Blue",
+      "Orange",
+      "Pink",
+      "Purple",
+      "Red",
+      "Silver",
+      "Skin",
+      "Transparent",
+      "Transparent Black",
+      "Transparent Blue",
+      "Transparent Green",
+      "Transparent Grey",
+      "Transparent Orange",
+      "Transparent Pink",
+      "Transparent Purple",
+      "Transparent Red",
+      "Transparent Yellow",
+      "White",
+      "Yellow"
+    ],
+    "POM": [
+      "_UNKNOWN_"
+    ],
+    "PP": [
+      "_UNKNOWN_"
+    ],
+    "PVA": [
+      "_UNKNOWN_"
+    ],
+    "Support for ABS": [
+      "_UNKNOWN_"
+    ],
+    "Support for PA/PET": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA (New Version)": [
+      "_UNKNOWN_"
+    ],
+    "Support for PLA/PETG": [
+      "_UNKNOWN_"
+    ],
+    "TPE": [
+      "_UNKNOWN_"
+    ],
+    "TPU": [
+      "_UNKNOWN_"
+    ],
+    "TPU 85A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 90A": [
+      "_UNKNOWN_"
+    ],
+    "TPU 95A": [
+      "Black",
+      "Grey",
+      "Natural",
+      "Rainbow",
+      "Transparent Blue",
+      "Transparent Green",
+      "Transparent Orange",
+      "Transparent Pink",
+      "Transparent Purple",
+      "Transparent Red",
+      "Transparent Yellow",
+      "White"
+    ],
+    "TPU 98A": [
+      "_UNKNOWN_"
+    ],
+    "Woodfill": [
+      "_UNKNOWN_"
+    ]
+  }
+}

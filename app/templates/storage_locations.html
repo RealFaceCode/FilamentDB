@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg max-w-5xl">
+  <h2 class="text-lg font-semibold mb-2">{{ t('storage_locations_title') }}</h2>
+  <p class="text-sm text-slate-500 mb-6">{{ t('storage_locations_hint') }}</p>
+
+  <form method="post" action="/storage-locations" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end mb-6">
+    <div>
+      <label for="area-code" class="text-xs text-slate-500">{{ t('storage_area_code') }}</label>
+      <input id="area-code" name="area_code" value="{{ form_data.area_code or '' }}" required class="mt-1 ui-input" placeholder="REGAL1">
+    </div>
+    <div>
+      <label for="sub-code" class="text-xs text-slate-500">{{ t('storage_sub_code') }}</label>
+      <input id="sub-code" name="sub_code" value="{{ form_data.sub_code or '' }}" required class="mt-1 ui-input" placeholder="FACH_A">
+    </div>
+    <div>
+      <label for="area-name" class="text-xs text-slate-500">{{ t('storage_area_name') }}</label>
+      <input id="area-name" name="area_name" value="{{ form_data.area_name or '' }}" class="mt-1 ui-input">
+    </div>
+    <div>
+      <label for="sub-name" class="text-xs text-slate-500">{{ t('storage_sub_name') }}</label>
+      <input id="sub-name" name="sub_name" value="{{ form_data.sub_name or '' }}" class="mt-1 ui-input">
+    </div>
+    <div class="md:col-span-4 flex justify-end">
+      <button class="ui-btn ui-btn-primary">{{ t('storage_locations_add') }}</button>
+    </div>
+  </form>
+
+  <div class="overflow-auto rounded-xl border border-slate-200">
+    <table class="ui-table">
+      <thead>
+        <tr class="ui-thead-row">
+          <th class="ui-th-sticky">{{ t('storage_path') }}</th>
+          <th class="ui-th-sticky">{{ t('storage_area_name') }}</th>
+          <th class="ui-th-sticky">{{ t('storage_sub_name') }}</th>
+          <th class="ui-th-sticky">{{ t('storage_usage') }}</th>
+          <th class="ui-th-sticky text-right">{{ t('actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for location in locations %}
+        <tr class="ui-row">
+          <td class="ui-td font-medium">{{ location.path_code }}</td>
+          <td class="ui-td">{{ location.area_name or '-' }}</td>
+          <td class="ui-td">{{ location.sub_name or '-' }}</td>
+          <td class="ui-td">{{ location.usage_count or 0 }}</td>
+          <td class="ui-td text-right">
+            <div class="inline-flex items-center gap-2">
+              <a href="/storage-locations/{{ location.id }}/qr" class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('qr') }}</a>
+              <form method="post" action="/storage-locations/{{ location.id }}/delete" onsubmit="return confirm('{{ t('confirm_delete') }}');">
+                <button class="ui-btn ui-btn-danger ui-btn-sm">{{ t('delete') }}</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="py-8 text-center text-slate-500">{{ t('storage_none') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

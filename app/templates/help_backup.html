@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 2xl:grid-cols-4 gap-6">
+  <aside class="2xl:col-span-1 ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{% if lang == 'de' %}Kapitel{% else %}Chapters{% endif %}</h3>
+    <div class="space-y-2">
+      {% for topic in help_topics %}
+      <a href="{{ topic.path }}" class="block text-sm px-3 py-2 rounded-lg border {% if current_help_topic == topic.slug %}border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30{% else %}border-slate-200 dark:border-slate-700{% endif %}">{{ topic.title }}</a>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="2xl:col-span-3 space-y-6">
+    <div class="ui-card ui-card-lg">
+      <h2 class="text-xl font-semibold mb-2">{% if lang == 'de' %}Backup, Restore & Betrieb{% else %}Backup, restore & operations{% endif %}</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+        {% if lang == 'de' %}
+        Produktionsbetrieb ist extern (Hostinger VPS). Nutze Compose, Alembic und regelmäßige PostgreSQL-Backups.
+        {% else %}
+        Production runs externally (Hostinger VPS). Use Compose, Alembic, and regular PostgreSQL backups.
+        {% endif %}
+      </p>
+      <a href="/static/help/screenshots/functions/backup_hd.png" target="_blank" rel="noopener noreferrer" class="block mb-4">
+        <img src="/static/help/screenshots/functions/backup_hd.png" alt="Operations" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 cursor-zoom-in">
+      </a>
+      <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+        {% if lang == 'de' %}
+        <strong>Bild 1:</strong> Backup-/Betriebsansicht als Referenz für regelmäßige Sicherungen und Go-Live Checks.
+        {% else %}
+        <strong>Image 1:</strong> Backup/operations view as reference for recurring backups and go-live checks.
+        {% endif %}
+      </p>
+      <figure>
+        <a href="/static/help/screenshots/functions/import_hd.png" target="_blank" rel="noopener noreferrer" class="block">
+          <img src="/static/help/screenshots/functions/import_hd.png" alt="Import" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 cursor-zoom-in">
+        </a>
+        <figcaption class="text-xs text-slate-500 mt-1">
+          {% if lang == 'de' %}<strong>Bild 2:</strong> Importmaske für CSV/Excel-Massenpflege von Spulen- und Metadaten.{% else %}<strong>Image 2:</strong> Import screen for CSV/Excel bulk updates of spool and metadata records.{% endif %}
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="ui-card ui-card-md">
+      <h3 class="font-semibold mb-3">{% if lang == 'de' %}Go-Live Kernschritte{% else %}Go-live core steps{% endif %}</h3>
+      <pre class="text-xs bg-slate-900 text-slate-100 p-3 rounded-lg overflow-auto">docker compose up -d --build
+docker compose exec web alembic upgrade head
+curl -fsS http://127.0.0.1:8000/healthz
+REPO_DIR=/opt/filament_datenbank BACKUP_DIR=/opt/filament_backups /opt/filament_datenbank/deploy/postgres_backup.sh</pre>
+      <ol class="list-decimal pl-6 mt-3 space-y-2 text-sm">
+        {% if lang == 'de' %}
+        <li><strong>Bild 1:</strong> Betriebsseite als Checkliste für Backup-Zeitpunkte und Health-Kontrolle nutzen.</li>
+        <li>Die Compose-/Alembic-Befehle in exakt dieser Reihenfolge ausführen.</li>
+        <li><strong>Bild 2:</strong> Für Erst- oder Massenmigration Daten über die Importmaske einspielen.</li>
+        {% else %}
+        <li><strong>Image 1:</strong> Use operations screen as checklist for backup timing and health checks.</li>
+        <li>Run Compose/Alembic commands in this exact order.</li>
+        <li><strong>Image 2:</strong> Use import screen for initial or bulk data migration.</li>
+        {% endif %}
+      </ol>
+      <p class="text-sm mt-3">
+        {% if lang == 'de' %}
+        Vollständige Runbooks: <code>DEPLOY_HOSTINGER_VPS.md</code>, <code>deploy/GO_LIVE_CHECKLIST.md</code>, <code>deploy/ROLLBACK_RUNBOOK.md</code>.
+        {% else %}
+        Full runbooks: <code>DEPLOY_HOSTINGER_VPS.md</code>, <code>deploy/GO_LIVE_CHECKLIST.md</code>, <code>deploy/ROLLBACK_RUNBOOK.md</code>.
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="ui-card ui-card-md">
+      <h3 class="font-semibold mb-3">{% if lang == 'de' %}Demo-Daten für Doku-Screenshots{% else %}Demo data for documentation screenshots{% endif %}</h3>
+      <p class="text-sm mb-3">
+        {% if lang == 'de' %}
+        Demo-Daten nur in Staging erzeugen und nach Screenshot-Erstellung wieder entfernen.
+        {% else %}
+        Create demo data in staging only and remove it after taking screenshots.
+        {% endif %}
+      </p>
+      <pre class="text-xs bg-slate-900 text-slate-100 p-3 rounded-lg overflow-auto">docker compose exec web python scripts/help_demo_seed.py --project private
+# screenshots aufnehmen
+docker compose exec web python scripts/help_demo_cleanup.py --project private --confirm</pre>
+    </div>
+  </section>
+</div>
+{% endblock %}

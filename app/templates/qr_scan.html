@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg max-w-3xl">
+  <h2 class="text-lg font-semibold mb-2">{{ t('qr_scan_title') }}</h2>
+  <p class="text-sm text-slate-500 mb-5">{{ t('qr_scan_hint') }}</p>
+
+  <form id="scan-form" method="post" action="/qr-scan" class="hidden">
+    <input id="qr-payload" name="qr_payload" value="{{ qr_payload or '' }}">
+  </form>
+
+  <div id="scan-wrap" class="mt-4 relative w-full max-w-sm">
+    <video id="scan-video" class="hidden" playsinline></video>
+    <canvas id="scan-canvas" class="block w-full rounded-xl border border-slate-200 bg-slate-900"></canvas>
+  </div>
+  <div class="mt-3">
+    <button type="button" id="scan-stop" class="ui-btn ui-btn-secondary" disabled>{{ t('qr_scan_stop_camera') }}</button>
+  </div>
+  <p
+    id="scan-hint"
+    class="mt-2 text-xs text-slate-500 hidden"
+    data-msg-no-qr="{{ t('qr_scan_image_no_qr') }}"
+    data-msg-https="{{ t('qr_scan_camera_requires_https') }}"
+  >{{ t('qr_scan_camera_unsupported') }}</p>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+(() => {
+  const input = document.getElementById('qr-payload');
+  const stopBtn = document.getElementById('scan-stop');
+  const video = document.getElementById('scan-video');
+  const displayCanvas = document.getElementById('scan-canvas');
+  const wrap = document.getElementById('scan-wrap');
+  const hint = document.getElementById('scan-hint');
+
+  if (!input || !stopBtn || !video || !displayCanvas || !wrap || !hint) {
+    return;
+  }
+
+  let stream = null;
+  let detector = null;
+  let rafId = null;
+  const msgHttps = hint.dataset.msgHttps || 'Camera access usually requires HTTPS (or localhost).';
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const viewCtx = displayCanvas.getContext('2d', { willReadFrequently: true });
+
+  function isDarkTheme() {
+    const root = document.documentElement;
+    const body = document.body;
+    return (
+      root.classList.contains('dark') ||
+      body.classList.contains('dark') ||
+      root.dataset.theme === 'dark' ||
+      body.dataset.theme === 'dark'
+    );
+  }
+
+  function drawScannerOverlay(width, height) {
+    if (!viewCtx) return;
+
+    const frameSize = Math.max(180, Math.min(width, height) * 0.6);
+    const frameX = (width - frameSize) / 2;
+    const frameY = (height - frameSize) / 2;
+    const corner = Math.max(24, frameSize * 0.16);
+    const strokeColor = isDarkTheme() ? '#ffffff' : '#000000';
+
+    viewCtx.strokeStyle = strokeColor;
+    viewCtx.lineWidth = 6;
+    viewCtx.beginPath();
+    viewCtx.moveTo(frameX, frameY + corner);
+    viewCtx.lineTo(frameX, frameY);
+    viewCtx.lineTo(frameX + corner, frameY);
+
+    viewCtx.moveTo(frameX + frameSize - corner, frameY);
+    viewCtx.lineTo(frameX + frameSize, frameY);
+    viewCtx.lineTo(frameX + frameSize, frameY + corner);
+
+    viewCtx.moveTo(frameX, frameY + frameSize - corner);
+    viewCtx.lineTo(frameX, frameY + frameSize);
+    viewCtx.lineTo(frameX + corner, frameY + frameSize);
+
+    viewCtx.moveTo(frameX + frameSize - corner, frameY + frameSize);
+    viewCtx.lineTo(frameX + frameSize, frameY + frameSize);
+    viewCtx.lineTo(frameX + frameSize, frameY + frameSize - corner);
+    viewCtx.stroke();
+  }
+
+  function submitPayload(value) {
+    if (!value) return;
+    input.value = value;
+    input.form?.submit();
+  }
+
+  function decodeFromCanvas() {
+    if (!ctx) return null;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    if (!globalThis.jsQR) return null;
+    const code = globalThis.jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: 'attemptBoth',
+    });
+    return code?.data || null;
+  }
+
+  async function stopScan() {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      stream = null;
+    }
+    video.srcObject = null;
+    wrap.classList.add('hidden');
+    stopBtn.disabled = true;
+  }
+
+  async function tick() {
+    if (!video || video.readyState < 2) {
+      rafId = requestAnimationFrame(tick);
+      return;
+    }
+    try {
+      let value = null;
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
+
+      if (displayCanvas.width !== width || displayCanvas.height !== height) {
+        displayCanvas.width = width;
+        displayCanvas.height = height;
+      }
+
+      if (viewCtx) {
+        viewCtx.drawImage(video, 0, 0, width, height);
+      }
+
+      if (detector) {
+        const barcodes = await detector.detect(video);
+        if (barcodes && barcodes.length > 0) {
+          value = barcodes[0].rawValue || null;
+        }
+      }
+
+      if (!value && ctx) {
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        value = decodeFromCanvas();
+      }
+
+      drawScannerOverlay(width, height);
+
+      if (value) {
+        await stopScan();
+        submitPayload(value);
+        return;
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  async function startScan() {
+    const hasMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    if (!hasMedia) {
+      hint.textContent = msgHttps;
+      hint.classList.remove('hidden');
+      return;
+    }
+    try {
+      detector = ('BarcodeDetector' in globalThis)
+        ? new BarcodeDetector({ formats: ['qr_code'] })
+        : null;
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      video.srcObject = stream;
+      await video.play();
+      wrap.classList.remove('hidden');
+      hint.classList.add('hidden');
+      stopBtn.disabled = false;
+      rafId = requestAnimationFrame(tick);
+    } catch (err) {
+      hint.textContent = msgHttps;
+      hint.classList.remove('hidden');
+      console.warn(err);
+    }
+  }
+
+  stopBtn.addEventListener('click', stopScan);
+  window.addEventListener('beforeunload', stopScan);
+
+  setTimeout(() => {
+    startScan();
+  }, 120);
+})();
+</script>
+{% endblock %}

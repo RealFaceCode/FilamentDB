@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl mx-auto ui-card ui-card-lg">
+  <h2 class="text-xl font-semibold mb-2">{{ t('register_title') }}</h2>
+  <p class="text-sm text-slate-500 mb-5">{{ t('register_hint') }}</p>
+
+  {% if message %}
+    <div class="ui-alert-warning mb-4">{{ message }}</div>
+  {% endif %}
+
+  <form method="post" action="/auth/register" class="grid grid-cols-1 gap-4">
+    <input type="hidden" name="next_url" value="{{ next_url if next_url is defined else '/dashboard' }}">
+    <div>
+      <label for="register-name" class="text-xs text-slate-500">{{ t('auth_name') }}</label>
+      <input id="register-name" name="name" type="text" required class="ui-input" value="{{ prefill_name if prefill_name is defined else '' }}">
+    </div>
+    <div>
+      <label for="register-email" class="text-xs text-slate-500">{{ t('auth_email') }}</label>
+      <input id="register-email" name="email" type="email" required class="ui-input" value="{{ prefill_email if prefill_email is defined else '' }}">
+    </div>
+    <div>
+      <label for="register-password" class="text-xs text-slate-500">{{ t('auth_password') }}</label>
+      <input id="register-password" name="password" type="password" required class="ui-input">
+    </div>
+    <div class="flex items-center gap-3 pt-1">
+      <button class="ui-btn ui-btn-primary">{{ t('auth_submit_register') }}</button>
+      <a href="/auth/login" class="ui-btn ui-btn-secondary">{{ t('landing_cta_login') }}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

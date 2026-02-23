@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg max-w-5xl">
+  <h2 class="text-lg font-semibold mb-2">{{ t('label_print_title') }}</h2>
+  <p class="text-sm text-slate-500 mb-6">{{ t('label_print_hint') }}</p>
+
+  <form method="post" action="/labels" class="space-y-5">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl">
+      <div>
+        <label for="label-target" class="text-xs text-slate-500">{{ t('label_target') }}</label>
+        <select id="label-target" name="label_target" class="mt-1 ui-select">
+          <option value="spool" {% if label_target != 'location' %}selected{% endif %}>{{ t('label_target_spool') }}</option>
+          <option value="location" {% if label_target == 'location' %}selected{% endif %}>{{ t('label_target_location') }}</option>
+        </select>
+      </div>
+      <div>
+        <label for="label-layout" class="text-xs text-slate-500">{{ t('label_layout') }}</label>
+        <select id="label-layout" name="layout" class="mt-1 ui-select">
+          {% for item in layout_choices %}
+            <option value="{{ item.key }}" {% if layout == item.key %}selected{% endif %}>{{ item.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="print-mode" class="text-xs text-slate-500">{{ t('label_print_mode') }}</label>
+        <select id="print-mode" name="print_mode" class="mt-1 ui-select">
+          <option value="sheet" {% if print_mode == 'sheet' %}selected{% endif %}>{{ t('label_print_mode_sheet') }}</option>
+          <option value="single" {% if print_mode == 'single' %}selected{% endif %}>{{ t('label_print_mode_single') }}</option>
+        </select>
+      </div>
+      <div>
+        <label for="label-orientation" class="text-xs text-slate-500">{{ t('label_orientation') }}</label>
+        <select id="label-orientation" name="label_orientation" class="mt-1 ui-select">
+          <option value="horizontal" {% if label_orientation == 'horizontal' %}selected{% endif %}>{{ t('label_orientation_horizontal') }}</option>
+          <option value="vertical" {% if label_orientation == 'vertical' %}selected{% endif %}>{{ t('label_orientation_vertical') }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <p class="text-xs text-slate-500 mb-2">{{ t('label_content') }}</p>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+        <label class="inline-flex items-center gap-2"><input type="checkbox" name="show_spool_id" value="1" {% if label_content.show_spool_id %}checked{% endif %}> {{ t('label_field_spool_id') }}</label>
+        <label class="inline-flex items-center gap-2"><input type="checkbox" name="show_brand" value="1" {% if label_content.show_brand %}checked{% endif %}> {{ t('label_field_brand') }}</label>
+        <label class="inline-flex items-center gap-2"><input type="checkbox" name="show_material_color" value="1" {% if label_content.show_material_color %}checked{% endif %}> {{ t('label_field_material_color') }}</label>
+        <label class="inline-flex items-center gap-2"><input type="checkbox" name="show_weight" value="1" {% if label_content.show_weight %}checked{% endif %}> {{ t('label_field_weight') }}</label>
+        <label class="inline-flex items-center gap-2"><input type="checkbox" name="show_remaining" value="1" {% if label_content.show_remaining %}checked{% endif %}> {{ t('label_field_remaining') }}</label>
+        <label class="inline-flex items-center gap-2"><input type="checkbox" name="show_location" value="1" {% if label_content.show_location %}checked{% endif %}> {{ t('label_field_location') }}</label>
+      </div>
+    </div>
+
+    <div>
+      <p class="text-xs text-slate-500 mb-2">{{ t('label_select_spools') }}</p>
+      <div class="max-h-[60vh] overflow-auto rounded-xl border border-slate-200">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left text-slate-500 border-b">
+              <th class="py-2 px-3">#</th>
+              <th class="py-2 px-3">{{ t('brand') }}</th>
+              <th class="py-2 px-3">{{ t('material') }}</th>
+              <th class="py-2 px-3">{{ t('color') }}</th>
+              <th class="py-2 px-3">{{ t('remaining') }}</th>
+              <th class="py-2 px-3 text-right">{{ t('actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for spool in spools %}
+            <tr class="border-b last:border-0">
+              <td class="py-2 px-3">SP-{{ '%04d'|format(spool.id) }}</td>
+              <td class="py-2 px-3">{{ spool.brand }}</td>
+              <td class="py-2 px-3">{{ spool.material }}</td>
+              <td class="py-2 px-3">{{ spool.color }}</td>
+              <td class="py-2 px-3">{{ format_weight_text(spool.remaining_g) }}</td>
+              <td class="py-2 px-3 text-right">
+                <input type="checkbox" name="spool_ids" value="{{ spool.id }}" {% if spool.id in selected_ids %}checked{% endif %}>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" class="py-6 text-center text-slate-500">{{ t('no_spools') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <p class="text-xs text-slate-500 mb-2">{{ t('label_select_locations') }}</p>
+      <div class="max-h-[40vh] overflow-auto rounded-xl border border-slate-200">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left text-slate-500 border-b">
+              <th class="py-2 px-3">{{ t('storage_path') }}</th>
+              <th class="py-2 px-3">{{ t('storage_area_name') }}</th>
+              <th class="py-2 px-3">{{ t('storage_sub_name') }}</th>
+              <th class="py-2 px-3 text-right">{{ t('actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for location in (storage_locations or []) %}
+            <tr class="border-b last:border-0">
+              <td class="py-2 px-3">{{ location.path_code }}</td>
+              <td class="py-2 px-3">{{ location.area_name or '-' }}</td>
+              <td class="py-2 px-3">{{ location.sub_name or '-' }}</td>
+              <td class="py-2 px-3 text-right">
+                <input type="checkbox" name="storage_location_ids" value="{{ location.id }}" {% if location.id in selected_location_ids %}checked{% endif %}>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="py-6 text-center text-slate-500">{{ t('storage_none') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <label class="inline-flex items-center gap-2 text-sm text-slate-600">
+        <input type="checkbox" name="save_defaults" value="1">
+        {{ t('label_save_defaults') }}
+      </label>
+      <button type="submit" class="ui-btn ui-btn-primary">{{ t('label_generate') }}</button>
+      <a href="/spools" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
+    </div>
+  </form>
+
+  <div class="mt-8 pt-6 border-t border-slate-200">
+    <h3 class="text-sm font-semibold mb-1">{{ t('label_custom_title') }}</h3>
+    <p class="text-xs text-slate-500 mb-3">{{ t('label_custom_hint') }}</p>
+
+    <form method="post" action="/labels/layouts" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+      <div class="md:col-span-2">
+        <label for="layout-name" class="text-xs text-slate-500">{{ t('label_custom_name') }}</label>
+        <input id="layout-name" name="layout_name" required class="mt-1 ui-input">
+      </div>
+      <div>
+        <label for="layout-width" class="text-xs text-slate-500">{{ t('label_custom_width') }}</label>
+        <input id="layout-width" type="number" min="0.1" step="0.1" name="cell_w_mm" required class="mt-1 ui-input">
+      </div>
+      <div>
+        <label for="layout-height" class="text-xs text-slate-500">{{ t('label_custom_height') }}</label>
+        <input id="layout-height" type="number" min="0.1" step="0.1" name="cell_h_mm" required class="mt-1 ui-input">
+      </div>
+      <div class="md:col-span-4 text-xs text-slate-500">{{ t('label_custom_columns_auto') }}</div>
+      <div class="md:col-span-4 flex justify-end">
+        <button type="submit" class="ui-btn ui-btn-secondary">{{ t('label_custom_add') }}</button>
+      </div>
+    </form>
+
+    {% if custom_layouts and custom_layouts|length > 0 %}
+    <div class="mt-4">
+      <p class="text-xs text-slate-500 mb-2">{{ t('label_custom_existing') }}</p>
+      <div class="flex flex-wrap gap-2">
+        {% for item in custom_layouts %}
+          <span class="ui-badge ui-badge-default">{{ item.title }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

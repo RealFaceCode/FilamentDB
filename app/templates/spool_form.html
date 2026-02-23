@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg max-w-2xl">
+  <h2 class="text-lg font-semibold mb-6">{{ title }}</h2>
+  <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <input type="hidden" name="next_url" value="{{ next_url|default('/spools', true) }}">
+    <div>
+      <label for="spool-brand" class="text-xs text-slate-500">{{ t('brand') }}</label>
+      <select id="spool-brand" name="brand" required class="ui-select">
+        {% if spool and spool.brand %}
+          <option selected>{{ spool.brand }}</option>
+        {% else %}
+          <option value="" disabled selected>—</option>
+        {% endif %}
+        {% for brand in (presets.brands or []) %}
+          <option value="{{ brand }}">{{ brand }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="spool-material" class="text-xs text-slate-500">{{ t('material') }}</label>
+      <select id="spool-material" name="material" required class="ui-select">
+        {% if spool and spool.material %}
+          <option selected>{{ spool.material }}</option>
+        {% else %}
+          <option value="" disabled selected>—</option>
+        {% endif %}
+        {% if presets.material_groups %}
+          {% for group in presets.material_groups %}
+            <optgroup label="{{ group["label"] }}">
+              {% for material in group["items"] %}
+                <option value="{{ material }}">{{ material }}</option>
+              {% endfor %}
+            </optgroup>
+          {% endfor %}
+        {% else %}
+          {% for material in (presets.materials or []) %}
+            <option value="{{ material }}">{{ material }}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+    </div>
+    <div>
+      <label for="color-select" class="text-xs text-slate-500">{{ t('color') }}</label>
+      <select name="color" id="color-select" data-current="{{ spool.color if spool else '' }}" required class="ui-select">
+        <option value="" disabled selected>—</option>
+      </select>
+    </div>
+    <div>
+      <label for="spool-weight" class="text-xs text-slate-500">{{ t('weight') }} (g)</label>
+      <input id="spool-weight" type="number" step="any" list="weight-presets" name="weight_g" required value="{{ spool.weight_g if spool else '' }}" class="ui-input">
+      <datalist id="weight-presets">
+        {% for weight in (presets.weights_g or []) %}
+          <option value="{{ weight }}"></option>
+        {% endfor %}
+      </datalist>
+    </div>
+    <div>
+      <label for="spool-remaining" class="text-xs text-slate-500">{{ t('remaining') }} (g)</label>
+      <input id="spool-remaining" type="number" step="any" name="remaining_g" required value="{{ spool.remaining_g if spool else '' }}" class="ui-input">
+    </div>
+    <div>
+      <label for="spool-threshold" class="text-xs text-slate-500">{{ t('low_stock_threshold') }} (g)</label>
+      <input id="spool-threshold" type="number" step="any" min="0" name="low_stock_threshold_g" value="{{ spool.low_stock_threshold_g if spool and spool.low_stock_threshold_g is not none else '' }}" class="ui-input" placeholder="z. B. 200">
+    </div>
+    <div>
+      <label for="spool-price" class="text-xs text-slate-500">{{ t('price') }} (€)</label>
+      <input id="spool-price" type="number" step="any" name="price" value="{{ spool.price if spool else '' }}" class="ui-input">
+    </div>
+    <div>
+      <label for="spool-lifecycle-status" class="text-xs text-slate-500">{{ t('lifecycle_status') }}</label>
+      {% set current_lifecycle = spool.lifecycle_status if spool and spool.lifecycle_status else 'new' %}
+      <select id="spool-lifecycle-status" name="lifecycle_status" class="ui-select">
+        {% for option in (lifecycle_status_options or []) %}
+          <option value="{{ option.value }}" {% if option.value == current_lifecycle %}selected{% endif %}>{{ option.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="md:col-span-2">
+      <label for="spool-storage-location" class="text-xs text-slate-500">{{ t('storage_location') }}</label>
+      <select id="spool-storage-location" name="storage_sub_location_id" class="ui-select">
+        <option value="">{{ t('storage_location_none') }}</option>
+        {% for option in (storage_location_options or []) %}
+          <option value="{{ option.id }}" {% if spool and spool.storage_sub_location_id and option.id == spool.storage_sub_location_id %}selected{% endif %}>{{ option.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if spool and spool.id %}
+    <div class="md:col-span-2">
+      <label for="spool-location" class="text-xs text-slate-500">{{ t('location') }}</label>
+      <input id="spool-location" name="location" value="{{ spool.location if spool else '' }}" class="ui-input" placeholder="Legacy / optional">
+    </div>
+    <div>
+      <label for="spool-ams-printer" class="text-xs text-slate-500">{{ t('ams_printer') }}</label>
+      <input id="spool-ams-printer" name="ams_printer" value="{{ spool.ams_printer if spool else '' }}" class="ui-input" placeholder="z. B. P1S-01">
+    </div>
+    <div>
+      <label for="spool-ams-slot" class="text-xs text-slate-500">{{ t('ams_slot') }}</label>
+      <input id="spool-ams-slot" type="number" min="1" step="1" name="ams_slot" value="{{ spool.ams_slot if spool and spool.ams_slot is not none else '' }}" class="ui-input" placeholder="z. B. 1">
+    </div>
+    {% endif %}
+    <div class="md:col-span-2 flex items-center gap-3 pt-2">
+      <button class="ui-btn ui-btn-primary">{{ t('save') }}</button>
+      <a href="{{ next_url|default('/spools', true) }}" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const colorMap = {{ (presets.color_map or {}) | tojson }};
+  const genericColors = {{ (presets.colors or []) | tojson }};
+  const brandSelect = document.querySelector('select[name="brand"]');
+  const materialSelect = document.querySelector('select[name="material"]');
+  const colorSelect = document.getElementById('color-select');
+
+  function resolveColors(brand, material) {
+    const brandMap = colorMap && colorMap[brand] ? colorMap[brand] : {};
+    const colors = brandMap && brandMap[material] ? brandMap[material] : [];
+    const list = Array.isArray(colors) ? colors : [colors].filter(Boolean);
+    const hasUnknown = list.some(c => String(c || '').toUpperCase().includes('UNKNOWN'));
+    if (!list.length || hasUnknown) return genericColors;
+    return list;
+  }
+
+  function populateColors() {
+    const brand = brandSelect.value;
+    const material = materialSelect.value;
+    const current = colorSelect.dataset.current || '';
+    const colors = resolveColors(brand, material);
+    colorSelect.innerHTML = '<option value="" disabled>—</option>';
+    colors.forEach(color => {
+      const opt = document.createElement('option');
+      opt.value = color;
+      opt.textContent = color;
+      if (color === current) opt.selected = true;
+      colorSelect.appendChild(opt);
+    });
+    if (!colorSelect.value && current && !colors.includes(current)) {
+      const opt = document.createElement('option');
+      opt.value = current;
+      opt.textContent = current;
+      opt.selected = true;
+      colorSelect.appendChild(opt);
+    }
+  }
+
+  brandSelect.addEventListener('change', populateColors);
+  materialSelect.addEventListener('change', populateColors);
+  document.addEventListener('DOMContentLoaded', populateColors);
+  populateColors();
+</script>
+{% endblock %}

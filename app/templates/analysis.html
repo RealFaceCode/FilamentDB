@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg mb-6">
+  <div class="mb-2">
+    <h2 class="text-lg font-semibold">{{ t('analysis_title') }}</h2>
+  </div>
+  <p class="text-sm text-slate-500">{{ t('analysis_hint') }}</p>
+  <p class="text-sm mt-2"><span class="text-slate-500">{{ t('stat_total_remaining') }}:</span> <span class="font-semibold">{{ format_weight_text(total_remaining) }}</span></p>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+  <div class="ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{{ t('analysis_by_brand') }}</h3>
+    <div class="overflow-auto max-h-[55vh]">
+      <table class="ui-table">
+        <thead><tr class="ui-thead-row"><th class="ui-th-sticky">{{ t('brand') }}</th><th class="ui-th-sticky">{{ t('analysis_count') }}</th><th class="ui-th-sticky">{{ t('remaining') }}</th><th class="ui-th-sticky">{{ t('analysis_share') }}</th></tr></thead>
+        <tbody>
+          {% for row in groups.brand %}
+          <tr class="ui-row">
+            <td class="ui-td font-medium">{{ row.name }}</td>
+            <td class="ui-td">{{ row.count }}</td>
+            <td class="ui-td">{{ format_weight_text(row.remaining_g) }}</td>
+            <td class="ui-td">
+              <div class="w-28 h-2 rounded-full bg-slate-100 overflow-hidden inline-block align-middle mr-2">
+                <div class="h-2 bg-indigo-500" style="width: {{ row.share_pct }}%"></div>
+              </div>
+              {{ format_number_compact(row.share_pct, 1, lang) }} %
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="py-6 text-slate-500 text-center">{{ t('no_spools') }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{{ t('analysis_by_material') }}</h3>
+    <div class="overflow-auto max-h-[55vh]">
+      <table class="ui-table">
+        <thead><tr class="ui-thead-row"><th class="ui-th-sticky">{{ t('material') }}</th><th class="ui-th-sticky">{{ t('analysis_count') }}</th><th class="ui-th-sticky">{{ t('remaining') }}</th><th class="ui-th-sticky">{{ t('analysis_share') }}</th></tr></thead>
+        <tbody>
+          {% for row in groups.material %}
+          <tr class="ui-row">
+            <td class="ui-td font-medium">{{ row.name }}</td>
+            <td class="ui-td">{{ row.count }}</td>
+            <td class="ui-td">{{ format_weight_text(row.remaining_g) }}</td>
+            <td class="ui-td">
+              <div class="w-28 h-2 rounded-full bg-slate-100 overflow-hidden inline-block align-middle mr-2">
+                <div class="h-2 bg-violet-500" style="width: {{ row.share_pct }}%"></div>
+              </div>
+              {{ format_number_compact(row.share_pct, 1, lang) }} %
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="py-6 text-slate-500 text-center">{{ t('no_spools') }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{{ t('analysis_by_color') }}</h3>
+    <div class="overflow-auto max-h-[55vh]">
+      <table class="ui-table">
+        <thead><tr class="ui-thead-row"><th class="ui-th-sticky">{{ t('color') }}</th><th class="ui-th-sticky">{{ t('analysis_count') }}</th><th class="ui-th-sticky">{{ t('remaining') }}</th><th class="ui-th-sticky">{{ t('analysis_share') }}</th></tr></thead>
+        <tbody>
+          {% for row in groups.color %}
+          <tr class="ui-row">
+            <td class="ui-td font-medium">{{ row.name }}</td>
+            <td class="ui-td">{{ row.count }}</td>
+            <td class="ui-td">{{ format_weight_text(row.remaining_g) }}</td>
+            <td class="ui-td">
+              <div class="w-28 h-2 rounded-full bg-slate-100 overflow-hidden inline-block align-middle mr-2">
+                <div class="h-2 bg-emerald-500" style="width: {{ row.share_pct }}%"></div>
+              </div>
+              {{ format_number_compact(row.share_pct, 1, lang) }} %
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="py-6 text-slate-500 text-center">{{ t('no_spools') }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{{ t('analysis_by_location') }}</h3>
+    <div class="overflow-auto max-h-[55vh]">
+      <table class="ui-table">
+        <thead><tr class="ui-thead-row"><th class="ui-th-sticky">{{ t('location') }}</th><th class="ui-th-sticky">{{ t('analysis_count') }}</th><th class="ui-th-sticky">{{ t('remaining') }}</th><th class="ui-th-sticky">{{ t('analysis_share') }}</th></tr></thead>
+        <tbody>
+          {% for row in groups.location %}
+          <tr class="ui-row">
+            <td class="ui-td font-medium">{{ row.name }}</td>
+            <td class="ui-td">{{ row.count }}</td>
+            <td class="ui-td">{{ format_weight_text(row.remaining_g) }}</td>
+            <td class="ui-td">
+              <div class="w-28 h-2 rounded-full bg-slate-100 overflow-hidden inline-block align-middle mr-2">
+                <div class="h-2 bg-amber-500" style="width: {{ row.share_pct }}%"></div>
+              </div>
+              {{ format_number_compact(row.share_pct, 1, lang) }} %
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="py-6 text-slate-500 text-center">{{ t('no_spools') }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

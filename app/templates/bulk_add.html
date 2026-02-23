@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-lg font-semibold">{{ title }}</h2>
+      <p class="text-sm text-slate-500">{{ t('bulk_add_hint') }}</p>
+    </div>
+    <button type="button" id="add-row" class="ui-btn ui-btn-sm ui-btn-secondary">{{ t('add_row') }}</button>
+  </div>
+
+  <form method="post">
+    <div class="overflow-x-auto">
+      <table class="ui-table" id="bulk-table">
+        <thead>
+          <tr class="ui-thead-row">
+            <th class="ui-td">{{ t('brand') }}</th>
+            <th class="ui-td">{{ t('material') }}</th>
+            <th class="ui-td">{{ t('color') }}</th>
+            <th class="ui-td">{{ t('storage_location') }}</th>
+            <th class="ui-td">{{ t('weight') }}</th>
+            <th class="ui-td">{{ t('remaining') }}</th>
+            <th class="ui-td">{{ t('price') }}</th>
+            <th class="ui-td w-40">{{ t('quantity') }}</th>
+          </tr>
+        </thead>
+        <tbody id="bulk-body">
+          <tr class="ui-row">
+            <td class="ui-td">
+              <select name="brand" required class="ui-select">
+                <option value="" disabled selected>—</option>
+                {% for brand in (presets.brands or []) %}
+                  <option value="{{ brand }}">{{ brand }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td class="ui-td">
+              <select name="material" required class="ui-select">
+                <option value="" disabled selected>—</option>
+                {% if presets.material_groups %}
+                  {% for group in presets.material_groups %}
+                    <optgroup label="{{ group["label"] }}">
+                      {% for material in group["items"] %}
+                        <option value="{{ material }}">{{ material }}</option>
+                      {% endfor %}
+                    </optgroup>
+                  {% endfor %}
+                {% else %}
+                  {% for material in (presets.materials or []) %}
+                    <option value="{{ material }}">{{ material }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </td>
+            <td class="ui-td">
+              <select name="color" required class="ui-select">
+                <option value="" disabled selected>—</option>
+              </select>
+            </td>
+            <td class="ui-td">
+              <select name="storage_sub_location_id" class="ui-select">
+                <option value="">{{ t('storage_location_none') }}</option>
+                {% for option in (storage_location_options or []) %}
+                  <option value="{{ option.id }}">{{ option.label }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td class="ui-td">
+              <input type="number" step="0.1" list="weight-presets" name="weight_g" required class="ui-input w-28">
+            </td>
+            <td class="ui-td">
+              <input type="number" step="0.1" name="remaining_g" required class="ui-input w-28">
+            </td>
+            <td class="ui-td">
+              <input type="number" step="0.01" name="price" class="ui-input w-24">
+            </td>
+            <td class="ui-td">
+              <input type="number" min="1" step="1" name="quantity" value="1" class="ui-input w-20">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <datalist id="weight-presets">
+      {% for weight in (presets.weights_g or []) %}
+        <option value="{{ weight }}"></option>
+      {% endfor %}
+    </datalist>
+
+    <div class="mt-4 flex items-center gap-3">
+      <button class="ui-btn ui-btn-primary">{{ t('save_all') }}</button>
+      <a href="/" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const addRowButton = document.getElementById('add-row');
+  const tbody = document.getElementById('bulk-body');
+  const colorMap = {{ (presets.color_map or {}) | tojson }};
+  const genericColors = {{ (presets.colors or []) | tojson }};
+
+  function resolveColors(brand, material) {
+    const brandMap = colorMap && colorMap[brand] ? colorMap[brand] : {};
+    const colors = brandMap && brandMap[material] ? brandMap[material] : [];
+    const list = Array.isArray(colors) ? colors : [colors].filter(Boolean);
+    const hasUnknown = list.some(c => String(c || '').toUpperCase().includes('UNKNOWN'));
+    if (!list.length || hasUnknown) return genericColors;
+    return list;
+  }
+
+  function populateColorsForRow(row) {
+    const brandSelect = row.querySelector('select[name="brand"]');
+    const materialSelect = row.querySelector('select[name="material"]');
+    const colorSelect = row.querySelector('select[name="color"]');
+    const colors = resolveColors(brandSelect.value, materialSelect.value);
+    colorSelect.innerHTML = '<option value="" disabled selected>—</option>';
+    colors.forEach(color => {
+      const opt = document.createElement('option');
+      opt.value = color;
+      opt.textContent = color;
+      colorSelect.appendChild(opt);
+    });
+  }
+
+  function attachRowHandlers(row) {
+    const brandSelect = row.querySelector('select[name="brand"]');
+    const materialSelect = row.querySelector('select[name="material"]');
+    brandSelect.addEventListener('change', () => populateColorsForRow(row));
+    materialSelect.addEventListener('change', () => populateColorsForRow(row));
+    populateColorsForRow(row);
+  }
+
+  addRowButton.addEventListener('click', () => {
+    const row = tbody.querySelector('tr');
+    const clone = row.cloneNode(true);
+    clone.querySelectorAll('input').forEach(input => input.value = '');
+    clone.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+    const quantityInput = clone.querySelector('input[name="quantity"]');
+    if (quantityInput) quantityInput.value = '1';
+    tbody.appendChild(clone);
+    attachRowHandlers(clone);
+  });
+
+  attachRowHandlers(tbody.querySelector('tr'));
+</script>
+{% endblock %}

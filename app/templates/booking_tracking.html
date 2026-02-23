@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg max-w-5xl">
+  <h2 class="text-lg font-semibold mb-2">{{ t('booking_area_title') }}</h2>
+  <div class="flex items-center justify-between gap-3 mb-3">
+    <h3 class="text-sm font-semibold">{{ t('booking_section_tracking') }}</h3>
+    <form method="post" action="/booking/tracking">
+      <input type="hidden" name="action" value="undo_last">
+      <button class="ui-btn ui-btn-sm ui-btn-secondary">{{ t('usage_undo_last') }}</button>
+    </form>
+  </div>
+  <p class="text-sm text-slate-500 mb-4">{{ t('usage_history_title') }}</p>
+
+  <div class="space-y-2">
+    {% for row in usage_history %}
+    <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+          <span class="font-medium">{{ row.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+          <span class="px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700">
+            {% if row.mode == 'bambu_auto' or row.mode == 'auto_file' %}
+              {% if row.source_app %}
+                {{ t('usage_mode_auto') }} ({{ row.source_app }})
+              {% else %}
+                {{ t('usage_mode_auto_slicer') }}
+              {% endif %}
+            {% elif row.mode == 'save_auto' %}
+              {{ t('usage_mode_upload_manual') }}
+            {% elif row.mode == 'save_manual' %}
+              {{ t('usage_mode_manual_entry') }}
+            {% elif row.mode == 'manual' %}
+              {{ t('usage_mode_manual') }}
+            {% else %}
+              {{ t('usage_mode_auto') }}
+            {% endif %}
+          </span>
+          {% if row.spool_count == 1 and row.primary_spool_id %}
+          <span class="ui-badge ui-badge-default">
+            {{ t('usage_history_spool_id') }}: SP-{{ '%04d'|format(row.primary_spool_id) }}
+          </span>
+          {% elif row.spool_count > 1 %}
+          <span class="ui-badge ui-badge-default">
+            {{ t('usage_history_spools') }}: {{ row.spool_count }}
+          </span>
+          {% endif %}
+        </div>
+
+        {% if row.spool_count == 1 %}
+        <p class="text-base mt-1">{{ row.primary_spool_brand }} · {{ row.primary_spool_material }} · {{ row.primary_spool_color }}</p>
+        {% endif %}
+
+        {% if row.spool_items and row.spool_items|length > 0 %}
+        <div class="mt-2">
+          <div class="grid grid-cols-[1fr_170px] items-center gap-3 text-xs text-slate-500 pb-1 border-b border-slate-200">
+            <span>{{ t('usage_history_breakdown') }}</span>
+            <span class="text-right">{{ t('usage_history_amount') }}</span>
+          </div>
+          {% for item in row.spool_items %}
+          <div class="grid grid-cols-[1fr_auto] items-center gap-3 text-sm border-b border-slate-200 py-1 last:border-b-0">
+            <span class="min-w-0 truncate text-slate-700" title="{{ item.spool_index_label }} · {{ item.brand or '-' }} · {{ item.material or '-' }} · {{ item.color or '-' }}">
+              <span class="font-medium">{{ item.spool_index_label }}</span>
+              · {{ item.brand or '-' }} · {{ item.material or '-' }} · {{ item.color or '-' }}
+            </span>
+            <span class="shrink-0 font-medium text-rose-600 tabular-nums font-mono text-right w-[170px]">-{{ format_number_compact(item.deducted_g, 1, lang) }} g</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="mt-2 w-full flex justify-end">
+          <div class="w-[190px]">
+            <div class="border-t border-slate-300"></div>
+            <div class="mt-0.5 border-t-2 border-slate-400 pt-1">
+              <p class="text-[11px] text-slate-500 uppercase tracking-wide">{{ t('usage_total') }}</p>
+              <p class="text-base font-semibold text-rose-600 tabular-nums font-mono text-right w-[170px] ml-auto">-{{ format_number_compact(row.total_deducted_g, 1, lang) }} g</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-2 text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1">
+          <span>{{ t('usage_history_who') }}: {{ row.actor or '-' }}</span>
+          {% if row.printer_name %}
+          <span>{{ t('usage_history_printer') }}: {{ row.printer_name }}</span>
+          {% endif %}
+          {% if row.ams_slots and row.ams_slots|length > 0 %}
+          <span>{{ t('usage_history_ams_slots') }}: {{ row.ams_slots|join(', ') }}</span>
+          {% endif %}
+          <span class="max-w-[640px] truncate" title="{{ row.source_file or '-' }}">{{ t('usage_history_file') }}: {{ row.source_file or '-' }}</span>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-slate-500 text-sm">
+      {{ t('usage_history_empty') }}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

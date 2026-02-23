@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg max-w-2xl">
+  <h2 class="text-lg font-semibold mb-4">{{ t('import_data') }}</h2>
+  <p class="text-sm text-slate-500 mb-4">{{ t('import_hint') }}</p>
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    <input type="file" name="file" accept=".csv,.xlsx" required class="ui-file-input">
+    <button class="ui-btn ui-btn-primary">{{ t('import') }}</button>
+    <a href="/" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
+  </form>
+</div>
+{% endblock %}

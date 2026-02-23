@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg max-w-3xl">
+  <h2 class="text-lg font-semibold mb-2">{{ t('qr_scan_manage_title') }}</h2>
+  <p class="text-sm text-slate-500 mb-5">{{ t('qr_scan_manage_hint') }}</p>
+
+  <div class="flex items-start gap-4">
+    <img src="/spools/{{ spool.id }}/qr" alt="QR" class="w-24 h-24 rounded-lg border border-slate-200">
+    <div class="flex-1 min-w-0">
+      <p class="text-lg font-semibold">SP-{{ '%04d'|format(spool.id) }}</p>
+      <p class="text-sm text-slate-700">{{ spool.brand }}</p>
+      <p class="text-sm text-slate-700">{{ spool.material }} · {{ spool.color }}</p>
+      <p class="text-sm text-slate-700">{{ t('remaining') }}: {{ format_weight_text(spool.remaining_g) }}</p>
+      <p class="text-sm text-slate-700">{{ t('weight') }}: {{ format_weight_text(spool.weight_g) }}</p>
+      <p class="text-xs text-slate-500 mt-1">{{ t('qr_scan_status') }}: {{ t(spool_status_key or 'idle') }}</p>
+    </div>
+  </div>
+
+  <div class="mt-5 flex flex-wrap gap-2">
+    <form method="post" action="/qr-scan/action">
+      <input type="hidden" name="spool_id" value="{{ spool.id }}">
+      <input type="hidden" name="action" value="set_in_use">
+      <input type="hidden" name="return_to_scan" class="return-to-scan-field" value="1">
+      <button type="submit" class="ui-btn ui-btn-success">{{ t('qr_scan_action_in_use') }}</button>
+    </form>
+
+    <form method="post" action="/qr-scan/action">
+      <input type="hidden" name="spool_id" value="{{ spool.id }}">
+      <input type="hidden" name="action" value="set_idle">
+      <input type="hidden" name="return_to_scan" class="return-to-scan-field" value="1">
+      <button type="submit" class="ui-btn ui-btn-secondary">{{ t('qr_scan_action_idle') }}</button>
+    </form>
+
+    <form method="post" action="/qr-scan/action">
+      <input type="hidden" name="spool_id" value="{{ spool.id }}">
+      <input type="hidden" name="action" value="set_empty">
+      <input type="hidden" name="return_to_scan" class="return-to-scan-field" value="1">
+      <button type="submit" class="ui-btn ui-btn-danger">{{ t('qr_scan_action_empty') }}</button>
+    </form>
+  </div>
+
+  <div class="mt-5 ui-panel">
+    <form method="post" action="/qr-scan/action" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+      <input type="hidden" name="spool_id" value="{{ spool.id }}">
+      <input type="hidden" name="action" value="set_lifecycle">
+      <input type="hidden" name="return_to_scan" class="return-to-scan-field" value="1">
+      <div>
+        <label for="qr-lifecycle-status" class="text-xs text-slate-500">{{ t('qr_scan_lifecycle_label') }}</label>
+        <select id="qr-lifecycle-status" name="lifecycle_status" class="ui-select">
+          {% set current_lifecycle = spool.lifecycle_status if spool and spool.lifecycle_status else 'new' %}
+          {% for option in (lifecycle_status_options or []) %}
+            <option value="{{ option.value }}" {% if option.value == current_lifecycle %}selected{% endif %}>{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="ui-btn ui-btn-primary">{{ t('qr_scan_action_set_lifecycle') }}</button>
+    </form>
+  </div>
+
+  <div class="mt-4">
+    <label class="inline-flex items-center gap-2 text-sm text-slate-600">
+      <input id="auto-back-toggle" type="checkbox" checked>
+      {{ t('qr_scan_auto_back') }}
+    </label>
+  </div>
+
+  <div class="mt-5">
+    <a href="/qr-scan" class="ui-btn ui-btn-secondary">{{ t('qr_scan_back_to_scan') }}</a>
+  </div>
+</div>
+
+<script>
+(() => {
+  const toggle = document.getElementById('auto-back-toggle');
+  if (!toggle) return;
+
+  const applyValue = () => {
+    const value = toggle.checked ? '1' : '0';
+    document.querySelectorAll('.return-to-scan-field').forEach((field) => {
+      field.value = value;
+    });
+  };
+
+  toggle.addEventListener('change', applyValue);
+  applyValue();
+})();
+</script>
+{% endblock %}

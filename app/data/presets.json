@@ -1,0 +1,217 @@
+{
+  "brands": [
+    "Bambu Lab",
+    "Prusament",
+    "eSUN",
+    "Hatchbox",
+    "Overture",
+    "SUNLU",
+    "Polymaker",
+    "ColorFabb",
+    "Proto-Pasta",
+    "3DJake",
+    "FormFutura",
+    "Fillamentum",
+    "MatterHackers",
+    "Gizmo Dorks",
+    "Amazon Basics",
+    "Anycubic",
+    "Elegoo",
+    "Creality",
+    "Geeetech",
+    "Jayo",
+    "ICE Filaments"
+  ],
+  "material_groups": [
+    {
+      "label": "PLA",
+      "items": [
+        "PLA",
+        "PLA+",
+        "PLA Matte",
+        "PLA Silk",
+        "PLA Glow",
+        "CF-PLA"
+      ]
+    },
+    {
+      "label": "PETG",
+      "items": [
+        "PETG",
+        "PETG-CF",
+        "CF-PETG"
+      ]
+    },
+    {
+      "label": "ABS/ASA",
+      "items": [
+        "ABS",
+        "ABS-CF",
+        "ASA",
+        "ASA-CF"
+      ]
+    },
+    {
+      "label": "TPU/TPE",
+      "items": [
+        "TPU",
+        "TPU 85A",
+        "TPU 90A",
+        "TPU 95A",
+        "TPU 98A",
+        "TPE"
+      ]
+    },
+    {
+      "label": "Nylon (PA)",
+      "items": [
+        "Nylon (PA)",
+        "PA6",
+        "PA12",
+        "PA-CF",
+        "PA6-CF",
+        "PA12-CF",
+        "PA-GF",
+        "CF-Nylon"
+      ]
+    },
+    {
+      "label": "PC",
+      "items": [
+        "PC",
+        "PC-ABS",
+        "PC-CF"
+      ]
+    },
+    {
+      "label": "Support",
+      "items": [
+        "Support for PLA (New Version)",
+        "Support for PLA/PETG",
+        "Support for ABS",
+        "Support for PA/PET",
+        "PVA",
+        "BVOH",
+        "HIPS"
+      ]
+    },
+    {
+      "label": "Special",
+      "items": [
+        "PP",
+        "POM",
+        "Woodfill",
+        "Metal-filled",
+        "Glow-in-the-dark"
+      ]
+    }
+  ],
+  "colors": [
+    "Beige",
+    "Black",
+    "Blue",
+    "Brown",
+    "Clear",
+    "Copper",
+    "Cyan",
+    "Gold",
+    "Gray",
+    "Green",
+    "Multicolor",
+    "Navy",
+    "Orange",
+    "Pink",
+    "Purple",
+    "Red",
+    "Silver",
+    "Transparent",
+    "White",
+    "Yellow",
+    "black"
+  ],
+  "weights_g": [
+    250,
+    500,
+    750,
+    1000,
+    2000,
+    3000
+  ],
+  "materials": [
+    "PLA",
+    "PLA+",
+    "PLA Matte",
+    "PLA Silk",
+    "PLA Glow",
+    "CF-PLA",
+    "PETG",
+    "PETG-CF",
+    "CF-PETG",
+    "ABS",
+    "ABS-CF",
+    "ASA",
+    "ASA-CF",
+    "TPU",
+    "TPU 85A",
+    "TPU 90A",
+    "TPU 95A",
+    "TPU 98A",
+    "TPE",
+    "Nylon (PA)",
+    "PA6",
+    "PA12",
+    "PA-CF",
+    "PA6-CF",
+    "PA12-CF",
+    "PA-GF",
+    "CF-Nylon",
+    "PC",
+    "PC-ABS",
+    "PC-CF",
+    "Support for PLA (New Version)",
+    "Support for PLA/PETG",
+    "Support for ABS",
+    "Support for PA/PET",
+    "PVA",
+    "BVOH",
+    "HIPS",
+    "PP",
+    "POM",
+    "Woodfill",
+    "Metal-filled",
+    "Glow-in-the-dark"
+  ],
+  "low_stock_thresholds": {
+    "PLA": 150.0,
+    "PLA+": 150.0
+  },
+  "material_total_thresholds": {
+    "PLA::Black": 1000.0
+  },
+  "custom_label_layouts": {
+    "label_76mm_x_50mm": {
+      "label_de": "Label 76mm x 50mm",
+      "label_en": "Label 76mm x 50mm",
+      "cell_w_mm": 76.0,
+      "cell_h_mm": 50.0
+    },
+    "groe_spezial": {
+      "label_de": "Größe Spezial",
+      "label_en": "Größe Spezial",
+      "cell_w_mm": 68.0,
+      "cell_h_mm": 30.0
+    },
+    "my_3x6_sheet": {
+      "label_de": "My 3x6 Sheet",
+      "label_en": "My 3x6 Sheet",
+      "cell_w_mm": 70.5,
+      "cell_h_mm": 35.0
+    },
+    "selectable_73x33": {
+      "label_de": "Selectable 73x33",
+      "label_en": "Selectable 73x33",
+      "cell_w_mm": 73.0,
+      "cell_h_mm": 33.0
+    }
+  }
+}

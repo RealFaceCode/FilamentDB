@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg max-w-2xl">
+  <h2 class="text-lg font-semibold mb-4">{{ t('backup_title') }}</h2>
+  <p class="text-sm text-slate-500 mb-6">{{ backup_hint_text or t('backup_hint') }}</p>
+
+  {% if backup_notice %}
+  <div class="mb-6 ui-panel">
+    <p class="text-sm text-amber-700">{{ backup_notice }}</p>
+  </div>
+  {% endif %}
+
+  {% if backup_supported %}
+    <div class="mb-6 ui-panel">
+      <h3 class="text-sm font-semibold mb-3">{{ t('backup_export') }}</h3>
+      <a href="/backup/export" class="ui-btn ui-btn-primary">{{ t('backup_export') }}</a>
+    </div>
+
+    <div class="ui-panel">
+      <h3 class="text-sm font-semibold mb-3">{{ t('backup_import') }}</h3>
+      <form method="post" action="/backup/import" enctype="multipart/form-data" class="space-y-4">
+        <div>
+          <label for="backup-file-input" class="text-xs text-slate-500">{{ t('backup_import_file') }}</label>
+          <input id="backup-file-input" type="file" name="file" accept="{{ backup_accept or '.db' }}" required class="mt-1 ui-file-input">
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="ui-btn ui-btn-primary">{{ t('backup_import') }}</button>
+          <a href="/" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
+        </div>
+      </form>
+    </div>
+  {% else %}
+    <div class="ui-panel">
+      <a href="/" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

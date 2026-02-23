@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 2xl:grid-cols-4 gap-6">
+  <aside class="2xl:col-span-1 ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{% if lang == 'de' %}Kapitel{% else %}Chapters{% endif %}</h3>
+    <div class="space-y-2">
+      {% for topic in help_topics %}
+      <a href="{{ topic.path }}" class="block text-sm px-3 py-2 rounded-lg border {% if current_help_topic == topic.slug %}border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30{% else %}border-slate-200 dark:border-slate-700{% endif %}">{{ topic.title }}</a>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="2xl:col-span-3 space-y-6">
+    <div class="ui-card ui-card-lg">
+      <h2 class="text-xl font-semibold mb-2">{% if lang == 'de' %}Buchung & Auto-Verbrauch{% else %}Booking & automatic usage{% endif %}</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+        {% if lang == 'de' %}
+        Du kannst Verbrauch manuell buchen oder automatisiert aus 3MF/GCode übernehmen.
+        {% else %}
+        You can book usage manually or import it automatically from 3MF/GCode.
+        {% endif %}
+      </p>
+      <a href="/static/help/screenshots/functions/booking_hd.png" target="_blank" rel="noopener noreferrer" class="block mb-4">
+        <img src="/static/help/screenshots/functions/booking_hd.png" alt="Buchung" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 cursor-zoom-in">
+      </a>
+      <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+        {% if lang == 'de' %}
+        <strong>Bild 1:</strong> Buchungsseite. Hier lädst du Druckdateien hoch oder buchst Gramm manuell auf ausgewählte Spulen.
+        {% else %}
+        <strong>Image 1:</strong> Booking page. Upload print files or manually book grams to selected spools.
+        {% endif %}
+      </p>
+      <figure>
+        <a href="/static/help/screenshots/functions/booking_tracking_hd.png" target="_blank" rel="noopener noreferrer" class="block">
+          <img src="/static/help/screenshots/functions/booking_tracking_hd.png" alt="Booking Tracking" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 cursor-zoom-in">
+        </a>
+        <figcaption class="text-xs text-slate-500 mt-1">
+          {% if lang == 'de' %}<strong>Bild 2:</strong> Tracking zeigt Historie, Datei, Modus und Verbrauch je Spule zur Nachvollziehbarkeit.{% else %}<strong>Image 2:</strong> Tracking shows history, file, mode, and per-spool usage for auditability.{% endif %}
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="ui-card ui-card-md">
+      <h3 class="font-semibold mb-3">{% if lang == 'de' %}Manuelle Buchung{% else %}Manual booking{% endif %}</h3>
+      <ol class="list-decimal pl-6 space-y-2 text-sm">
+        {% if lang == 'de' %}
+        <li><strong>Bild 1:</strong> <a class="underline" href="/booking">/booking</a> öffnen, Datei optional hochladen oder Gramm manuell setzen.</li>
+        <li>Spulen prüfen und Buchung speichern.</li>
+        <li><strong>Bild 2:</strong> Historie unter <a class="underline" href="/booking/tracking">/booking/tracking</a> kontrollieren.</li>
+        {% else %}
+        <li><strong>Image 1:</strong> Open <a class="underline" href="/booking">/booking</a>, optionally upload file or enter grams manually.</li>
+        <li>Review spool allocation and save booking.</li>
+        <li><strong>Image 2:</strong> Verify history at <a class="underline" href="/booking/tracking">/booking/tracking</a>.</li>
+        {% endif %}
+      </ol>
+    </div>
+
+    <div class="ui-card ui-card-md">
+      <h3 class="font-semibold mb-3">{% if lang == 'de' %}Slicer-Automation (externes Ziel){% else %}Slicer automation (external target){% endif %}</h3>
+      <p class="text-sm mb-3">
+        {% if lang == 'de' %}
+        Setze im Post-Processing immer den externen Endpoint (`https://DEINE_DOMAIN/api/usage/auto-from-file`) oder `FILAMENT_DB_ENDPOINT`.
+        {% else %}
+        In post-processing, always target the external endpoint (`https://YOUR_DOMAIN/api/usage/auto-from-file`) or use `FILAMENT_DB_ENDPOINT`.
+        {% endif %}
+      </p>
+      <pre class="text-xs bg-slate-900 text-slate-100 p-3 rounded-lg overflow-auto">python .\local_services\slicer_auto_usage.py "$env:SLICER_FILE" --endpoint "https://DEINE_DOMAIN/api/usage/auto-from-file" --project private --slicer "Bambu Studio" --printer "P1S-01"</pre>
+    </div>
+  </section>
+</div>
+{% endblock %}

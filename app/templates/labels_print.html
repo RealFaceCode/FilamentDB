@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block content %}
+{% set cell_w = (layout_config.cell_w_mm or 0)|float %}
+{% set cell_h = (layout_config.cell_h_mm or 0)|float %}
+{% set is_single_mode = (print_mode == 'single') %}
+{% set is_vertical = (label_orientation == 'vertical') %}
+
+{% if is_single_mode %}
+  {% set base_font_px = (cell_h * 0.52) %}
+{% else %}
+  {% set base_font_px = (cell_h * 0.38) %}
+{% endif %}
+{% if cell_w < 55 and base_font_px > 10.2 %}
+  {% set base_font_px = 10.2 %}
+{% endif %}
+{% if base_font_px < 8.8 %}
+  {% set base_font_px = 8.8 %}
+{% elif base_font_px > 26.0 %}
+  {% set base_font_px = 26.0 %}
+{% endif %}
+{% set title_font_px = (base_font_px * 1.18) %}
+{% if title_font_px > 34.0 %}
+  {% set title_font_px = 34.0 %}
+{% endif %}
+{% set meta_font_px = (base_font_px * 0.93) %}
+
+{% if is_single_mode %}
+  {% if is_vertical %}
+    {% set qr_mm = (cell_w * 0.60) %}
+    {% if qr_mm > (cell_h * 0.42) %}
+      {% set qr_mm = (cell_h * 0.42) %}
+    {% endif %}
+  {% else %}
+    {% set qr_mm = (cell_h * 0.82) %}
+    {% if qr_mm > (cell_w * 0.46) %}
+      {% set qr_mm = (cell_w * 0.46) %}
+    {% endif %}
+  {% endif %}
+{% else %}
+  {% set qr_mm = cell_h * 0.82 %}
+  {% if qr_mm > (cell_w * 0.46) %}
+    {% set qr_mm = cell_w * 0.46 %}
+  {% endif %}
+{% endif %}
+{% if qr_mm < 9 %}
+  {% set qr_mm = 9 %}
+{% elif qr_mm > 44 %}
+  {% if is_single_mode %}
+    {% set qr_mm = 80 %}
+  {% else %}
+    {% set qr_mm = 44 %}
+  {% endif %}
+{% endif %}
+
+<style>
+  .print-sheet {
+    --cols: {{ layout_config.columns }};
+    --cell-w: {{ layout_config.cell_w_mm }}mm;
+    --cell-h: {{ layout_config.cell_h_mm }}mm;
+    --qr-size: {{ qr_mm }}mm;
+    --label-font-size: {{ base_font_px|round(2) }}px;
+    --label-title-size: {{ title_font_px|round(2) }}px;
+    --label-meta-size: {{ meta_font_px|round(2) }}px;
+    --label-line-height: {{ (base_font_px * 1.26)|round(2) }}px;
+    --label-gap: {{ 1.2 if base_font_px <= 9.5 else 1.9 }}mm;
+    --label-padding: {{ 1.2 if base_font_px <= 9.5 else 1.7 }}mm;
+    background: #ffffff;
+    color: #0f172a;
+  }
+  body {
+    color: #0f172a !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @media print {
+    header, footer, .print-controls { display: none !important; }
+    @page {
+      {% if is_single_mode %}
+      size: {{ layout_config.cell_w_mm }}mm {{ layout_config.cell_h_mm }}mm;
+      margin: 0;
+      {% else %}
+      size: A4 portrait;
+      margin: 8mm;
+      {% endif %}
+    }
+    main { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+    .print-sheet {
+      border: 0 !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      background: transparent !important;
+    }
+    .print-grid { gap: 0 !important; }
+    .label-card {
+      border: 0.28mm solid #94a3b8 !important;
+      border-radius: 2.4mm !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+    .label-qr {
+      border: 0.22mm solid #64748b !important;
+      border-radius: 1.1mm !important;
+      background: transparent !important;
+    }
+    .label-line { color: #000 !important; }
+    .label-card { break-inside: avoid; page-break-inside: avoid; }
+  }
+  .print-grid {
+    display: grid;
+    {% if is_single_mode %}
+    grid-template-columns: repeat(1, minmax(0, var(--cell-w)));
+    {% else %}
+    grid-template-columns: repeat(var(--cols), minmax(0, var(--cell-w)));
+    {% endif %}
+    gap: 4mm;
+    justify-content: flex-start;
+    background: transparent;
+  }
+  .label-card {
+    width: var(--cell-w);
+    height: var(--cell-h);
+    padding: var(--label-padding);
+    column-gap: var(--label-gap);
+    font-size: var(--label-font-size);
+    line-height: var(--label-line-height);
+    overflow: hidden;
+    display: grid;
+    {% if is_vertical %}
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--qr-size) minmax(0, 1fr);
+    row-gap: calc(var(--label-gap) * 1.05);
+    justify-items: center;
+    {% else %}
+    grid-template-columns: var(--qr-size) minmax(0, 1fr);
+    column-gap: var(--label-gap);
+    {% endif %}
+    align-items: stretch;
+    box-sizing: border-box;
+    color: #0f172a;
+    background: #ffffff;
+  }
+  .label-qr {
+    width: var(--qr-size);
+    height: var(--qr-size);
+    min-width: var(--qr-size);
+    min-height: var(--qr-size);
+  }
+  .label-text {
+    min-width: 0;
+    height: 100%;
+    box-sizing: border-box;
+    font-size: var(--resolved-font, var(--label-font-size));
+    {% if is_vertical %}
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    gap: {{ 1.1 if is_single_mode else 0.8 }}mm;
+    writing-mode: vertical-rl;
+    text-orientation: sideways;
+    {% else %}
+    display: flex;
+    flex-direction: column;
+    gap: {{ 1.4 if is_single_mode else 1 }}px;
+    justify-content: center;
+    {% endif %}
+    {% if is_vertical %}
+    width: 100%;
+    {% endif %}
+    padding-top: 0.55mm;
+    padding-bottom: 0.55mm;
+  }
+  .label-line {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    line-height: 1.16em;
+    padding-block: 0.05em;
+    color: #0f172a;
+    {% if is_vertical %}
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.22em;
+    padding-block: 0.10em;
+    {% endif %}
+  }
+  .label-title {
+    font-size: 1.18em;
+    line-height: 1.08em;
+    font-weight: 700;
+  }
+  .label-meta {
+    font-size: 0.92em;
+    line-height: 1.08em;
+  }
+
+  {% if is_single_mode %}
+  .label-card {
+    border-radius: 3mm;
+  }
+  .label-title {
+    margin-top: 0.4mm;
+  }
+  {% endif %}
+</style>
+
+<div class="print-controls flex items-center gap-3 mb-4">
+  <button onclick="window.print()" class="ui-btn ui-btn-primary">{{ t('label_print_now') }}</button>
+  <a href="/labels" class="ui-btn ui-btn-secondary">{{ t('label_back') }}</a>
+</div>
+
+<div class="print-sheet rounded-2xl shadow-sm border border-slate-200 p-4">
+  <div class="print-grid">
+    {% for item in label_items %}
+    <div class="label-card border border-slate-300 rounded-lg flex items-center" data-max-font="{{ (base_font_px * (2.35 if is_single_mode else 1.55))|round(1) }}" data-min-font="{{ 10.0 if is_single_mode else 8.8 }}" data-vertical="{{ '1' if is_vertical else '0' }}">
+      <img src="{{ item.qr_src }}" alt="QR" class="label-qr shrink-0 rounded border border-slate-200">
+      <div class="label-text">
+        {% if label_target == 'location' %}
+        <p class="label-line label-title">{{ item.line_title }}</p>
+        {% if item.line_brand %}
+        <p class="label-line label-meta">{{ item.line_brand }}</p>
+        {% endif %}
+        {% else %}
+        {% if label_content.show_spool_id %}
+        <p class="label-line label-title">{{ item.line_title }}</p>
+        {% endif %}
+        {% if label_content.show_brand %}
+        <p class="label-line label-meta">{{ item.line_brand }}</p>
+        {% endif %}
+        {% if label_content.show_material_color %}
+        <p class="label-line">{{ item.line_material_color }}</p>
+        {% endif %}
+        {% if label_content.show_weight and item.line_weight %}
+        <p class="label-line label-meta">{{ t('weight') }}: {{ item.line_weight }}</p>
+        {% endif %}
+        {% if label_content.show_remaining and item.line_remaining %}
+        <p class="label-line label-meta">{{ t('remaining') }}: {{ item.line_remaining }}</p>
+        {% endif %}
+        {% if label_content.show_location and item.line_location %}
+        <p class="label-line label-meta">{{ t('location') }}: {{ item.line_location }}</p>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  function fitLabelText() {
+    const cards = document.querySelectorAll('.label-card');
+    cards.forEach((card) => {
+      const text = card.querySelector('.label-text');
+      if (!text) return;
+
+      const maxFont = Number(card.dataset.maxFont || 24);
+      const minFont = Number(card.dataset.minFont || 9);
+      const isVertical = card.dataset.vertical === '1';
+
+      const fits = () => (text.scrollHeight <= text.clientHeight + 0.5 && text.scrollWidth <= text.clientWidth + 0.5);
+
+      let size = maxFont;
+      text.style.fontSize = `${size}px`;
+
+      for (let i = 0; i < 180; i += 1) {
+        if (fits() || size <= minFont) {
+          break;
+        }
+        size -= 0.5;
+        text.style.fontSize = `${size}px`;
+      }
+
+      for (let i = 0; i < 80; i += 1) {
+        const candidate = size + 0.25;
+        if (candidate > maxFont) {
+          break;
+        }
+        text.style.fontSize = `${candidate}px`;
+        if (!fits()) {
+          text.style.fontSize = `${size}px`;
+          break;
+        }
+        size = candidate;
+      }
+
+      text.style.lineHeight = isVertical ? '1.22em' : '1.16em';
+      card.style.setProperty('--resolved-font', `${Math.max(size, minFont)}px`);
+    });
+  }
+
+  window.addEventListener('load', fitLabelText);
+  globalThis.addEventListener('beforeprint', fitLabelText);
+</script>
+{% endblock %}
