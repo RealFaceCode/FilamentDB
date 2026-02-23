@@ -80,6 +80,12 @@ curl -fsS http://127.0.0.1:8000/healthz
 
 Der Healthcheck liefert DB-Readiness (`database: ok|error`) und gibt bei DB-Problemen HTTP `503` zurück.
 
+Wenn Login nach erfolgreichem POST sofort wieder auf `/auth/login` landet, liegt fast immer ein Session-Cookie-Problem vor:
+
+- Browser-Zugriff muss über HTTPS erfolgen
+- Nginx muss `proxy_set_header X-Forwarded-Proto $scheme;` setzen
+- Bei bewusst reinem HTTP-Betrieb (nur temporär) `COOKIE_SECURE=0` setzen
+
 ## 4) Nginx Reverse Proxy
 
 Datei `/etc/nginx/sites-available/filament-db`:

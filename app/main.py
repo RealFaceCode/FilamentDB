@@ -119,7 +119,9 @@ def _merge_allowed_hosts(configured_hosts: list[str]) -> list[str]:
 APP_ENV = str(os.getenv("APP_ENV", "development")).strip().lower()
 LOG_LEVEL = str(os.getenv("LOG_LEVEL", "info")).strip().upper()
 DEFAULT_COOKIE_SECURE = APP_ENV == "production"
-COOKIE_SECURE = _env_truthy(os.getenv("COOKIE_SECURE"), default=DEFAULT_COOKIE_SECURE)
+COOKIE_SECURE_RAW = os.getenv("COOKIE_SECURE")
+COOKIE_SECURE_EXPLICIT = COOKIE_SECURE_RAW is not None
+COOKIE_SECURE = _env_truthy(COOKIE_SECURE_RAW, default=DEFAULT_COOKIE_SECURE)
 COOKIE_HTTPONLY = _env_truthy(os.getenv("COOKIE_HTTPONLY"), default=True)
 ENABLE_BASIC_AUTH = _env_truthy(os.getenv("ENABLE_BASIC_AUTH"), default=False)
 BASIC_AUTH_USERNAME = str(os.getenv("BASIC_AUTH_USERNAME", "")).strip()
@@ -1390,12 +1392,13 @@ def _resolve_user_by_session_token(token: Optional[str]) -> Optional[User]:
         if user is None:
             return None
 
-        session_row.updated_at = _utcnow()
+        session_row.updated_at = _utcnow().replace(tzinfo=None)
         db.commit()
         db.refresh(user)
         return user
     except Exception:
         db.rollback()
+        logger.exception("Failed to resolve user from session token")
         return None
     finally:
         db.close()
@@ -1721,13 +1724,34 @@ def _is_truthy(value: Optional[str]) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _set_cookie(response, key: str, value: str, max_age: int = SETTINGS_COOKIE_MAX_AGE) -> None:
+def _request_is_https(request: Optional[Request]) -> bool:
+    if request is None:
+        return False
+
+    forwarded_proto = str(request.headers.get("x-forwarded-proto") or "").split(",", 1)[0].strip().lower()
+    if forwarded_proto:
+        return forwarded_proto == "https"
+
+    return str(request.url.scheme or "").strip().lower() == "https"
+
+
+def _cookie_secure_for_request(request: Optional[Request]) -> bool:
+    if COOKIE_SECURE_EXPLICIT:
+        return COOKIE_SECURE
+
+    if APP_ENV == "production":
+        return _request_is_https(request)
+
+    return COOKIE_SECURE
+
+
+def _set_cookie(response, key: str, value: str, max_age: int = SETTINGS_COOKIE_MAX_AGE, request: Optional[Request] = None) -> None:
     response.set_cookie(
         key,
         value,
         max_age=max_age,
         samesite="lax",
-        secure=COOKIE_SECURE,
+        secure=_cookie_secure_for_request(request),
         httponly=COOKIE_HTTPONLY,
     )
 
@@ -1792,7 +1816,7 @@ def _resolve_user_by_api_token(request: Request) -> Optional[User]:
         if user is None:
             return None
 
-        token_row.last_used_at = _utcnow()
+        token_row.last_used_at = _utcnow().replace(tzinfo=None)
         db.commit()
         db.refresh(user)
         return user
@@ -3380,7 +3404,7 @@ def auth_login_submit(
     db.commit()
 
     response = RedirectResponse(_normalize_next_url(next_url or "/dashboard"), status_code=303)
-    _set_cookie(response, AUTH_SESSION_COOKIE, session_token, max_age=AUTH_SESSION_MAX_AGE)
+    _set_cookie(response, AUTH_SESSION_COOKIE, session_token, max_age=AUTH_SESSION_MAX_AGE, request=request)
     return response
 
 
@@ -3450,7 +3474,7 @@ def auth_register_submit(
     db.commit()
 
     response = RedirectResponse(_normalize_next_url(next_url or "/dashboard"), status_code=303)
-    _set_cookie(response, AUTH_SESSION_COOKIE, session_token, max_age=AUTH_SESSION_MAX_AGE)
+    _set_cookie(response, AUTH_SESSION_COOKIE, session_token, max_age=AUTH_SESSION_MAX_AGE, request=request)
     return response
 
 
