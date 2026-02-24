@@ -41,8 +41,6 @@ required_env_keys=(
   ALLOWED_HOSTS
   COOKIE_SECURE
   CSRF_PROTECT
-  DEFAULT_ADMIN_EMAIL
-  DEFAULT_ADMIN_PASSWORD
 )
 
 for key in "${required_env_keys[@]}"; do
@@ -89,16 +87,6 @@ if docker compose exec -T web alembic current >/tmp/filament_alembic_current.txt
 else
   warn "alembic current check failed"
   cat /tmp/filament_alembic_err.txt || true
-fi
-
-default_admin_email="$(get_env_value DEFAULT_ADMIN_EMAIL || true)"
-if [ -n "$default_admin_email" ]; then
-  admin_state="$(docker compose exec -T db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT is_active FROM users WHERE lower(email)=lower('\''"$1"'\'') LIMIT 1;"' -- "$default_admin_email" 2>/dev/null || true)"
-  if [ "$admin_state" = "t" ]; then
-    ok "default admin exists and is active ($default_admin_email)"
-  else
-    fail "default admin missing or inactive ($default_admin_email). Run: REPO_DIR=$REPO_DIR ./deploy/ensure_default_admin.sh"
-  fi
 fi
 
 internal_health="$(curl -sS -o /tmp/filament_health_internal.json -w "%{http_code}" http://127.0.0.1:8000/healthz || true)"

@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base, get_db
 from app.main import app
 import app.main as main_module
-from app.models import Spool, User
+from app.models import Spool
 
 
 class QrScanLifecycleTests(unittest.TestCase):
@@ -39,19 +39,10 @@ class QrScanLifecycleTests(unittest.TestCase):
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app, base_url="https://testserver")
 
-        self.client.post(
-            "/auth/register",
-            data={"name": "Tester", "email": "tester@example.com", "password": "password123"},
-            follow_redirects=False,
-        )
         with self.SessionLocal() as db:
-            user = db.query(User).filter(User.email == "tester@example.com").first()
-            self.assertIsNotNone(user)
-            self.user_id = int(user.id)
-            self.project_scope = f"u{user.id}_private"
+            self.project_scope = "private"
 
             spool = Spool(
-                user_id=self.user_id,
                 brand="Bambu",
                 material="PLA",
                 color="Black",

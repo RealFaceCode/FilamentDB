@@ -56,21 +56,6 @@ Erwartung:
 
 - Alembic auf `head`
 
-```bash
-chmod +x deploy/ensure_default_admin.sh
-REPO_DIR=/opt/filament_datenbank ./deploy/ensure_default_admin.sh
-```
-
-Erwartung:
-
-- Admin-User aus `DEFAULT_ADMIN_EMAIL` ist vorhanden und aktiv
-
-Optional bei Passwort-Rotation:
-
-```bash
-REPO_DIR=/opt/filament_datenbank RESET_PASSWORD=1 ./deploy/ensure_default_admin.sh
-```
-
 ## 3) Runtime-Checks (intern)
 
 ```bash

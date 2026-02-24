@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base, get_db
 from app.main import app
 import app.main as main_module
-from app.models import Spool, UsageHistory, UsageBatchContext, User
+from app.models import Spool, UsageHistory, UsageBatchContext
 
 
 class AutoUsageApiTests(unittest.TestCase):
@@ -40,20 +40,10 @@ class AutoUsageApiTests(unittest.TestCase):
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app, base_url="https://testserver")
 
-        self.client.post(
-            "/auth/register",
-            data={"name": "Tester", "email": "tester@example.com", "password": "password123"},
-            follow_redirects=False,
-        )
-        with self.SessionLocal() as db:
-            user = db.query(User).filter(User.email == "tester@example.com").first()
-            self.assertIsNotNone(user)
-            self.user_id = int(user.id)
-            self.project_scope = f"u{user.id}_private"
+        self.project_scope = "private"
 
         with self.SessionLocal() as db:
             spool = Spool(
-                user_id=self.user_id,
                 brand="Bambu",
                 material="PLA",
                 color="Schwarz",
@@ -223,7 +213,6 @@ class AutoUsageApiTests(unittest.TestCase):
             db.add_all(
                 [
                     Spool(
-                        user_id=self.user_id,
                         brand="Bambu",
                         material="PLA",
                         color="Schwarz",
@@ -235,7 +224,6 @@ class AutoUsageApiTests(unittest.TestCase):
                         ams_slot=1,
                     ),
                     Spool(
-                        user_id=self.user_id,
                         brand="Bambu",
                         material="PLA",
                         color="Schwarz",

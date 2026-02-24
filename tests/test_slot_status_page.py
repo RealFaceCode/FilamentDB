@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base, get_db
 from app.main import app
 import app.main as main_module
-from app.models import DeviceSlotState, Spool, User
+from app.models import DeviceSlotState, Spool
 
 
 class SlotStatusPageTests(unittest.TestCase):
@@ -39,16 +39,7 @@ class SlotStatusPageTests(unittest.TestCase):
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app, base_url="https://testserver")
 
-        self.client.post(
-            "/auth/register",
-            data={"name": "Tester", "email": "tester@example.com", "password": "password123"},
-            follow_redirects=False,
-        )
-        with self.SessionLocal() as db:
-            user = db.query(User).filter(User.email == "tester@example.com").first()
-            self.assertIsNotNone(user)
-            self.user_id = int(user.id)
-            self.project_scope = f"u{user.id}_private"
+        self.project_scope = "private"
 
     def tearDown(self):
         main_module.COOKIE_SECURE = self._orig_cookie_secure
@@ -63,7 +54,6 @@ class SlotStatusPageTests(unittest.TestCase):
             db.add_all(
                 [
                     Spool(
-                        user_id=self.user_id,
                         brand="Bambu",
                         material="PLA",
                         color="Black",
@@ -75,7 +65,6 @@ class SlotStatusPageTests(unittest.TestCase):
                         ams_slot=1,
                     ),
                     Spool(
-                        user_id=self.user_id,
                         brand="Bambu",
                         material="PETG",
                         color="White",
@@ -87,7 +76,6 @@ class SlotStatusPageTests(unittest.TestCase):
                         ams_slot=2,
                     ),
                     DeviceSlotState(
-                        user_id=self.user_id,
                         project=self.project_scope,
                         printer_name="P1S-01",
                         slot=1,
@@ -98,7 +86,6 @@ class SlotStatusPageTests(unittest.TestCase):
                         observed_at=now,
                     ),
                     DeviceSlotState(
-                        user_id=self.user_id,
                         project=self.project_scope,
                         printer_name="P1S-01",
                         slot=2,

@@ -41,7 +41,6 @@ Danach `.env` bearbeiten und mindestens diese Werte setzen:
 - `ENABLE_BASIC_AUTH=1`, `BASIC_AUTH_USERNAME`, `BASIC_AUTH_PASSWORD`
 - `ALLOWED_HOSTS` auf deine Domain setzen (z. B. `filament.example.com`)
 - optional `TRUSTED_ORIGINS` mit `https://DEINE_DOMAIN`
-- `DEFAULT_ADMIN_EMAIL` und `DEFAULT_ADMIN_PASSWORD` für den initialen Admin-Zugang
 
 ## 3) Stack starten
 
@@ -59,19 +58,6 @@ Schema-Migrationen anwenden:
 docker compose exec web alembic upgrade head
 ```
 
-Initialen Admin sicherstellen (auch bei bereits vorhandenen Usern):
-
-```bash
-chmod +x deploy/ensure_default_admin.sh
-REPO_DIR=/opt/filament_datenbank ./deploy/ensure_default_admin.sh
-```
-
-Optional Passwort forcieren (Rotation / Recovery):
-
-```bash
-REPO_DIR=/opt/filament_datenbank RESET_PASSWORD=1 ./deploy/ensure_default_admin.sh
-```
-
 Schnellcheck:
 
 ```bash
@@ -80,11 +66,11 @@ curl -fsS http://127.0.0.1:8000/healthz
 
 Der Healthcheck liefert DB-Readiness (`database: ok|error`) und gibt bei DB-Problemen HTTP `503` zurück.
 
-Wenn Login nach erfolgreichem POST sofort wieder auf `/auth/login` landet, liegt fast immer ein Session-Cookie-Problem vor:
+Für korrekte Security-Header im Proxy weiterhin sicherstellen:
 
-- Browser-Zugriff muss über HTTPS erfolgen
-- Nginx muss `proxy_set_header X-Forwarded-Proto $scheme;` setzen
-- Bei bewusst reinem HTTP-Betrieb (nur temporär) `COOKIE_SECURE=0` setzen
+- Browser-Zugriff über HTTPS
+- Nginx setzt `proxy_set_header X-Forwarded-Proto $scheme;`
+- Bei bewusst reinem HTTP-Betrieb (nur temporär) `COOKIE_SECURE=0`
 
 ## 4) Nginx Reverse Proxy
 

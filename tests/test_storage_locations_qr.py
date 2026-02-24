@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base, get_db
 from app.main import app
 import app.main as main_module
-from app.models import Spool, StorageArea, StorageSubLocation, User
+from app.models import Spool, StorageArea, StorageSubLocation
 
 
 class StorageLocationsQrTests(unittest.TestCase):
@@ -38,16 +38,8 @@ class StorageLocationsQrTests(unittest.TestCase):
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app, base_url="https://testserver")
 
-        self.client.post(
-            "/auth/register",
-            data={"name": "Tester", "email": "tester@example.com", "password": "password123"},
-            follow_redirects=False,
-        )
-        with self.SessionLocal() as db:
-            user = db.query(User).filter(User.email == "tester@example.com").first()
-            self.assertIsNotNone(user)
-            self.user_id = int(user.id)
-            self.project_scope = f"u{user.id}_private"
+        self.project_scope = "private"
+            self.project_scope = "private"
 
     def tearDown(self):
         main_module.COOKIE_SECURE = self._orig_cookie_secure
@@ -59,11 +51,10 @@ class StorageLocationsQrTests(unittest.TestCase):
     def _seed_location(self, path_code: str = "R1/A1") -> StorageSubLocation:
         area_code, sub_code = path_code.split("/", 1)
         with self.SessionLocal() as db:
-            area = StorageArea(user_id=self.user_id, project=self.project_scope, code=area_code)
+            area = StorageArea(project=self.project_scope, code=area_code)
             db.add(area)
             db.flush()
             location = StorageSubLocation(
-                user_id=self.user_id,
                 project=self.project_scope,
                 area_id=area.id,
                 code=sub_code,
@@ -122,7 +113,6 @@ class StorageLocationsQrTests(unittest.TestCase):
             db.add_all(
                 [
                     Spool(
-                        user_id=self.user_id,
                         brand="A",
                         material="PLA",
                         color="Blue",
@@ -133,7 +123,6 @@ class StorageLocationsQrTests(unittest.TestCase):
                         storage_sub_location_id=location.id,
                     ),
                     Spool(
-                        user_id=self.user_id,
                         brand="B",
                         material="PETG",
                         color="Black",

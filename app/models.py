@@ -25,7 +25,6 @@ class Spool(Base):
     ams_slot = Column(Integer, nullable=True, index=True)
     lifecycle_status = Column(String(32), nullable=False, default="new", index=True)
     in_use = Column(Boolean, default=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, default="private", index=True)
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
@@ -41,7 +40,6 @@ class UsageHistory(Base):
     source_app = Column(String(120), nullable=True)
     batch_id = Column(String(64), nullable=True, index=True)
     source_file = Column(String(255), nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, default="private", index=True)
 
     spool_id = Column(Integer, nullable=True, index=True)
@@ -61,7 +59,6 @@ class StorageArea(Base):
     __table_args__ = (UniqueConstraint("project", "code", name="uq_storage_areas_project_code"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, index=True)
     code = Column(String(32), nullable=False, index=True)
     name = Column(String(120), nullable=True)
@@ -77,7 +74,6 @@ class StorageSubLocation(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, index=True)
     area_id = Column(Integer, ForeignKey("storage_areas.id"), nullable=False, index=True)
     code = Column(String(32), nullable=False, index=True)
@@ -93,7 +89,6 @@ class UsageBatchContext(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=_utcnow, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, index=True)
     batch_id = Column(String(64), nullable=False, index=True)
     printer_name = Column(String(120), nullable=True)
@@ -105,7 +100,6 @@ class DeviceSlotState(Base):
     __table_args__ = (UniqueConstraint("project", "printer_name", "slot", name="uq_device_slot_state_project_printer_slot"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, index=True)
     printer_name = Column(String(120), nullable=False, index=True)
     slot = Column(Integer, nullable=False, index=True)
@@ -123,40 +117,3 @@ class AppSetting(Base):
     key = Column(String(80), primary_key=True, index=True)
     value = Column(String(255), nullable=False)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), nullable=False, unique=True, index=True)
-    display_name = Column(String(120), nullable=True)
-    password_hash = Column(String(255), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, default=_utcnow)
-    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
-
-
-class UserSession(Base):
-    __tablename__ = "user_sessions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    token_hash = Column(String(128), nullable=False, unique=True, index=True)
-    user_agent = Column(String(255), nullable=True)
-    ip_address = Column(String(120), nullable=True)
-    expires_at = Column(DateTime, nullable=False, index=True)
-    created_at = Column(DateTime, default=_utcnow)
-    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
-
-
-class UserApiToken(Base):
-    __tablename__ = "user_api_tokens"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    name = Column(String(120), nullable=False, default="default")
-    token_hash = Column(String(128), nullable=False, unique=True, index=True)
-    is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, default=_utcnow)
-    last_used_at = Column(DateTime, nullable=True)

@@ -108,7 +108,6 @@ Für Produktionsbetrieb auf VPS:
 - Rollback-Runbook: `deploy/ROLLBACK_RUNBOOK.md`
 - Go-Live-Runbook: `deploy/GO_LIVE_CHECKLIST.md`
 - One-Command Go-Live-Check: `deploy/go_live_check.sh`
-- Admin-Bootstrap/Recovery: `deploy/ensure_default_admin.sh`
 
 ## Lokaler Preflight vor Hostinger-VPS (Docker-only, empfohlen)
 

@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base, get_db
 from app.main import app
 import app.main as main_module
-from app.models import Spool, User
+from app.models import Spool
 
 
 class SpoolListHideEmptyTests(unittest.TestCase):
@@ -38,16 +38,7 @@ class SpoolListHideEmptyTests(unittest.TestCase):
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app, base_url="https://testserver")
 
-        self.client.post(
-            "/auth/register",
-            data={"name": "Tester", "email": "tester@example.com", "password": "password123"},
-            follow_redirects=False,
-        )
-        with self.SessionLocal() as db:
-            user = db.query(User).filter(User.email == "tester@example.com").first()
-            self.assertIsNotNone(user)
-            self.user_id = int(user.id)
-            self.project_scope = f"u{user.id}_private"
+        self.project_scope = "private"
 
     def tearDown(self):
         main_module.COOKIE_SECURE = self._orig_cookie_secure
@@ -61,7 +52,6 @@ class SpoolListHideEmptyTests(unittest.TestCase):
             db.add_all(
                 [
                     Spool(
-                        user_id=self.user_id,
                         brand="BrandFull",
                         material="PLA",
                         color="Blue",
@@ -71,7 +61,6 @@ class SpoolListHideEmptyTests(unittest.TestCase):
                         project=self.project_scope,
                     ),
                     Spool(
-                        user_id=self.user_id,
                         brand="BrandEmpty",
                         material="PLA",
                         color="Black",
@@ -106,7 +95,6 @@ class SpoolListHideEmptyTests(unittest.TestCase):
         with self.SessionLocal() as db:
             db.add(
                 Spool(
-                    user_id=self.user_id,
                     brand="Bambu",
                     material="PLA",
                     color="Black",
@@ -150,7 +138,6 @@ class SpoolListHideEmptyTests(unittest.TestCase):
             db.add_all(
                 [
                     Spool(
-                        user_id=self.user_id,
                         brand="OpenedOne",
                         material="PLA",
                         color="White",
@@ -160,7 +147,6 @@ class SpoolListHideEmptyTests(unittest.TestCase):
                         project=self.project_scope,
                     ),
                     Spool(
-                        user_id=self.user_id,
                         brand="ArchivedOne",
                         material="PETG",
                         color="Black",

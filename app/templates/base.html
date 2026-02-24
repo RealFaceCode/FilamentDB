@@ -415,11 +415,10 @@
     <div class="max-w-screen-2xl mx-auto px-4 py-4">
       <div class="flex items-center justify-between gap-4">
         <div>
-        <h1 class="text-2xl font-semibold tracking-tight"><a href="/landing" class="hover:underline">{{ t('app_title') }}</a></h1>
+        <h1 class="text-2xl font-semibold tracking-tight"><a href="/dashboard" class="hover:underline">{{ t('app_title') }}</a></h1>
         <p class="text-indigo-100 text-sm">{{ t('app_subtitle') }}</p>
         </div>
         <div class="flex items-start gap-3 flex-wrap justify-end">
-          {% if is_authenticated %}
           <div class="min-w-[250px]">
             <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Bestand</p>
             <div class="grid grid-cols-2 gap-2">
@@ -534,25 +533,11 @@
             </div>
           </details>
           <div class="min-w-[250px]">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Account</p>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-indigo-100/90 truncate max-w-[170px]" title="{{ current_user_email or '' }}">{{ current_user_name or current_user_email or '' }}</span>
-              <form method="post" action="/auth/logout">
-                <input type="hidden" name="next_url" value="/">
-                <button class="ui-btn ui-btn-sm ui-btn-nav">{{ t('auth_logout') }}</button>
-              </form>
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Support</p>
+            <div class="grid grid-cols-1 gap-2">
+              <a href="/help" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_help') }}</a>
             </div>
           </div>
-          {% else %}
-          <div class="min-w-[250px]">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Zugang</p>
-            <div class="grid grid-cols-2 gap-2">
-              <a href="/auth/login" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('landing_cta_login') }}</a>
-              <a href="/auth/register" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('landing_cta_register') }}</a>
-              <a href="/help" class="ui-btn ui-btn-sm ui-btn-nav w-full col-span-2">{{ t('nav_help') }}</a>
-            </div>
-          </div>
-          {% endif %}
         </div>
       </div>
     </div>

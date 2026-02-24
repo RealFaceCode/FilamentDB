@@ -40,9 +40,6 @@ from .models import (
     AppSetting,
     StorageArea,
     StorageSubLocation,
-    User,
-    UserApiToken,
-    UserSession,
 )
 from .utils.three_mf import parse_3mf_filament_usage
 from .utils.qr import generate_qr_png
@@ -78,14 +75,6 @@ CUSTOM_LABEL_LAYOUT_SETTING_PREFIX = "custom_label_layout:"
 PRINTABLE_WIDTH_MM = 190.0
 LABEL_GRID_GAP_MM = 4.0
 STORAGE_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
-AUTH_SESSION_COOKIE = "session_token"
-AUTH_SESSION_DAYS = max(1, int(float(str(os.getenv("AUTH_SESSION_DAYS", "30")).strip() or "30")))
-AUTH_SESSION_MAX_AGE = AUTH_SESSION_DAYS * 24 * 60 * 60
-AUTH_PBKDF2_ITERATIONS = max(120000, int(float(str(os.getenv("AUTH_PBKDF2_ITERATIONS", "240000")).strip() or "240000")))
-DEFAULT_ADMIN_EMAIL = str(os.getenv("DEFAULT_ADMIN_EMAIL", "admin@filament.local")).strip().lower()
-DEFAULT_ADMIN_PASSWORD = str(os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123456")).strip()
-DEFAULT_ADMIN_NAME = str(os.getenv("DEFAULT_ADMIN_NAME", "Administrator")).strip() or "Administrator"
-DEFAULT_ADMIN_API_TOKEN = str(os.getenv("DEFAULT_ADMIN_API_TOKEN", "")).strip()
 LIFECYCLE_STATUS_VALUES = ["new", "opened", "dry_stored", "humidity_risk", "empty", "archived"]
 
 
@@ -137,10 +126,6 @@ SLOT_STATE_STALE_MINUTES = max(1, int(float(str(os.getenv("SLOT_STATE_STALE_MINU
 PUBLIC_PATH_PREFIXES = (
     "/static/",
     "/healthz",
-    "/",
-    "/landing",
-    "/auth/login",
-    "/auth/register",
     "/help",
 )
 CSRF_EXEMPT_PATH_PREFIXES = (
@@ -1078,8 +1063,6 @@ TRANSLATIONS = {
 
 def _run_startup_tasks() -> None:
     Base.metadata.create_all(bind=engine)
-    _ensure_default_admin_user()
-    _migrate_legacy_projects_to_user_scope()
     if _is_postgresql_database():
         _sync_postgres_id_sequences()
         return
@@ -1088,113 +1071,6 @@ def _run_startup_tasks() -> None:
         return
 
     _apply_legacy_sqlite_schema_patches()
-
-
-def _ensure_default_admin_user() -> None:
-    email = _normalize_email(DEFAULT_ADMIN_EMAIL)
-    password = str(DEFAULT_ADMIN_PASSWORD or "").strip()
-    if not email or not password:
-        return
-
-    db = SessionLocal()
-    try:
-        user_count = db.query(func.count(User.id)).scalar() or 0
-        existing = db.query(User).filter(User.email == email).first()
-        if existing is None and int(user_count) == 0:
-            user = User(
-                email=email,
-                display_name=DEFAULT_ADMIN_NAME,
-                password_hash=_hash_password(password),
-                is_active=True,
-            )
-            db.add(user)
-            db.flush()
-
-            api_token = str(DEFAULT_ADMIN_API_TOKEN or "").strip()
-            if api_token:
-                db.add(
-                    UserApiToken(
-                        user_id=user.id,
-                        name="default",
-                        token_hash=_hash_secret_value(api_token),
-                        is_active=True,
-                    )
-                )
-            db.commit()
-    except Exception:
-        db.rollback()
-    finally:
-        db.close()
-
-
-def _migrate_legacy_projects_to_user_scope() -> None:
-    db = SessionLocal()
-    try:
-        first_user = db.query(User).order_by(User.id.asc()).first()
-        if first_user is None:
-            return
-
-        from_private = "private"
-        from_business = "business"
-        to_private = _project_scope_for_user(first_user.id, "private")
-        to_business = _project_scope_for_user(first_user.id, "business")
-
-        table_column_pairs = [
-            (Spool.__tablename__, "project"),
-            (UsageHistory.__tablename__, "project"),
-            (UsageBatchContext.__tablename__, "project"),
-            (DeviceSlotState.__tablename__, "project"),
-            (StorageArea.__tablename__, "project"),
-            (StorageSubLocation.__tablename__, "project"),
-        ]
-
-        changed = False
-        for table_name, column_name in table_column_pairs:
-            private_count = db.execute(
-                text(f"SELECT COUNT(1) FROM {table_name} WHERE {column_name} = :project"),
-                {"project": from_private},
-            ).scalar() or 0
-            if int(private_count) > 0:
-                db.execute(
-                    text(f"UPDATE {table_name} SET {column_name} = :target WHERE {column_name} = :source"),
-                    {"source": from_private, "target": to_private},
-                )
-                changed = True
-
-            business_count = db.execute(
-                text(f"SELECT COUNT(1) FROM {table_name} WHERE {column_name} = :project"),
-                {"project": from_business},
-            ).scalar() or 0
-            if int(business_count) > 0:
-                db.execute(
-                    text(f"UPDATE {table_name} SET {column_name} = :target WHERE {column_name} = :source"),
-                    {"source": from_business, "target": to_business},
-                )
-                changed = True
-
-            try:
-                rows = db.execute(
-                    text(f"SELECT id, {column_name}, user_id FROM {table_name}")
-                ).fetchall()
-                for row_id, row_project, row_user_id in rows:
-                    if row_user_id is not None:
-                        continue
-                    scoped_user_id = _extract_user_id_from_scope(row_project)
-                    resolved_user_id = int(scoped_user_id) if scoped_user_id else int(first_user.id)
-                    db.execute(
-                        text(f"UPDATE {table_name} SET user_id = :user_id WHERE id = :row_id"),
-                        {"user_id": resolved_user_id, "row_id": int(row_id)},
-                    )
-                    changed = True
-            except Exception:
-                pass
-
-        if changed:
-            db.commit()
-    except Exception:
-        db.rollback()
-    finally:
-        db.close()
 
 
 def _apply_legacy_sqlite_schema_patches() -> None:
@@ -1277,142 +1153,28 @@ def _hash_secret_value(value: str) -> str:
     return hashlib.sha256(str(value or "").encode("utf-8")).hexdigest()
 
 
-def _hash_password(password: str) -> str:
-    salt = secrets.token_hex(16)
-    digest = hashlib.pbkdf2_hmac(
-        "sha256",
-        str(password or "").encode("utf-8"),
-        salt.encode("utf-8"),
-        AUTH_PBKDF2_ITERATIONS,
-    ).hex()
-    return f"pbkdf2_sha256${AUTH_PBKDF2_ITERATIONS}${salt}${digest}"
-
-
-def _verify_password(password: str, encoded_hash: str) -> bool:
-    raw = str(encoded_hash or "")
-    try:
-        scheme, iterations_raw, salt, digest = raw.split("$", 3)
-        if scheme != "pbkdf2_sha256":
-            return False
-        iterations = int(iterations_raw)
-    except Exception:
-        return False
-
-    candidate = hashlib.pbkdf2_hmac(
-        "sha256",
-        str(password or "").encode("utf-8"),
-        salt.encode("utf-8"),
-        iterations,
-    ).hex()
-    return hmac.compare_digest(candidate, digest)
-
-
-def _is_scoped_project_key(project: Optional[str]) -> bool:
-    return bool(re.match(r"^u\d+_(private|business)$", str(project or "").strip().lower()))
-
-
 def _base_project_preference(request: Request) -> str:
     candidate = request.query_params.get("project") or request.cookies.get("project") or _load_setting_from_db("project")
     return _normalize_project(candidate)
 
 
-def _project_scope_for_user(user_id: int, base_project: str) -> str:
-    normalized = _normalize_project(base_project)
-    return f"u{int(user_id)}_{normalized}"
-
-
 def _extract_base_project_from_scope(project_scope: str) -> str:
-    raw = str(project_scope or "").strip().lower()
-    match = re.match(r"^u\d+_(private|business)$", raw)
-    if match:
-        return _normalize_project(match.group(1))
-    return _normalize_project(raw)
+    return _normalize_project(project_scope)
 
 
-def _extract_user_id_from_scope(project_scope: Optional[str]) -> Optional[int]:
-    raw = str(project_scope or "").strip().lower()
-    match = re.match(r"^u(?P<user_id>\d+)_(private|business)$", raw)
-    if not match:
-        return None
-    try:
-        return int(match.group("user_id"))
-    except Exception:
-        return None
-
-
-def _current_user_id(request: Request) -> Optional[int]:
-    user = get_current_user(request)
-    if user is not None:
-        try:
-            return int(user.id)
-        except Exception:
-            return None
-    return _extract_user_id_from_scope(get_project(request))
-
-
-def _model_scope_filters(model, project: str, user_id: Optional[int]) -> list:
+def _model_scope_filters(model, project: str) -> list:
     filters = []
     if hasattr(model, "project"):
         filters.append(getattr(model, "project") == project)
-    resolved_user_id = user_id if user_id is not None else _extract_user_id_from_scope(project)
-    if resolved_user_id is not None and hasattr(model, "user_id"):
-        filters.append(getattr(model, "user_id") == int(resolved_user_id))
     return filters
 
 
-def _scoped_query(db: Session, model, project: str, user_id: Optional[int]):
-    return db.query(model).filter(*_model_scope_filters(model, project, user_id))
+def _scoped_query(db: Session, model, project: str):
+    return db.query(model).filter(*_model_scope_filters(model, project))
 
 
-def _resolve_user_by_session_token(token: Optional[str]) -> Optional[User]:
-    raw_token = str(token or "").strip()
-    if not raw_token:
-        return None
-
-    token_hash = _hash_secret_value(raw_token)
-    now = _utcnow().replace(tzinfo=None)
-    db = SessionLocal()
-    try:
-        session_row = (
-            db.query(UserSession)
-            .filter(
-                UserSession.token_hash == token_hash,
-                UserSession.expires_at > now,
-            )
-            .first()
-        )
-        if session_row is None:
-            return None
-
-        user = (
-            db.query(User)
-            .filter(User.id == session_row.user_id, User.is_active.is_(True))
-            .first()
-        )
-        if user is None:
-            return None
-
-        session_row.updated_at = _utcnow().replace(tzinfo=None)
-        db.commit()
-        db.refresh(user)
-        return user
-    except Exception:
-        db.rollback()
-        logger.exception("Failed to resolve user from session token")
-        return None
-    finally:
-        db.close()
-
-
-def get_current_user(request: Request) -> Optional[User]:
-    state_user = getattr(request.state, "current_user", None)
-    if state_user is not None:
-        return state_user
-
-    token = request.cookies.get(AUTH_SESSION_COOKIE)
-    user = _resolve_user_by_session_token(token)
-    request.state.current_user = user
-    return user
+def get_current_user(_: Request) -> None:
+    return None
 
 
 def get_theme(request: Request) -> str:
@@ -1428,19 +1190,12 @@ def _normalize_project(project: Optional[str]) -> str:
 
 
 def get_project(request: Request) -> str:
-    base_project = _base_project_preference(request)
-    user = get_current_user(request)
-    if user is None:
-        return base_project
-    return _project_scope_for_user(user.id, base_project)
+    return _base_project_preference(request)
 
 
 def _effective_project_for_request(request: Request, project_override: Optional[str] = None) -> str:
-    user = get_current_user(request)
     base = _normalize_project(project_override) if project_override is not None else _base_project_preference(request)
-    if user is None:
-        return base
-    return _project_scope_for_user(user.id, base)
+    return base
 
 
 @app.get("/healthz")
@@ -1768,65 +1523,6 @@ def _is_public_path(path: str) -> bool:
     return False
 
 
-def _is_auth_public_path(path: str) -> bool:
-    normalized = str(path or "").strip() or "/"
-    auth_public_prefixes = (
-        "/",
-        "/landing",
-        "/auth/login",
-        "/auth/register",
-        "/help",
-        "/healthz",
-        "/static/",
-    )
-    for prefix in auth_public_prefixes:
-        if prefix == "/":
-            if normalized == "/":
-                return True
-            continue
-        if normalized == prefix or normalized.startswith(prefix):
-            return True
-    return False
-
-
-def _resolve_user_by_api_token(request: Request) -> Optional[User]:
-    auth_header = str(request.headers.get("authorization") or "").strip()
-    header_token = str(request.headers.get("x-api-token") or "").strip()
-    token = header_token
-    if not token and auth_header.lower().startswith("bearer "):
-        token = auth_header.split(" ", 1)[1].strip()
-    if not token:
-        return None
-
-    token_hash = _hash_secret_value(token)
-    db = SessionLocal()
-    try:
-        token_row = (
-            db.query(UserApiToken)
-            .filter(
-                UserApiToken.token_hash == token_hash,
-                UserApiToken.is_active.is_(True),
-            )
-            .first()
-        )
-        if token_row is None:
-            return None
-
-        user = db.query(User).filter(User.id == token_row.user_id, User.is_active.is_(True)).first()
-        if user is None:
-            return None
-
-        token_row.last_used_at = _utcnow().replace(tzinfo=None)
-        db.commit()
-        db.refresh(user)
-        return user
-    except Exception:
-        db.rollback()
-        return None
-    finally:
-        db.close()
-
-
 def _is_basic_auth_valid(authorization_header: Optional[str]) -> bool:
     if not ENABLE_BASIC_AUTH:
         return True
@@ -1875,21 +1571,7 @@ def _read_upload_limited(file: UploadFile, max_bytes: int = MAX_UPLOAD_BYTES) ->
 
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
-    request.state.current_user = _resolve_user_by_session_token(request.cookies.get(AUTH_SESSION_COOKIE))
-
-    if request.state.current_user is None and request.url.path.startswith("/api/"):
-        request.state.current_user = _resolve_user_by_api_token(request)
-
-    if not _is_auth_public_path(request.url.path):
-        if request.state.current_user is None:
-            if request.url.path.startswith("/api/"):
-                return JSONResponse({"ok": False, "error": "auth_required"}, status_code=401)
-            next_url = str(request.url.path or "/")
-            query = str(request.url.query or "").strip()
-            if query:
-                next_url = f"{next_url}?{query}"
-            redirect_target = f"/auth/login?{urlencode({'next_url': next_url})}"
-            return RedirectResponse(redirect_target, status_code=303)
+    request.state.current_user = None
 
     if ENABLE_BASIC_AUTH and not _is_public_path(request.url.path):
         if not _is_basic_auth_valid(request.headers.get("authorization")):
@@ -2013,14 +1695,8 @@ def _storage_path_code(area_code: str, sub_code: str) -> str:
     return f"{area_code}/{sub_code}"
 
 
-def _storage_location_options(db: Session, project: str, user_id: Optional[int] = None) -> list[dict]:
-    resolved_user_id = user_id if user_id is not None else _extract_user_id_from_scope(project)
+def _storage_location_options(db: Session, project: str) -> list[dict]:
     location_filters = [StorageSubLocation.project == project, StorageArea.project == project]
-    if resolved_user_id is not None:
-        location_filters.extend([
-            StorageSubLocation.user_id == int(resolved_user_id),
-            StorageArea.user_id == int(resolved_user_id),
-        ])
 
     rows = (
         db.query(StorageSubLocation, StorageArea)
@@ -2050,16 +1726,13 @@ def _storage_location_options(db: Session, project: str, user_id: Optional[int] 
     return options
 
 
-def _storage_location_map_by_id(db: Session, project: str, ids: list[int], user_id: Optional[int] = None) -> dict[int, str]:
+def _storage_location_map_by_id(db: Session, project: str, ids: list[int]) -> dict[int, str]:
     if not ids:
         return {}
-    resolved_user_id = user_id if user_id is not None else _extract_user_id_from_scope(project)
     filters = [
         StorageSubLocation.project == project,
         StorageSubLocation.id.in_(ids),
     ]
-    if resolved_user_id is not None:
-        filters.append(StorageSubLocation.user_id == int(resolved_user_id))
 
     rows = (
         db.query(StorageSubLocation.id, StorageSubLocation.path_code)
@@ -2079,19 +1752,15 @@ def _resolve_storage_sub_location(
     db: Session,
     project: str,
     storage_sub_location_id: Optional[str],
-    user_id: Optional[int] = None,
 ) -> tuple[Optional[StorageSubLocation], Optional[str]]:
     normalized_id = _normalize_storage_sub_location_id(storage_sub_location_id)
     if normalized_id is None:
         return None, None
 
-    resolved_user_id = user_id if user_id is not None else _extract_user_id_from_scope(project)
     filters = [
         StorageSubLocation.project == project,
         StorageSubLocation.id == normalized_id,
     ]
-    if resolved_user_id is not None:
-        filters.append(StorageSubLocation.user_id == int(resolved_user_id))
 
     sub_location = (
         db.query(StorageSubLocation)
@@ -2753,7 +2422,6 @@ def _upsert_slot_state_entries(db: Session, project: str, source: str, entries: 
         return 0
 
     now = _utcnow().replace(tzinfo=None)
-    resolved_user_id = _extract_user_id_from_scope(project)
     updated = 0
 
     for entry in entries:
@@ -2762,9 +2430,6 @@ def _upsert_slot_state_entries(db: Session, project: str, source: str, entries: 
             DeviceSlotState.printer_name == entry["printer_name"],
             DeviceSlotState.slot == entry["slot"],
         ]
-        if resolved_user_id is not None:
-            state_filters.append(DeviceSlotState.user_id == int(resolved_user_id))
-
         state = (
             db.query(DeviceSlotState)
             .filter(*state_filters)
@@ -2772,14 +2437,11 @@ def _upsert_slot_state_entries(db: Session, project: str, source: str, entries: 
         )
         if state is None:
             state = DeviceSlotState(
-                user_id=_extract_user_id_from_scope(project),
                 project=project,
                 printer_name=entry["printer_name"],
                 slot=entry["slot"],
             )
             db.add(state)
-        elif state.user_id is None:
-            state.user_id = _extract_user_id_from_scope(project)
 
         state.observed_brand = entry.get("observed_brand")
         state.observed_material = entry.get("observed_material")
@@ -2814,7 +2476,6 @@ def render(request: Request, template: str, context: dict, lang: str):
     settings_return_url = f"{request.url.path}?{settings_query}" if settings_query else request.url.path
 
     theme = get_theme(request)
-    current_user = get_current_user(request)
     project_scope = get_project(request)
     project = _extract_base_project_from_scope(project_scope)
 
@@ -2826,9 +2487,9 @@ def render(request: Request, template: str, context: dict, lang: str):
             "theme": theme,
             "project": project,
             "project_options": PROJECT_OPTIONS,
-            "is_authenticated": bool(current_user),
-            "current_user_email": str(current_user.email) if current_user else None,
-            "current_user_name": str(current_user.display_name) if current_user and current_user.display_name else None,
+            "is_authenticated": True,
+            "current_user_email": None,
+            "current_user_name": None,
             "t": t_factory(lang),
             "lang_url_de": lang_url_de,
             "lang_url_en": lang_url_en,
@@ -2910,7 +2571,6 @@ def _render_dashboard(
 ):
     lang = get_lang(request)
     project = get_project(request)
-    user_id = _current_user_id(request)
     t = t_factory(lang)
     notice_key = str(request.query_params.get("notice") or "").strip()
     presets = load_presets()
@@ -2921,8 +2581,8 @@ def _render_dashboard(
     page_size = page_size if page_size in page_size_options else 25
     page = max(1, int(page or 1))
 
-    spool_scope_filters = _model_scope_filters(Spool, project, user_id)
-    usage_scope_filters = _model_scope_filters(UsageHistory, project, user_id)
+    spool_scope_filters = _model_scope_filters(Spool, project)
+    usage_scope_filters = _model_scope_filters(UsageHistory, project)
 
     query = db.query(Spool).filter(*spool_scope_filters)
     normalized_location_id = int(location_id) if location_id and int(location_id) > 0 else None
@@ -2978,7 +2638,6 @@ def _render_dashboard(
         db,
         project,
         [int(spool.storage_sub_location_id) for spool in spools if spool.storage_sub_location_id],
-        user_id,
     )
 
     for spool in spools:
@@ -3272,7 +2931,7 @@ def _render_dashboard(
             "location_id": normalized_location_id,
             "lifecycle_status": normalized_lifecycle_status,
             "lifecycle_status_options": _lifecycle_status_options(lang),
-            "storage_location_options": _storage_location_options(db, project, user_id),
+            "storage_location_options": _storage_location_options(db, project),
             "hide_empty": hide_empty,
             "sort": sort_key,
             "sort_dir": sort_dir,
@@ -3288,20 +2947,7 @@ def _render_dashboard(
 
 @app.get("/")
 def landing_page(request: Request):
-    lang = get_lang(request)
-    return render(
-        request,
-        "landing.html",
-        {
-            "title": t_factory(lang)("landing_title"),
-        },
-        lang,
-    )
-
-
-@app.get("/landing")
-def landing_page_alias(request: Request):
-    return landing_page(request)
+    return RedirectResponse("/dashboard", status_code=303)
 
 
 @app.get("/dashboard")
@@ -3331,166 +2977,6 @@ def index(
         show_stats=True,
         show_spool_list=False,
     )
-
-
-@app.get("/auth/login")
-def auth_login_page(request: Request, next_url: Optional[str] = None):
-    lang = get_lang(request)
-    if get_current_user(request) is not None:
-        return RedirectResponse(_normalize_next_url(next_url or "/dashboard"), status_code=303)
-    return render(
-        request,
-        "auth_login.html",
-        {
-            "title": t_factory(lang)("login_title"),
-            "next_url": _normalize_next_url(next_url or "/dashboard"),
-        },
-        lang,
-    )
-
-
-@app.get("/auth/register")
-def auth_register_page(request: Request, next_url: Optional[str] = None):
-    lang = get_lang(request)
-    if get_current_user(request) is not None:
-        return RedirectResponse(_normalize_next_url(next_url or "/dashboard"), status_code=303)
-    return render(
-        request,
-        "auth_register.html",
-        {
-            "title": t_factory(lang)("register_title"),
-            "next_url": _normalize_next_url(next_url or "/dashboard"),
-        },
-        lang,
-    )
-
-
-@app.post("/auth/login")
-def auth_login_submit(
-    request: Request,
-    email: str = Form(""),
-    password: str = Form(""),
-    next_url: Optional[str] = Form(None),
-    db: Session = Depends(get_db),
-):
-    lang = get_lang(request)
-    t = t_factory(lang)
-    normalized_email = _normalize_email(email)
-    plain_password = str(password or "")
-    user = db.query(User).filter(User.email == normalized_email, User.is_active.is_(True)).first()
-
-    if user is None or not _verify_password(plain_password, user.password_hash):
-        return render(
-            request,
-            "auth_login.html",
-            {
-                "title": t("login_title"),
-                "error": t("auth_invalid_credentials"),
-                "prefill_email": normalized_email,
-                "next_url": _normalize_next_url(next_url or "/dashboard"),
-            },
-            lang,
-        )
-
-    session_token = secrets.token_urlsafe(48)
-    session = UserSession(
-        user_id=user.id,
-        token_hash=_hash_secret_value(session_token),
-        user_agent=str(request.headers.get("user-agent") or "")[:255] or None,
-        ip_address=str(request.client.host if request.client else "")[:120] or None,
-        expires_at=_utcnow().replace(tzinfo=None) + timedelta(days=AUTH_SESSION_DAYS),
-    )
-    db.add(session)
-    db.commit()
-
-    response = RedirectResponse(_normalize_next_url(next_url or "/dashboard"), status_code=303)
-    _set_cookie(response, AUTH_SESSION_COOKIE, session_token, max_age=AUTH_SESSION_MAX_AGE, request=request)
-    return response
-
-
-@app.post("/auth/register")
-def auth_register_submit(
-    request: Request,
-    name: str = Form(""),
-    email: str = Form(""),
-    password: str = Form(""),
-    next_url: Optional[str] = Form(None),
-    db: Session = Depends(get_db),
-):
-    lang = get_lang(request)
-    t = t_factory(lang)
-    normalized_email = _normalize_email(email)
-    display_name = str(name or "").strip() or None
-    plain_password = str(password or "")
-
-    if len(plain_password) < 8:
-        return render(
-            request,
-            "auth_register.html",
-            {
-                "title": t("register_title"),
-                "error": t("auth_password_too_short"),
-                "prefill_name": display_name,
-                "prefill_email": normalized_email,
-                "next_url": _normalize_next_url(next_url or "/dashboard"),
-            },
-            lang,
-        )
-
-    existing = db.query(User).filter(User.email == normalized_email).first()
-    if existing is not None:
-        return render(
-            request,
-            "auth_register.html",
-            {
-                "title": t("register_title"),
-                "error": t("auth_email_exists"),
-                "prefill_name": display_name,
-                "prefill_email": normalized_email,
-                "next_url": _normalize_next_url(next_url or "/dashboard"),
-            },
-            lang,
-        )
-
-    user = User(
-        email=normalized_email,
-        display_name=display_name,
-        password_hash=_hash_password(plain_password),
-        is_active=True,
-    )
-    db.add(user)
-    db.flush()
-
-    session_token = secrets.token_urlsafe(48)
-    db.add(
-        UserSession(
-            user_id=user.id,
-            token_hash=_hash_secret_value(session_token),
-            user_agent=str(request.headers.get("user-agent") or "")[:255] or None,
-            ip_address=str(request.client.host if request.client else "")[:120] or None,
-            expires_at=_utcnow().replace(tzinfo=None) + timedelta(days=AUTH_SESSION_DAYS),
-        )
-    )
-    db.commit()
-
-    response = RedirectResponse(_normalize_next_url(next_url or "/dashboard"), status_code=303)
-    _set_cookie(response, AUTH_SESSION_COOKIE, session_token, max_age=AUTH_SESSION_MAX_AGE, request=request)
-    return response
-
-
-@app.post("/auth/logout")
-def auth_logout(request: Request, next_url: Optional[str] = Form("/"), db: Session = Depends(get_db)):
-    token = str(request.cookies.get(AUTH_SESSION_COOKIE) or "").strip()
-    if token:
-        token_hash = _hash_secret_value(token)
-        session_row = db.query(UserSession).filter(UserSession.token_hash == token_hash).first()
-        if session_row is not None:
-            db.delete(session_row)
-            db.commit()
-
-    response = RedirectResponse(_normalize_next_url(next_url or "/"), status_code=303)
-    response.delete_cookie(AUTH_SESSION_COOKIE)
-    return response
 
 
 @app.get("/spools")
@@ -3892,8 +3378,7 @@ def _render_storage_locations_page(
     form_data: Optional[dict] = None,
 ):
     project = get_project(request)
-    user_id = _current_user_id(request)
-    spool_scope_filters = _model_scope_filters(Spool, project, user_id)
+    spool_scope_filters = _model_scope_filters(Spool, project)
     usage_rows = (
         db.query(Spool.storage_sub_location_id, func.count(Spool.id).label("count"))
         .filter(*spool_scope_filters, Spool.storage_sub_location_id.is_not(None))
@@ -3901,7 +3386,7 @@ def _render_storage_locations_page(
         .all()
     )
     usage_map = {int(location_id): int(count) for location_id, count in usage_rows if location_id}
-    locations = _storage_location_options(db, project, user_id)
+    locations = _storage_location_options(db, project)
     for location in locations:
         location["usage_count"] = usage_map.get(int(location["id"]), 0)
 
@@ -3937,7 +3422,6 @@ def create_storage_location(
     lang = get_lang(request)
     t = t_factory(lang)
     project = get_project(request)
-    user_id = _current_user_id(request)
 
     normalized_area_code = _normalize_storage_area_code(area_code)
     normalized_sub_code = _normalize_storage_sub_code(sub_code)
@@ -3963,7 +3447,6 @@ def create_storage_location(
     )
     if area is None:
         area = StorageArea(
-            user_id=user_id,
             project=project,
             code=normalized_area_code,
             name=str(area_name or "").strip() or None,
@@ -3973,10 +3456,6 @@ def create_storage_location(
     elif area_name is not None and str(area_name).strip():
         area.name = str(area_name).strip()
         area.updated_at = _utcnow()
-        if area.user_id is None:
-            area.user_id = user_id
-    elif area.user_id is None:
-        area.user_id = user_id
 
     path_code = _storage_path_code(normalized_area_code, normalized_sub_code)
     existing = (
@@ -3995,7 +3474,6 @@ def create_storage_location(
         )
 
     sub_location = StorageSubLocation(
-        user_id=user_id,
         project=project,
         area_id=area.id,
         code=normalized_sub_code,
@@ -4098,7 +3576,6 @@ def create_spool(
 ):
     lang = get_lang(request)
     project = get_project(request)
-    user_id = _current_user_id(request)
     t = t_factory(lang)
     normalized_lifecycle_status = _normalize_lifecycle_status(lifecycle_status)
     normalized_ams_printer = _normalize_printer_name(ams_printer)
@@ -4107,7 +3584,6 @@ def create_spool(
         db,
         project,
         storage_sub_location_id,
-        user_id,
     )
 
     if storage_error_key:
@@ -4185,7 +3661,6 @@ def create_spool(
         location_value = storage_sub_location.path_code
 
     spool = Spool(
-        user_id=user_id,
         brand=brand,
         material=material,
         color=color,
@@ -4221,7 +3696,6 @@ def create_spools_bulk(
     db: Session = Depends(get_db),
 ):
     project = get_project(request)
-    user_id = _current_user_id(request)
     normalized_storage_ids: list[Optional[int]] = [
         _normalize_storage_sub_location_id(value) for value in storage_sub_location_id
     ]
@@ -4269,7 +3743,6 @@ def create_spools_bulk(
 
         for _ in range(qty):
             spool = Spool(
-                user_id=user_id,
                 brand=brand[i],
                 material=material[i],
                 color=color[i],
@@ -4530,7 +4003,6 @@ def update_spool(
             db,
             project,
             storage_sub_location_id,
-            _current_user_id(request),
         )
         if storage_error_key:
             presets = load_presets()
@@ -5172,9 +4644,8 @@ def booking_form(
 ):
     lang = get_lang(request)
     project = get_project(request)
-    user_id = _current_user_id(request)
     t = t_factory(lang)
-    spool_scope_filters = _model_scope_filters(Spool, project, user_id)
+    spool_scope_filters = _model_scope_filters(Spool, project)
     active_spools = (
         db.query(Spool)
         .filter(*spool_scope_filters, Spool.in_use.is_(True))
@@ -5220,10 +4691,9 @@ def booking_tracking_page(
 ):
     lang = get_lang(request)
     project = get_project(request)
-    user_id = _current_user_id(request)
     t = t_factory(lang)
-    history_scope_filters = _model_scope_filters(UsageHistory, project, user_id)
-    batch_scope_filters = _model_scope_filters(UsageBatchContext, project, user_id)
+    history_scope_filters = _model_scope_filters(UsageHistory, project)
+    batch_scope_filters = _model_scope_filters(UsageBatchContext, project)
 
     usage_history_rows = (
         db.query(UsageHistory)
@@ -5292,9 +4762,8 @@ def apply_usage(
 ):
     lang = get_lang(request)
     project = get_project(request)
-    user_id = _current_user_id(request)
-    spool_scope_filters = _model_scope_filters(Spool, project, user_id)
-    history_scope_filters = _model_scope_filters(UsageHistory, project, user_id)
+    spool_scope_filters = _model_scope_filters(Spool, project)
+    history_scope_filters = _model_scope_filters(UsageHistory, project)
     active_spools = (
         db.query(Spool)
         .filter(*spool_scope_filters, Spool.in_use.is_(True), Spool.remaining_g > 0)
@@ -5492,7 +4961,6 @@ def apply_usage(
 
             history_rows.append(
                 UsageHistory(
-                    user_id=user_id,
                     actor=actor,
                     mode=mode,
                     batch_id=batch_id,
@@ -5676,7 +5144,6 @@ def api_auto_usage_from_3mf(
     db: Session = Depends(get_db),
 ):
     effective_project = _effective_project_for_request(request, project)
-    current_user_id = _current_user_id(request)
     actor = request.client.host if request.client and request.client.host else None
     slicer_name = str(slicer or "").strip()[:120] or None
     printer_name = _normalize_printer_name(printer)
@@ -5726,9 +5193,9 @@ def api_auto_usage_from_3mf(
     resolved_ams_slots = _resolve_ams_slots(ams_slots, usage_breakdown)
     serialized_ams_slots = _serialize_ams_slots(resolved_ams_slots)
 
-    spool_scope_filters = _model_scope_filters(Spool, effective_project, current_user_id)
-    usage_scope_filters = _model_scope_filters(UsageHistory, effective_project, current_user_id)
-    batch_scope_filters = _model_scope_filters(UsageBatchContext, effective_project, current_user_id)
+    spool_scope_filters = _model_scope_filters(Spool, effective_project)
+    usage_scope_filters = _model_scope_filters(UsageHistory, effective_project)
+    batch_scope_filters = _model_scope_filters(UsageBatchContext, effective_project)
 
     active_spools = (
         db.query(Spool)
@@ -5979,7 +5446,6 @@ def api_auto_usage_from_3mf(
 
         history_rows.append(
             UsageHistory(
-                user_id=current_user_id,
                 actor=actor,
                 mode="auto_file",
                 source_app=slicer_name,
@@ -6010,7 +5476,6 @@ def api_auto_usage_from_3mf(
             if existing_context is None:
                 db.add(
                     UsageBatchContext(
-                        user_id=current_user_id,
                         project=effective_project,
                         batch_id=batch_id,
                         printer_name=printer_name,
@@ -6300,7 +5765,6 @@ def import_data(
     db: Session = Depends(get_db),
 ):
     project = get_project(request)
-    user_id = _current_user_id(request)
 
     import pandas as pd
 
@@ -6342,7 +5806,6 @@ def import_data(
 
     for _, row in df.iterrows():
         spool = Spool(
-            user_id=user_id,
             brand=str(row.get("brand", "")).strip(),
             material=str(row.get("material", "")).strip(),
             color=str(row.get("color", "")).strip(),
