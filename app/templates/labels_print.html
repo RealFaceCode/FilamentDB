@@ -92,6 +92,13 @@
       background: transparent !important;
     }
     .print-grid { gap: 0 !important; }
+    .print-grid {
+      {% if is_single_mode %}
+      grid-template-columns: repeat(1, minmax(0, var(--cell-w))) !important;
+      {% else %}
+      grid-template-columns: repeat(var(--cols), minmax(0, var(--cell-w))) !important;
+      {% endif %}
+    }
     .label-card {
       border: 0.28mm solid #94a3b8 !important;
       border-radius: 2.4mm !important;
@@ -108,11 +115,7 @@
   }
   .print-grid {
     display: grid;
-    {% if is_single_mode %}
-    grid-template-columns: repeat(1, minmax(0, var(--cell-w)));
-    {% else %}
-    grid-template-columns: repeat(var(--cols), minmax(0, var(--cell-w)));
-    {% endif %}
+    grid-template-columns: repeat(auto-fill, minmax(var(--cell-w), var(--cell-w)));
     gap: 4mm;
     justify-content: flex-start;
     background: transparent;
@@ -211,7 +214,7 @@
 
 <div class="print-controls flex items-center gap-3 mb-4">
   <button onclick="window.print()" class="ui-btn ui-btn-primary">{{ t('label_print_now') }}</button>
-  <a href="/labels" class="ui-btn ui-btn-secondary">{{ t('label_back') }}</a>
+  <a href="/labels?view={{ 'location' if label_target == 'location' else ('printer' if label_target == 'printer' else 'spool') }}&target={{ label_target }}" class="ui-btn ui-btn-secondary">{{ t('label_back') }}</a>
 </div>
 
 <div class="print-sheet rounded-2xl shadow-sm border border-slate-200 p-4">
@@ -221,9 +224,25 @@
       <img src="{{ item.qr_src }}" alt="QR" class="label-qr shrink-0 rounded border border-slate-200">
       <div class="label-text">
         {% if label_target == 'location' %}
+        {% set show_location_path = label_content.show_spool_id %}
+        {% set show_location_name = label_content.show_brand %}
+        {% if show_location_path %}
         <p class="label-line label-title">{{ item.line_title }}</p>
-        {% if item.line_brand %}
+        {% endif %}
+        {% if show_location_name and item.line_brand %}
         <p class="label-line label-meta">{{ item.line_brand }}</p>
+        {% elif item.line_brand and not show_location_path and not show_location_name %}
+        <p class="label-line label-meta">{{ item.line_brand }}</p>
+        {% endif %}
+        {% elif label_target == 'printer' %}
+        {% if label_content.show_spool_id %}
+        <p class="label-line label-title">{{ item.line_title }}</p>
+        {% endif %}
+        {% if label_content.show_brand and item.line_brand %}
+        <p class="label-line label-meta">{{ t('printer_serial') }}: {{ item.line_brand }}</p>
+        {% endif %}
+        {% if label_content.show_material_color and item.line_material_color %}
+        <p class="label-line label-meta">{{ t('printer_host') }}: {{ item.line_material_color }}</p>
         {% endif %}
         {% else %}
         {% if label_content.show_spool_id %}
@@ -294,6 +313,7 @@
   }
 
   window.addEventListener('load', fitLabelText);
+  document.addEventListener('ui:after-soft-refresh', fitLabelText);
   globalThis.addEventListener('beforeprint', fitLabelText);
 </script>
 {% endblock %}

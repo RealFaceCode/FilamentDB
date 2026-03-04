@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg mb-6">
+  <div class="mb-2 flex items-start justify-between gap-4 flex-wrap">
+    <h2 class="text-lg font-semibold">{{ t('audit_title') }}</h2>
+    <form method="get" action="/audit" class="flex items-end gap-2 flex-wrap">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <input type="hidden" name="project" value="{{ project }}">
+      <label for="audit-action" class="text-xs text-slate-500">
+        {{ t('audit_action') }}
+      </label>
+      <select id="audit-action" name="action" class="ui-select min-w-44">
+        <option value="">{{ t('audit_all_actions') }}</option>
+        {% for option in (audit_action_options or []) %}
+        <option value="{{ option }}" {% if audit_action == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="audit-period" class="text-xs text-slate-500">
+        {{ t('audit_period_days') }}
+      </label>
+      <select id="audit-period" name="period_days" class="ui-select min-w-24">
+        <option value="7" {% if audit_period_days == 7 %}selected{% endif %}>7</option>
+        <option value="14" {% if audit_period_days == 14 %}selected{% endif %}>14</option>
+        <option value="30" {% if audit_period_days == 30 %}selected{% endif %}>30</option>
+        <option value="60" {% if audit_period_days == 60 %}selected{% endif %}>60</option>
+        <option value="90" {% if audit_period_days == 90 %}selected{% endif %}>90</option>
+        <option value="180" {% if audit_period_days == 180 %}selected{% endif %}>180</option>
+        <option value="365" {% if audit_period_days == 365 %}selected{% endif %}>365</option>
+      </select>
+
+      <button class="ui-btn ui-btn-secondary">{{ t('analysis_apply_filters') }}</button>
+      <a
+        class="ui-btn ui-btn-secondary"
+        href="/audit/export/csv?action={{ audit_action or '' }}&period_days={{ audit_period_days }}&lang={{ lang }}&project={{ project }}"
+      >{{ t('export_csv') }}</a>
+    </form>
+  </div>
+  <p class="text-sm text-slate-500">{{ t('audit_hint') }}</p>
+  <p class="text-xs text-slate-500 mt-2">{{ format_number_compact(total_count, 0, lang) }} {{ t('entries_label') }}</p>
+</div>
+
+<div class="ui-card ui-card-md">
+  <div class="overflow-auto max-h-[70vh]">
+    <table class="ui-table whitespace-nowrap">
+      <thead>
+        <tr class="ui-thead-row">
+          <th class="ui-th-sticky">{{ t('usage_history_when') }}</th>
+          <th class="ui-th-sticky">{{ t('audit_actor') }}</th>
+          <th class="ui-th-sticky">{{ t('audit_action') }}</th>
+          <th class="ui-th-sticky">{{ t('audit_entity') }}</th>
+          <th class="ui-th-sticky">{{ t('audit_details') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in (audit_rows or []) %}
+        <tr class="ui-row align-top">
+          <td class="ui-td">{% if row.created_at %}{{ row.created_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+          <td class="ui-td">{{ row.actor or '-' }}</td>
+          <td class="ui-td font-medium">{{ row.action }}</td>
+          <td class="ui-td">{{ row.entity_type or '-' }}{% if row.entity_id %} · {{ row.entity_id }}{% endif %}</td>
+          <td class="ui-td text-xs">
+            {% if row.details_json %}
+            <code class="block max-w-[40rem] overflow-auto">{{ row.details_json }}</code>
+            {% else %}
+            -
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="py-6 text-slate-500 text-center">{{ t('audit_no_data') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-4">
+    <form method="get" action="/audit" class="flex flex-wrap md:flex-nowrap items-center gap-2">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <input type="hidden" name="project" value="{{ project }}">
+      <input type="hidden" name="action" value="{{ audit_action or '' }}">
+      <input type="hidden" name="period_days" value="{{ audit_period_days }}">
+      <input type="hidden" name="page" value="1">
+      <label for="audit-page-size" class="text-xs text-slate-500">{{ t('rows_per_page') }}</label>
+      <select id="audit-page-size" name="page_size" onchange="this.form.submit()" class="ui-select py-1">
+        {% for option in page_size_options %}
+        <option value="{{ option }}" {% if option == page_size %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+    </form>
+
+    <div class="flex items-center gap-2 text-sm">
+      {% set prev_page = page - 1 %}
+      {% set next_page = page + 1 %}
+      <a class="ui-btn ui-btn-sm ui-btn-secondary {% if page <= 1 %}opacity-50 pointer-events-none{% endif %}" href="{{ request.url.include_query_params(page=prev_page if prev_page > 0 else 1, page_size=page_size) }}">&larr;</a>
+      <span>{{ page }} / {{ total_pages }}</span>
+      <a class="ui-btn ui-btn-sm ui-btn-secondary {% if page >= total_pages %}opacity-50 pointer-events-none{% endif %}" href="{{ request.url.include_query_params(page=next_page if next_page <= total_pages else total_pages, page_size=page_size) }}">&rarr;</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

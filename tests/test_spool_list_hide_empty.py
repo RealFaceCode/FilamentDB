@@ -85,11 +85,62 @@ class SpoolListHideEmptyTests(unittest.TestCase):
     def test_spool_list_can_show_empty_when_filter_disabled(self):
         self._seed_spools()
 
-        response = self.client.get("/spools?project=private&hide_empty=false")
+        response = self.client.get("/spools?project=private&hide_empty=false&lang=en")
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("BrandFull", response.text)
         self.assertIn("BrandEmpty", response.text)
+        self.assertNotIn("ui-badge ui-badge-empty\">Empty<", response.text)
+
+    def test_spool_list_hides_lifecycle_empty_spool_with_stale_remaining(self):
+        with self.SessionLocal() as db:
+            db.add_all(
+                [
+                    Spool(
+                        brand="BrandVisible",
+                        material="PLA",
+                        color="White",
+                        weight_g=1000.0,
+                        remaining_g=200.0,
+                        lifecycle_status="opened",
+                        in_use=False,
+                        project=self.project_scope,
+                    ),
+                    Spool(
+                        brand="BrandLifecycleEmpty",
+                        material="PLA",
+                        color="Gray",
+                        weight_g=1000.0,
+                        remaining_g=150.0,
+                        lifecycle_status="empty",
+                        in_use=False,
+                        project=self.project_scope,
+                    ),
+                ]
+            )
+            db.commit()
+
+        response = self.client.get("/spools?project=private&lang=en")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("BrandVisible", response.text)
+        self.assertNotIn("BrandLifecycleEmpty", response.text)
+
+    def test_spool_list_shows_extended_lifecycle_filter_options(self):
+        response = self.client.get("/spools?project=private&lang=en")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Drying", response.text)
+        self.assertIn("Brittle", response.text)
+        self.assertIn("Recycled", response.text)
+
+    def test_spool_list_accepts_empty_location_id_query(self):
+        self._seed_spools()
+
+        response = self.client.get("/spools?project=private&hide_empty=false&location_id=")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("BrandFull", response.text)
 
     def test_create_spool_rejects_duplicate_ams_slot_mapping(self):
         with self.SessionLocal() as db:
@@ -164,6 +215,28 @@ class SpoolListHideEmptyTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("OpenedOne", response.text)
         self.assertNotIn("ArchivedOne", response.text)
+
+    def test_bulk_add_can_set_lifecycle_status(self):
+        response = self.client.post(
+            "/spools/bulk",
+            data={
+                "brand": ["Bambu"],
+                "material": ["PLA"],
+                "color": ["White"],
+                "weight_g": ["1000"],
+                "remaining_g": ["900"],
+                "lifecycle_status": ["archived"],
+                "quantity": ["1"],
+            },
+            follow_redirects=False,
+        )
+
+        self.assertEqual(response.status_code, 303)
+
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.brand == "Bambu").first()
+            self.assertIsNotNone(spool)
+            self.assertEqual(spool.lifecycle_status, "archived")
 
 
 if __name__ == "__main__":

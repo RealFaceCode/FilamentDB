@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, UniqueConstraint, ForeignKey, Text
 
 from .db import Base
 
@@ -92,6 +92,7 @@ class UsageBatchContext(Base):
     project = Column(String(40), nullable=False, index=True)
     batch_id = Column(String(64), nullable=False, index=True)
     printer_name = Column(String(120), nullable=True)
+    printer_serial = Column(String(120), nullable=True, index=True)
     ams_slots = Column(String(255), nullable=True)
 
 
@@ -102,7 +103,11 @@ class DeviceSlotState(Base):
     id = Column(Integer, primary_key=True, index=True)
     project = Column(String(40), nullable=False, index=True)
     printer_name = Column(String(120), nullable=False, index=True)
+    printer_serial = Column(String(120), nullable=True, index=True)
     slot = Column(Integer, nullable=False, index=True)
+    ams_unit = Column(Integer, nullable=True, index=True)
+    slot_local = Column(Integer, nullable=True, index=True)
+    ams_name = Column(String(120), nullable=True)
     observed_brand = Column(String(120), nullable=True)
     observed_material = Column(String(80), nullable=True)
     observed_color = Column(String(80), nullable=True)
@@ -111,9 +116,66 @@ class DeviceSlotState(Base):
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
+class Printer(Base):
+    __tablename__ = "printers"
+    __table_args__ = (
+        UniqueConstraint("project", "serial", name="uq_printers_project_serial"),
+        UniqueConstraint("project", "name", name="uq_printers_project_name"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    serial = Column(String(120), nullable=False, index=True)
+    name = Column(String(120), nullable=False, index=True)
+    host = Column(String(255), nullable=True)
+    access_code = Column(String(120), nullable=True)
+    ams_name_map = Column(String(500), nullable=True)
+    port = Column(Integer, nullable=False, default=8883)
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    status = Column(String(32), nullable=True, index=True)
+    last_seen_at = Column(DateTime, nullable=True, index=True)
+    last_source = Column(String(120), nullable=True)
+    telemetry_job_name = Column(String(255), nullable=True)
+    telemetry_job_status = Column(String(80), nullable=True)
+    telemetry_progress = Column(Float, nullable=True)
+    telemetry_nozzle_temp = Column(Float, nullable=True)
+    telemetry_bed_temp = Column(Float, nullable=True)
+    telemetry_chamber_temp = Column(Float, nullable=True)
+    telemetry_firmware = Column(String(120), nullable=True)
+    telemetry_error = Column(String(255), nullable=True)
+    telemetry_external_spool_active = Column(Boolean, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
 class AppSetting(Base):
     __tablename__ = "app_settings"
 
     key = Column(String(80), primary_key=True, index=True)
     value = Column(String(255), nullable=False)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=_utcnow, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    actor = Column(String(120), nullable=True)
+    action = Column(String(80), nullable=False, index=True)
+    entity_type = Column(String(80), nullable=True, index=True)
+    entity_id = Column(String(120), nullable=True, index=True)
+    details_json = Column(Text, nullable=True)
+
+
+class ImportMappingProfile(Base):
+    __tablename__ = "import_mapping_profiles"
+    __table_args__ = (UniqueConstraint("project", "name", name="uq_import_mapping_profiles_project_name"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    name = Column(String(120), nullable=False, index=True)
+    mapping_json = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)

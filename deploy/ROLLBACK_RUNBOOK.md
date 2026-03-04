@@ -1,4 +1,4 @@
-# Rollback Runbook (Hostinger VPS)
+# Rollback Runbook
 
 ## Voraussetzungen
 

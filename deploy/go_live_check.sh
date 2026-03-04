@@ -43,6 +43,13 @@ required_env_keys=(
   CSRF_PROTECT
 )
 
+if [ -n "$DOMAIN" ]; then
+  required_env_keys+=(
+    DOMAIN
+    TLS_EMAIL
+  )
+fi
+
 for key in "${required_env_keys[@]}"; do
   if ! grep -Eq "^${key}=" .env; then
     fail "missing env key in .env: $key"
@@ -69,6 +76,13 @@ ok "critical env defaults checked"
 docker compose ps >/dev/null
 ok "docker compose is reachable"
 
+if [ -n "$DOMAIN" ]; then
+  if ! docker compose --profile https config >/dev/null 2>&1; then
+    fail "docker compose --profile https config failed"
+  fi
+  ok "https profile config is valid"
+fi
+
 if ! docker compose ps --status running db >/dev/null 2>&1; then
   fail "db service is not running"
 fi
@@ -76,6 +90,13 @@ if ! docker compose ps --status running web >/dev/null 2>&1; then
   fail "web service is not running"
 fi
 ok "web and db services are running"
+
+if [ -n "$DOMAIN" ]; then
+  if ! docker compose ps --status running https-proxy >/dev/null 2>&1; then
+    fail "https-proxy service is not running (expected for DOMAIN deployment)"
+  fi
+  ok "https-proxy service is running"
+fi
 
 if docker compose exec -T web alembic current >/tmp/filament_alembic_current.txt 2>/tmp/filament_alembic_err.txt; then
   if grep -q "head" /tmp/filament_alembic_current.txt; then
@@ -106,6 +127,15 @@ if [ -z "$DOMAIN" ] && [ "$REQUIRE_EXTERNAL" = "1" ]; then
 fi
 
 if [ -n "$DOMAIN" ]; then
+  external_http_headers="$(curl -sS -I "http://${DOMAIN}/healthz" || true)"
+  if ! printf "%s" "$external_http_headers" | grep -Eqi '^HTTP/[0-9.]+[[:space:]]+30[1278]'; then
+    fail "http://${DOMAIN}/healthz did not return an HTTP redirect"
+  fi
+  if ! printf "%s" "$external_http_headers" | grep -Eqi '^location:[[:space:]]*https://'; then
+    fail "http://${DOMAIN}/healthz redirect target is not https://"
+  fi
+  ok "http to https redirect is active (${DOMAIN})"
+
   external_health="$(curl -sS -o /tmp/filament_health_external.json -w "%{http_code}" "https://${DOMAIN}/healthz" || true)"
   if [ "$external_health" != "200" ]; then
     fail "external healthz failed for https://${DOMAIN}/healthz (http $external_health)"

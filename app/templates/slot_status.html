@@ -1,10 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ui-card ui-card-lg max-w-6xl">
+<div class="ui-card ui-card-lg w-full">
   <h2 class="text-lg font-semibold mb-2">{{ t('slot_status_title') }}</h2>
   <p class="text-sm text-slate-500 mb-4">{{ t('slot_status_hint') }} ({{ stale_minutes }} min)</p>
+  {% set freshness = slot_data_freshness or {} %}
+  <div class="ui-panel mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <p class="text-xs text-slate-500">{{ t('slot_data_health') }}</p>
+      <div class="mt-1">
+        {% if freshness.status == 'fresh' %}
+          <span class="ui-badge ui-badge-inuse">{{ t('slot_data_fresh') }}</span>
+        {% elif freshness.status == 'stale' %}
+          <span class="ui-badge ui-badge-low">{{ t('slot_data_stale') }}</span>
+        {% else %}
+          <span class="ui-badge ui-badge-idle">{{ t('slot_data_no_data') }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="text-sm text-slate-600 dark:text-slate-300">
+      {% if freshness.last_seen_at %}
+        {{ t('slot_status_seen') }}: {{ freshness.last_seen_at.strftime('%Y-%m-%d %H:%M') }}
+        · {{ t('slot_data_age') }}: {{ ((freshness.age_seconds or 0) // 60)|int }} min
+      {% else %}
+        {{ t('slot_status_seen') }}: -
+      {% endif %}
+    </div>
+  </div>
 
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
     <div class="ui-panel">
       <p class="text-xs text-slate-500">{{ t('slot_state_ok') }}</p>
       <p class="text-xl font-semibold text-emerald-700">{{ slot_summary.ok or 0 }}</p>
@@ -48,8 +71,12 @@
           <td class="ui-td">{{ row.printer or '-' }}</td>
           <td class="ui-td">{{ row.slot }}</td>
           <td class="ui-td">
+            {% if row.spool %}
             <span class="font-medium">SP-{{ '%04d'|format(row.spool.id) }}</span>
             · {{ row.spool.brand or '-' }} · {{ row.spool.material or '-' }} · {{ row.spool.color or '-' }}
+            {% else %}
+            -
+            {% endif %}
           </td>
           <td class="ui-td">
             {{ row.observed_brand or '-' }} · {{ row.observed_material or '-' }} · {{ row.observed_color or '-' }}

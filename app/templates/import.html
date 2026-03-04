@@ -1,9 +1,69 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ui-card ui-card-lg max-w-2xl">
-  <h2 class="text-lg font-semibold mb-4">{{ t('import_data') }}</h2>
+<div class="ui-card ui-card-lg w-full">
+  <h2 class="text-lg font-semibold mb-4">{{ t('import_export') }}</h2>
   <p class="text-sm text-slate-500 mb-4">{{ t('import_hint') }}</p>
+  <div class="mb-5 rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/40">
+    <h3 class="text-sm font-semibold mb-3">{{ t('export_csv') }} / {{ t('export_excel') }}</h3>
+    <div class="flex flex-wrap gap-2">
+      <a href="/export/csv?lang={{ lang }}&project={{ project }}" class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('export_csv') }}</a>
+      <a href="/export/excel?lang={{ lang }}&project={{ project }}" class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('export_excel') }}</a>
+    </div>
+  </div>
+  {% if error %}
+  <div class="ui-alert ui-alert-error mb-4">{{ error }}</div>
+  {% endif %}
   <form method="post" enctype="multipart/form-data" class="space-y-4">
+    <div>
+      <label for="profile-name" class="text-xs text-slate-500">{{ t('import_profile_use') }}</label>
+      <select id="profile-name" name="profile_name" class="ui-select">
+        <option value="">{{ t('import_profile_none') }}</option>
+        {% for profile in (mapping_profiles or []) %}
+        <option value="{{ profile.name }}">{{ profile.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label for="map-brand" class="text-xs text-slate-500">{{ t('import_map_brand') }}</label>
+        <input id="map-brand" type="text" name="map_brand" class="ui-input" placeholder="brand / marke">
+      </div>
+      <div>
+        <label for="map-material" class="text-xs text-slate-500">{{ t('import_map_material') }}</label>
+        <input id="map-material" type="text" name="map_material" class="ui-input" placeholder="material">
+      </div>
+      <div>
+        <label for="map-color" class="text-xs text-slate-500">{{ t('import_map_color') }}</label>
+        <input id="map-color" type="text" name="map_color" class="ui-input" placeholder="color / farbe">
+      </div>
+      <div>
+        <label for="map-weight" class="text-xs text-slate-500">{{ t('import_map_weight') }}</label>
+        <input id="map-weight" type="text" name="map_weight_g" class="ui-input" placeholder="weight_g / gewicht">
+      </div>
+      <div>
+        <label for="map-remaining" class="text-xs text-slate-500">{{ t('import_map_remaining') }}</label>
+        <input id="map-remaining" type="text" name="map_remaining_g" class="ui-input" placeholder="remaining_g / restmenge">
+      </div>
+      <div>
+        <label for="map-threshold" class="text-xs text-slate-500">{{ t('import_map_threshold') }}</label>
+        <input id="map-threshold" type="text" name="map_low_stock_threshold_g" class="ui-input" placeholder="low_stock_threshold_g">
+      </div>
+      <div>
+        <label for="map-price" class="text-xs text-slate-500">{{ t('import_map_price') }}</label>
+        <input id="map-price" type="text" name="map_price" class="ui-input" placeholder="price / preis">
+      </div>
+      <div>
+        <label for="map-location" class="text-xs text-slate-500">{{ t('import_map_location') }}</label>
+        <input id="map-location" type="text" name="map_location" class="ui-input" placeholder="location / lagerort">
+      </div>
+    </div>
+
+    <div>
+      <label for="save-profile-name" class="text-xs text-slate-500">{{ t('import_profile_save_as') }}</label>
+      <input id="save-profile-name" type="text" name="save_profile_name" class="ui-input" placeholder="{{ t('import_profile_save_as') }}">
+    </div>
+
     <input type="file" name="file" accept=".csv,.xlsx" required class="ui-file-input">
     <button class="ui-btn ui-btn-primary">{{ t('import') }}</button>
     <a href="/" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>

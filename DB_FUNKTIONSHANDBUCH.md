@@ -8,7 +8,7 @@ Stand: 2026-02-21
 - **Datenbank**: PostgreSQL (Compose-Service `db`)
 - **Verbindungsquelle**: `DATABASE_URL`
 - **Schema-Management**: Alembic Migrationen
-- **Zielbetrieb**: Externer Server (z. B. Hostinger VPS), lokale Dienste nur als Datenzulieferer
+- **Zielbetrieb**: Docker-Compose-Stack mit PostgreSQL; lokale Dienste optional als Datenzulieferer
 
 Wichtige Dateien:
 - `app/db.py`
@@ -127,7 +127,8 @@ Endpoints (Auszug):
 - **Export CSV/XLSX**: Read-only aus `spools`
 
 Endpoints:
-- `GET /import`, `POST /import`
+- `GET /import-export`, `POST /import-export`
+- `GET /import` (Legacy-Redirect auf `/import-export`), `POST /import` (Legacy-kompatibel)
 - `GET /export/csv`, `GET /export/excel`
 
 ## Backup/Restore
@@ -183,9 +184,9 @@ Erweiterbar um:
    - Vor Abbuchung prüfen: stimmt `printer + slot` mit gemappter Spule?
    - bei Abweichung: keine Abbuchung, klarer Konfliktfehler
 
-2. Mittelfristig: **lokaler Agent + Server-Push als Standardpfad**
+2. Mittelfristig: **lokaler Agent + API-Push als Standardpfad**
    - lokaler Dienst im Nutzer-LAN
-   - Push auf externen Server (`/api/slot-state/push`)
+   - Push auf die laufende App (`/api/slot-state/push`)
    - optionaler Polling-Worker nur als Sonderfall
 
 3. Langfristig: **UI-Ansicht „Live Slot State“**
@@ -211,7 +212,8 @@ Erweiterbar um:
 - `POST /usage`, `POST /booking`, `POST /booking/tracking`
 - `POST /api/usage/auto-from-file`, `POST /api/usage/auto-from-3mf`
 - `POST /api/slot-state/push`
-- `GET /import`, `POST /import`
+- `GET /import-export`, `POST /import-export`
+- `GET /import` (Legacy-Redirect auf `/import-export`), `POST /import` (Legacy-kompatibel)
 - `GET /backup`, `GET /backup/export`, `POST /backup/import`
 - `GET /export/csv`, `GET /export/excel`
 
@@ -231,7 +233,7 @@ Tests (fokussiert):
 docker compose run --rm -e ENABLE_BASIC_AUTH=0 web python -m unittest tests.test_spool_list_hide_empty tests.test_api_auto_usage tests.test_slot_status_page
 ```
 
-Backup-Script (VPS):
+Backup-Script:
 
 ```bash
 bash deploy/postgres_backup.sh

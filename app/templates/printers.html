@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg w-full" data-open-printer-id="{{ open_printer_id or '' }}" data-open-printer-tab="{{ open_printer_tab or 'device' }}">
+  <h2 class="text-lg font-semibold mb-2">{{ t('printers_title') }}</h2>
+  <p class="text-sm text-slate-500 mb-6">{{ t('printers_hint') }}</p>
+  {% set freshness = slot_data_freshness or {} %}
+  <div class="ui-panel mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <p class="text-xs text-slate-500">{{ t('slot_data_health') }}</p>
+      <div class="mt-1">
+        {% if freshness.status == 'fresh' %}
+          <span class="ui-badge ui-badge-inuse">{{ t('slot_data_fresh') }}</span>
+        {% elif freshness.status == 'stale' %}
+          <span class="ui-badge ui-badge-low">{{ t('slot_data_stale') }}</span>
+        {% else %}
+          <span class="ui-badge ui-badge-idle">{{ t('slot_data_no_data') }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="text-sm text-slate-600 dark:text-slate-300">
+      {% if freshness.last_seen_at %}
+        {{ t('printer_last_seen') }}: {{ freshness.last_seen_at.strftime('%Y-%m-%d %H:%M') }}
+        · {{ t('slot_data_age') }}: {{ ((freshness.age_seconds or 0) // 60)|int }} min
+      {% else %}
+        {{ t('printer_last_seen') }}: -
+      {% endif %}
+      · {{ stale_minutes }} min threshold
+    </div>
+  </div>
+
+  <form method="post" action="/printers" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end mb-6">
+    <input type="hidden" name="printer_id" value="{{ form_data.printer_id or '' }}">
+    <div class="md:col-span-2">
+      <label for="printer-name" class="text-xs text-slate-500">{{ t('printer_name') }}</label>
+      <input id="printer-name" name="name" value="{{ form_data.name or '' }}" required class="mt-1 ui-input">
+    </div>
+    <div class="md:col-span-2">
+      <label for="printer-serial" class="text-xs text-slate-500">{{ t('printer_serial') }}</label>
+      <input id="printer-serial" name="serial" value="{{ form_data.serial or '' }}" required class="mt-1 ui-input privacy-sensitive">
+    </div>
+    <div>
+      <label for="printer-host" class="text-xs text-slate-500">{{ t('printer_host') }}</label>
+      <input id="printer-host" name="host" value="{{ form_data.host or '' }}" class="mt-1 ui-input privacy-sensitive" placeholder="192.168.0.42">
+    </div>
+    <div>
+      <label for="printer-port" class="text-xs text-slate-500">{{ t('printer_port') }}</label>
+      <input id="printer-port" name="port" type="number" min="1" max="65535" value="{{ form_data.port or '8883' }}" class="mt-1 ui-input">
+    </div>
+    <div class="md:col-span-4">
+      <label for="printer-access-code" class="text-xs text-slate-500">{{ t('printer_access_code') }}</label>
+      <input id="printer-access-code" name="access_code" value="{{ form_data.access_code or '' }}" class="mt-1 ui-input privacy-sensitive">
+    </div>
+    <div class="md:col-span-1 flex items-center gap-2">
+      <input id="printer-active" name="is_active" type="checkbox" value="1" {% if form_data.is_active is not defined or form_data.is_active %}checked{% endif %}>
+      <label for="printer-active" class="text-sm text-slate-600">{{ t('printer_active') }}</label>
+    </div>
+    <div class="md:col-span-1 flex justify-end">
+      <button class="ui-btn ui-btn-primary">{{ t('printers_add') }}</button>
+    </div>
+  </form>
+
+  {% if printers %}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    {% for printer in printers %}
+    {% set status = printer.status or 'unknown' %}
+    {% set status_badge = 'bg-slate-100 border-slate-300 text-slate-700' %}
+    {% set status_dot = 'bg-slate-400' %}
+    {% if status == 'online' %}
+      {% set status_badge = 'bg-emerald-100 border-emerald-300 text-emerald-800' %}
+      {% set status_dot = 'bg-emerald-500' %}
+    {% elif status == 'offline' %}
+      {% set status_badge = 'bg-rose-100 border-rose-300 text-rose-800' %}
+      {% set status_dot = 'bg-rose-500' %}
+    {% endif %}
+    <button
+      type="button"
+      class="ui-card text-left w-full min-h-[240px] px-5 py-4 flex flex-col gap-4 border border-slate-200 hover:border-slate-300 hover:translate-y-[-1px] transition"
+      data-printer-open="printer-modal-{{ printer.id }}"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="text-xl font-semibold text-slate-900 leading-snug truncate" title="{{ printer.name }}">{{ printer.name }}</div>
+          <div class="privacy-sensitive text-sm text-slate-500 mt-1 truncate" title="{{ printer.serial }}">{{ printer.serial }}</div>
+        </div>
+        <span class="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full border {{ status_badge }}">
+          <span class="w-2 h-2 rounded-full {{ status_dot }}"></span>
+          {{ printer.status_label }}
+        </span>
+      </div>
+
+      <div class="space-y-2.5 pt-1">
+        <div class="flex items-center justify-between text-sm text-slate-500">
+          <span>{{ t('printer_progress') }}</span>
+          <span class="font-semibold text-slate-800">{% if printer.progress is not none %}{{ '%.1f'|format(printer.progress) }}%{% else %}-{% endif %}</span>
+        </div>
+        <div class="mt-2 h-2 rounded-full bg-slate-200 overflow-hidden">
+          <div
+            class="h-2 rounded-full {% if status == 'online' %}bg-emerald-500{% elif status == 'offline' %}bg-rose-500{% else %}bg-slate-500{% endif %}"
+            style="width:{% if printer.progress is not none %}{{ [printer.progress, 100]|min|round(0, 'floor') }}{% else %}0{% endif %}%"
+          ></div>
+        </div>
+      </div>
+
+      {% set host_display = printer.host or '-' %}
+      {% set port_display = printer.port if printer.port else '-' %}
+      {% set nozzle_display = ('%.1f'|format(printer.nozzle_temp) ~ '°C') if printer.nozzle_temp is not none else '-' %}
+      {% set bed_display = ('%.1f'|format(printer.bed_temp) ~ '°C') if printer.bed_temp is not none else '-' %}
+      {% set chamber_display = ('%.1f'|format(printer.chamber_temp) ~ '°C') if printer.chamber_temp is not none else '-' %}
+
+      <div class="space-y-4 text-sm">
+        <div class="grid grid-cols-2 gap-x-5 gap-y-3">
+          <div>
+            <div class="text-xs font-medium text-slate-500">{{ t('printer_host') }}</div>
+            <div class="privacy-sensitive mt-1.5 text-base font-medium text-slate-800 truncate" title="{{ host_display }}:{{ port_display }}">{{ host_display }}:{{ port_display }}</div>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500">{{ t('printer_temps') }}</div>
+            <div class="mt-1.5 text-[13px] font-medium text-slate-700 leading-5 truncate" title="N {{ nozzle_display }} · B {{ bed_display }} · C {{ chamber_display }}">
+              N {{ nozzle_display }} · B {{ bed_display }} · C {{ chamber_display }}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-5 gap-y-3">
+          <div>
+            <div class="text-xs font-medium text-slate-500">{{ t('printer_job') }}</div>
+            <div class="mt-1.5 text-base font-medium text-slate-800 truncate" title="{{ printer.job_label or '-' }}">{{ printer.job_label or '-' }}</div>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500">{{ t('printer_source') }}</div>
+            <div class="mt-1.5 text-base font-medium text-slate-800 truncate" title="{{ printer.source or '-' }}">{{ printer.source or '-' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-sm text-slate-500 mt-auto pt-3.5 border-t border-slate-200">
+        {{ t('printer_last_seen') }}: {% if printer.last_seen_at %}{{ printer.last_seen_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}
+      </div>
+    </button>
+    {% endfor %}
+  </div>
+
+  {% for printer in printers %}
+  <dialog id="printer-modal-{{ printer.id }}" class="rounded-2xl p-0 w-full max-w-2xl bg-transparent backdrop:bg-slate-900/40">
+    <div class="ui-card ui-card-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-lg font-semibold truncate" title="{{ printer.name }}">{{ printer.name }}</h3>
+          <p class="privacy-sensitive text-sm text-slate-500 truncate" title="{{ printer.serial }}">{{ printer.serial }}</p>
+        </div>
+        <button type="button" class="ui-btn ui-btn-secondary ui-btn-sm" data-printer-close="printer-modal-{{ printer.id }}">{{ t('cancel') }}</button>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 mb-4" data-printer-tabs="printer-modal-{{ printer.id }}">
+        <button
+          type="button"
+          class="ui-btn ui-btn-secondary ui-btn-sm"
+          data-printer-tab="device"
+          data-printer-tab-active="1"
+        >
+          {{ t('printer_tab_device') }}
+        </button>
+        <button
+          type="button"
+          class="ui-btn ui-btn-secondary ui-btn-sm"
+          data-printer-tab="ams"
+          data-printer-tab-active="0"
+        >
+          {{ t('printer_tab_ams') }}
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 pr-1">
+      <div data-printer-panels-container class="h-full">
+        <div data-printer-panel="device" class="h-full overflow-y-auto">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-5">
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-xs text-slate-500">{{ t('printer_status') }}</div>
+              <div class="font-medium mt-1">{{ printer.status_label }}</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-xs text-slate-500">{{ t('printer_last_seen') }}</div>
+              <div class="font-medium mt-1">{% if printer.last_seen_at %}{{ printer.last_seen_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-xs text-slate-500">{{ t('printer_job') }}</div>
+              <div class="font-medium mt-1 truncate" title="{{ printer.job_label or '-' }}">{{ printer.job_label or '-' }}</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-xs text-slate-500">{{ t('printer_progress') }}</div>
+              <div class="font-medium mt-1">{% if printer.progress is not none %}{{ '%.1f'|format(printer.progress) }}%{% else %}-{% endif %}</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-xs text-slate-500">{{ t('printer_temps') }}</div>
+              <div class="font-medium mt-1 truncate" title="{{ printer.temps or '-' }}">{{ printer.temps or '-' }}</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-xs text-slate-500">{{ t('printer_firmware') }}</div>
+              <div class="font-medium mt-1 truncate" title="{{ printer.firmware or '-' }}">{{ printer.firmware or '-' }}</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-xs text-slate-500">{{ t('printer_source') }}</div>
+              <div class="font-medium mt-1 truncate" title="{{ printer.source or '-' }}">{{ printer.source or '-' }}</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-xs text-slate-500">{{ t('printer_error') }}</div>
+              <div class="font-medium mt-1 truncate" title="{{ printer.error or '-' }}">{{ printer.error or '-' }}</div>
+            </div>
+          </div>
+
+          <form id="printer-edit-{{ printer.id }}" method="post" action="/printers" class="grid grid-cols-1 md:grid-cols-7 gap-3 items-end">
+            <input type="hidden" name="printer_id" value="{{ printer.id }}">
+            <div class="md:col-span-2">
+              <label for="printer-name-edit-{{ printer.id }}" class="text-xs text-slate-500">{{ t('printer_name') }}</label>
+              <input id="printer-name-edit-{{ printer.id }}" name="name" value="{{ printer.name }}" class="mt-1 ui-input" required>
+            </div>
+            <div class="md:col-span-2">
+              <label for="printer-serial-edit-{{ printer.id }}" class="text-xs text-slate-500">{{ t('printer_serial') }}</label>
+              <input id="printer-serial-edit-{{ printer.id }}" name="serial" value="{{ printer.serial }}" class="mt-1 ui-input privacy-sensitive" required>
+            </div>
+            <div class="md:col-span-2">
+              <label for="printer-host-edit-{{ printer.id }}" class="text-xs text-slate-500">{{ t('printer_host') }}</label>
+              <input id="printer-host-edit-{{ printer.id }}" name="host" value="{{ printer.host or '' }}" class="mt-1 ui-input privacy-sensitive font-medium font-mono text-slate-900" placeholder="192.168.0.42">
+            </div>
+            <div class="md:col-span-1">
+              <label for="printer-port-edit-{{ printer.id }}" class="text-xs text-slate-500">{{ t('printer_port') }}</label>
+              <input id="printer-port-edit-{{ printer.id }}" name="port" type="number" min="1" max="65535" value="{{ printer.port or 8883 }}" class="mt-1 ui-input">
+            </div>
+            <div class="md:col-span-5">
+              <label for="printer-access-edit-{{ printer.id }}" class="text-xs text-slate-500">{{ t('printer_access_code') }}</label>
+              <input id="printer-access-edit-{{ printer.id }}" name="access_code" value="{{ printer.access_code or '' }}" class="mt-1 ui-input privacy-sensitive">
+            </div>
+            <div class="md:col-span-1 flex items-center gap-2">
+              <input type="hidden" name="is_active" value="0">
+              <input id="printer-active-{{ printer.id }}" name="is_active" type="checkbox" value="1" {% if printer.is_active %}checked{% endif %}>
+              <label for="printer-active-{{ printer.id }}" class="text-sm text-slate-600">{{ t('printer_active') }}</label>
+            </div>
+            <div class="md:col-span-1 flex justify-end gap-2">
+              <button class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('save') }}</button>
+            </div>
+          </form>
+
+          <div class="mt-3 flex justify-end">
+            <form method="post" action="/printers/{{ printer.id }}/delete" onsubmit="return confirm('{{ t('confirm_delete') }}');">
+              <button class="ui-btn ui-btn-danger ui-btn-sm">{{ t('delete') }}</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="mb-5 h-full overflow-y-auto hidden" data-printer-panel="ams">
+          <h4 class="text-sm font-semibold mb-2">{{ t('printer_ams_title') }}</h4>
+          <div class="mb-3">
+            {% if printer.external_spool_active %}
+            <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border border-amber-300 bg-amber-100 text-amber-800">
+              {{ t('printer_external_spool') }}: {{ printer.external_spool_label }}
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border border-slate-300 bg-slate-100 text-slate-700">
+              {{ t('printer_external_spool') }}: {{ printer.external_spool_label }}
+            </span>
+            {% endif %}
+          </div>
+          {% if printer.ams_slot_groups and printer.ams_slot_groups|length > 0 %}
+          <div class="space-y-4">
+            {% for group in printer.ams_slot_groups %}
+            <div>
+              <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <div class="text-sm font-medium text-slate-700" data-ams-group-label data-ams-unit="{{ group.ams_unit }}">{{ group.label }}</div>
+                <form method="post" action="/printers/{{ printer.id }}/ams-mapping" class="flex items-center gap-2" data-ams-mapping-form>
+                  <input type="hidden" name="ams_unit" value="{{ group.ams_unit }}">
+                  <input type="hidden" name="open_printer_tab" value="ams">
+                  <input
+                    name="ams_label"
+                    value="{{ group.mapped_name or '' }}"
+                    class="ui-input h-8 min-w-[180px]"
+                    placeholder="{{ t('printer_ams_name_map_hint') }}"
+                  >
+                  <button class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('save') }}</button>
+                </form>
+              </div>
+              <div class="overflow-auto">
+                <table class="ui-table whitespace-nowrap table-fixed w-full rounded-none">
+                  <thead>
+                    <tr class="ui-thead-row">
+                      <th class="ui-th-sticky w-12">{{ t('slot_status_slot') }}</th>
+                      <th class="ui-th-sticky w-[48%]">{{ t('slot_status_observed') }}</th>
+                      <th class="ui-th-sticky w-[22%]">{{ t('slot_status_source') }}</th>
+                      <th class="ui-th-sticky w-[30%]">{{ t('slot_status_seen') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for slot in group.slots %}
+                    <tr class="ui-row">
+                      <td class="ui-td font-medium">{{ slot.slot }}</td>
+                      <td class="ui-td">
+                        <div class="truncate" title="{{ slot.observed or '-' }}">{{ slot.observed or '-' }}</div>
+                      </td>
+                      <td class="ui-td">
+                        <div class="truncate" title="{{ slot.source or '-' }}">{{ slot.source or '-' }}</div>
+                      </td>
+                      <td class="ui-td">{% if slot.observed_at %}{{ slot.observed_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% elif printer.ams_slots and printer.ams_slots|length > 0 %}
+          <div class="overflow-auto">
+            <table class="ui-table whitespace-nowrap table-fixed w-full">
+              <thead>
+                <tr class="ui-thead-row">
+                  <th class="ui-th-sticky w-12">{{ t('slot_status_slot') }}</th>
+                  <th class="ui-th-sticky w-[48%]">{{ t('slot_status_observed') }}</th>
+                  <th class="ui-th-sticky w-[22%]">{{ t('slot_status_source') }}</th>
+                  <th class="ui-th-sticky w-[30%]">{{ t('slot_status_seen') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for slot in printer.ams_slots %}
+                <tr class="ui-row">
+                  <td class="ui-td font-medium">{{ slot.slot }}</td>
+                  <td class="ui-td">
+                    <div class="truncate" title="{{ slot.observed or '-' }}">{{ slot.observed or '-' }}</div>
+                  </td>
+                  <td class="ui-td">
+                    <div class="truncate" title="{{ slot.source or '-' }}">{{ slot.source or '-' }}</div>
+                  </td>
+                  <td class="ui-td">{% if slot.observed_at %}{{ slot.observed_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-500">{{ t('printer_ams_empty') }}</div>
+          {% endif %}
+        </div>
+      </div>
+      </div>
+    </div>
+  </dialog>
+  {% endfor %}
+  {% else %}
+  <div class="py-8 text-center text-slate-500 border border-slate-200 rounded-xl">{{ t('printers_none') }}</div>
+  {% endif %}
+</div>
+
+<script>
+  const PRINTER_MODAL_TAB_KEY_PREFIX = 'ui:printer-modal:tab:';
+
+  const getPrinterModalTabStorageKey = (dialogId) => `${PRINTER_MODAL_TAB_KEY_PREFIX}${String(dialogId || '').trim()}`;
+
+  const loadPrinterModalTab = (dialogId) => {
+    const normalizedId = String(dialogId || '').trim();
+    if (!normalizedId) {
+      return 'device';
+    }
+    try {
+      const raw = String(globalThis.sessionStorage.getItem(getPrinterModalTabStorageKey(normalizedId)) || '').trim();
+      return raw === 'ams' ? 'ams' : 'device';
+    } catch (_error) {
+      console.warn('Could not read printer modal tab state from sessionStorage', _error);
+      return 'device';
+    }
+  };
+
+  const savePrinterModalTab = (dialogId, tabName) => {
+    const normalizedId = String(dialogId || '').trim();
+    if (!normalizedId) {
+      return;
+    }
+    const normalizedTab = tabName === 'ams' ? 'ams' : 'device';
+    try {
+      globalThis.sessionStorage.setItem(getPrinterModalTabStorageKey(normalizedId), normalizedTab);
+    } catch (_error) {
+      console.warn('Could not persist printer modal tab state to sessionStorage', _error);
+    }
+  };
+
+  const lockPrinterModalContentHeight = (dialog) => {
+    if (!dialog) return;
+
+    const container = dialog.querySelector('[data-printer-panels-container]');
+    const devicePanel = dialog.querySelector('[data-printer-panel="device"]');
+    const card = dialog.querySelector('.ui-card');
+    if (!container || !devicePanel || !card) return;
+
+    const wasHidden = devicePanel.classList.contains('hidden');
+    if (wasHidden) {
+      devicePanel.classList.remove('hidden');
+    }
+
+    const deviceHeight = Math.max(devicePanel.scrollHeight || 0, devicePanel.offsetHeight || 0);
+    const containerCurrent = container.offsetHeight || 0;
+    const chromeHeight = Math.max((card.scrollHeight || 0) - containerCurrent, 0);
+    const maxCardHeight = Math.floor(window.innerHeight * 0.85);
+    const maxContainerHeight = Math.max(220, maxCardHeight - chromeHeight);
+    const targetHeight = Math.max(220, Math.min(deviceHeight, maxContainerHeight));
+
+    container.style.height = `${targetHeight}px`;
+
+    if (wasHidden) {
+      devicePanel.classList.add('hidden');
+    }
+  };
+
+  const setPrinterModalTab = (dialog, tabName) => {
+    if (!(dialog instanceof HTMLDialogElement)) return;
+    const normalizedTab = tabName === 'ams' ? 'ams' : 'device';
+
+    dialog.querySelectorAll('[data-printer-panel]').forEach((panel) => {
+      const matches = panel.dataset.printerPanel === normalizedTab;
+      panel.classList.toggle('hidden', !matches);
+    });
+
+    dialog.querySelectorAll('[data-printer-tab]').forEach((tabButton) => {
+      const isActive = tabButton.dataset.printerTab === normalizedTab;
+      tabButton.dataset.printerTabActive = isActive ? '1' : '0';
+      tabButton.classList.toggle('ui-btn-primary', isActive);
+      tabButton.classList.toggle('ui-btn-secondary', !isActive);
+    });
+
+    savePrinterModalTab(dialog.id, normalizedTab);
+  };
+
+  const bindDialogBackdropClick = (dialog) => {
+    if (!(dialog instanceof HTMLDialogElement)) {
+      return;
+    }
+    if (dialog.dataset.printerBackdropBound === '1') {
+      return;
+    }
+    dialog.addEventListener('click', (event) => {
+      const box = dialog.querySelector('.ui-card');
+      if (box && !box.contains(event.target)) {
+        dialog.close();
+      }
+    });
+    dialog.dataset.printerBackdropBound = '1';
+  };
+
+  const initializePrinterDialogs = () => {
+    document.querySelectorAll('dialog[id^="printer-modal-"]').forEach((dialog) => {
+      setPrinterModalTab(dialog, loadPrinterModalTab(dialog.id));
+      bindDialogBackdropClick(dialog);
+    });
+  };
+
+  const openInitialPrinterDialogFromPageState = () => {
+    const root = document.querySelector('[data-open-printer-id]');
+    const printerId = (root?.dataset.openPrinterId || '').trim();
+    if (!printerId) return;
+
+    const requestedInitialTab = (root?.dataset.openPrinterTab || '').trim();
+    const initialTab = requestedInitialTab === 'ams'
+      ? 'ams'
+      : loadPrinterModalTab(`printer-modal-${printerId}`);
+
+    const dialog = document.getElementById(`printer-modal-${printerId}`);
+    if (dialog && typeof dialog.showModal === 'function') {
+      setPrinterModalTab(dialog, initialTab);
+      dialog.showModal();
+      requestAnimationFrame(() => lockPrinterModalContentHeight(dialog));
+    }
+  };
+
+  initializePrinterDialogs();
+  openInitialPrinterDialogFromPageState();
+  document.addEventListener('ui:after-soft-refresh', () => {
+    initializePrinterDialogs();
+    openInitialPrinterDialogFromPageState();
+  });
+
+  document.addEventListener('click', (event) => {
+    const openTrigger = event.target.closest('[data-printer-open]');
+    if (openTrigger) {
+      const id = openTrigger.dataset.printerOpen;
+      const dialog = document.getElementById(id);
+      if (dialog && typeof dialog.showModal === 'function') {
+        setPrinterModalTab(dialog, loadPrinterModalTab(id));
+        dialog.showModal();
+        requestAnimationFrame(() => lockPrinterModalContentHeight(dialog));
+      }
+      return;
+    }
+
+    const tabTrigger = event.target.closest('[data-printer-tab]');
+    if (tabTrigger) {
+      const dialog = tabTrigger.closest('dialog');
+      const tabName = tabTrigger.dataset.printerTab || 'device';
+      setPrinterModalTab(dialog, tabName);
+      return;
+    }
+
+    const closeTrigger = event.target.closest('[data-printer-close]');
+    if (closeTrigger) {
+      const id = closeTrigger.dataset.printerClose;
+      const dialog = document.getElementById(id);
+      if (dialog) {
+        dialog.close();
+      }
+    }
+  });
+
+  document.addEventListener('submit', async (event) => {
+    const form = event.target.closest('[data-ams-mapping-form]');
+    if (!form) return;
+
+    event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"], button:not([type])');
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
+
+    try {
+      const response = await fetch(form.action + globalThis.location.search, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+        },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.ok) {
+        return;
+      }
+
+      const unit = String(payload.ams_unit || '').trim();
+      const dialog = form.closest('dialog');
+      if (dialog && unit) {
+        const labelNode = dialog.querySelector(`[data-ams-group-label][data-ams-unit="${unit}"]`);
+        if (labelNode && payload.label) {
+          labelNode.textContent = payload.label;
+        }
+        setPrinterModalTab(dialog, 'ams');
+      }
+    } catch (_error) {
+      console.warn('AMS mapping update failed', _error);
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    document.querySelectorAll('dialog[id^="printer-modal-"]').forEach((dialog) => {
+      if (dialog.open) {
+        lockPrinterModalContentHeight(dialog);
+      }
+    });
+  });
+</script>
+{% endblock %}

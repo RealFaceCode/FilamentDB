@@ -25,7 +25,7 @@ python .\local_services\local_slot_bridge.py --endpoint "https://dein-server/api
 
 Hinweise:
 
-- `--endpoint` (oder `SLOT_PUSH_ENDPOINT`) ist Pflicht und sollte auf den externen Server zeigen.
+- `--endpoint` (oder `SLOT_PUSH_ENDPOINT`) ist Pflicht und sollte auf deine laufende App zeigen.
 - `paho-mqtt` muss installiert sein (z. B. über Projekt-`requirements.txt`).
 - Für mehrere Drucker einfach mehrere Objekte in `BAMBU_PRINTERS_JSON` hinterlegen.
 - Der Server-Endpoint akzeptiert Format:
@@ -37,6 +37,17 @@ Hinweise:
   "printers": [
     {
       "printer": "P1S-01",
+      "serial": "01S00XXXXXXXX",
+      "telemetry": {
+        "status": "online",
+        "job_name": "part.3mf",
+        "job_status": "RUNNING",
+        "progress": 42.3,
+        "nozzle_temp": 220.1,
+        "bed_temp": 59.7,
+        "chamber_temp": 35.0,
+        "firmware": "01.08.00.00"
+      },
       "slots": [
         { "slot": 1, "brand": "Bambu", "material": "PLA", "color": "Black" }
       ]

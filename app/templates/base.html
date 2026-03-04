@@ -22,6 +22,7 @@
     }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/morphdom@2.7.4/dist/morphdom-umd.min.js"></script>
   <style>
     :root { color-scheme: light; }
     .dark { color-scheme: dark; }
@@ -142,22 +143,50 @@
     .ui-textarea {
       width: 100%;
       border: 1px solid rgb(148 163 184 / 0.42);
-      border-radius: 0.75rem;
-      background-color: rgb(255 255 255 / 0.62);
+      border-radius: 1rem;
+      background-color: rgb(255 255 255 / 0.66);
       color: rgb(30 41 59);
       font-size: 0.875rem;
       line-height: 1.25rem;
-      padding: 0.5rem 0.75rem;
+      padding: 0.56rem 0.82rem;
       outline: none;
-      transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.26), 0 6px 16px rgb(15 23 42 / 0.08);
+      transition: border-color .18s ease, box-shadow .2s ease, background-color .18s ease, transform .2s ease;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
+    }
+    .ui-select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      cursor: pointer;
+      padding-right: 2.4rem;
+      background-image:
+        linear-gradient(to bottom, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.04)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat, no-repeat;
+      background-position: 0 0, right 0.7rem center;
+      background-size: 100% 100%, 1rem 1rem;
+    }
+    .ui-input:hover,
+    .ui-select:hover,
+    .ui-textarea:hover {
+      border-color: rgb(99 102 241 / 0.45);
+      background-color: rgb(255 255 255 / 0.75);
+      transform: translateY(-1px);
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 10px 22px rgb(15 23 42 / 0.12);
+    }
+    .ui-select:hover {
+      border-color: rgb(99 102 241 / 0.55);
+      background-color: rgb(255 255 255 / 0.8);
     }
     .ui-input:focus,
     .ui-select:focus,
     .ui-textarea:focus {
       border-color: rgb(99 102 241);
-      box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
+      box-shadow: 0 0 0 3px rgb(99 102 241 / 0.17), 0 12px 26px rgb(99 102 241 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.24);
+      background-color: rgb(255 255 255 / 0.86);
+      transform: translateY(-1px);
     }
     .dark .ui-input,
     .dark .ui-select,
@@ -165,10 +194,237 @@
       border-color: rgb(148 163 184 / 0.34);
       background-color: rgb(15 23 42 / 0.58);
       color: rgb(226 232 240);
+      box-shadow: inset 0 1px 0 rgb(148 163 184 / 0.09), 0 8px 20px rgb(2 6 23 / 0.24);
+    }
+    .dark .ui-select {
+      background-image:
+        linear-gradient(to bottom, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.01)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%2394A3B8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat, no-repeat;
+      background-position: 0 0, right 0.7rem center;
+      background-size: 100% 100%, 1rem 1rem;
+    }
+    .dark .ui-select:hover {
+      border-color: rgb(129 140 248 / 0.55);
+      background-color: rgb(15 23 42 / 0.74);
+      transform: translateY(-1px);
+      box-shadow: inset 0 1px 0 rgb(148 163 184 / 0.1), 0 12px 24px rgb(2 6 23 / 0.34);
+    }
+    .dark .ui-input:hover,
+    .dark .ui-textarea:hover {
+      border-color: rgb(129 140 248 / 0.45);
+      background-color: rgb(15 23 42 / 0.68);
+      transform: translateY(-1px);
+      box-shadow: inset 0 1px 0 rgb(148 163 184 / 0.1), 0 12px 24px rgb(2 6 23 / 0.32);
+    }
+    .dark .ui-input:focus,
+    .dark .ui-select:focus,
+    .dark .ui-textarea:focus {
+      border-color: rgb(129 140 248 / 0.92);
+      background-color: rgb(15 23 42 / 0.86);
+      box-shadow: 0 0 0 3px rgb(129 140 248 / 0.2), 0 14px 28px rgb(67 56 202 / 0.2), inset 0 1px 0 rgb(148 163 184 / 0.12);
     }
     .dark .ui-input::placeholder,
     .dark .ui-textarea::placeholder {
       color: rgb(148 163 184);
+    }
+    .ui-select option {
+      color: rgb(30 41 59);
+      background-color: rgb(248 250 252);
+    }
+    .dark .ui-select option {
+      color: rgb(226 232 240);
+      background-color: rgb(15 23 42);
+    }
+
+    .ui-select-native-reset {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      background-image:
+        linear-gradient(to bottom, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.04)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat, no-repeat !important;
+      background-position: 0 0, right 0.7rem center !important;
+      background-size: 100% 100%, 1rem 1rem !important;
+      padding-right: 2.4rem !important;
+    }
+
+    .dark .ui-select-native-reset {
+      background-image:
+        linear-gradient(to bottom, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.01)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%2394A3B8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat, no-repeat !important;
+      background-position: 0 0, right 0.7rem center !important;
+      background-size: 100% 100%, 1rem 1rem !important;
+    }
+
+    .ui-select-native-reset::-ms-expand {
+      display: none;
+    }
+
+    input[type="checkbox"]:not(.ui-checkbox-native) {
+      appearance: none;
+      -webkit-appearance: none;
+      position: relative;
+      width: 2.35rem;
+      height: 1.35rem;
+      border-radius: 9999px;
+      border: 1px solid rgb(148 163 184 / 0.36);
+      background: linear-gradient(180deg, rgb(248 250 252 / 0.85), rgb(226 232 240 / 0.82));
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), 0 2px 7px rgb(15 23 42 / 0.1);
+      cursor: pointer;
+      outline: none;
+      vertical-align: middle;
+      transition: background-color .28s cubic-bezier(.22,1,.36,1), border-color .28s cubic-bezier(.22,1,.36,1), box-shadow .28s cubic-bezier(.22,1,.36,1), transform .22s cubic-bezier(.22,1,.36,1);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native)::after {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: calc(1.35rem - 4px);
+      height: calc(1.35rem - 4px);
+      border-radius: 9999px;
+      background: linear-gradient(180deg, rgb(255 255 255), rgb(241 245 249));
+      box-shadow: 0 1px 3px rgb(15 23 42 / 0.25);
+      transition: transform .3s cubic-bezier(.22,1,.36,1), background .26s cubic-bezier(.22,1,.36,1), box-shadow .26s cubic-bezier(.22,1,.36,1);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):hover {
+      border-color: rgb(99 102 241 / 0.4);
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), 0 4px 10px rgb(15 23 42 / 0.12);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):checked {
+      border-color: rgb(16 185 129 / 0.78);
+      background: linear-gradient(180deg, rgb(52 211 153 / 0.95), rgb(5 150 105 / 0.9));
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.24), 0 7px 16px rgb(5 150 105 / 0.34);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):checked::after {
+      transform: translateX(1rem) scale(1.02);
+      background: linear-gradient(180deg, rgb(110 231 183), rgb(16 185 129));
+      box-shadow: 0 1px 4px rgb(5 150 105 / 0.45), 0 0 0 1px rgb(255 255 255 / 0.35) inset;
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):active {
+      transform: translateY(0.5px) scale(0.995);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):active::after {
+      transform: translateX(0.06rem) scale(0.98);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):checked:active::after {
+      transform: translateX(0.94rem) scale(0.98);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):focus-visible {
+      box-shadow: 0 0 0 3px rgb(99 102 241 / 0.22), inset 0 1px 0 rgb(255 255 255 / 0.72), 0 6px 14px rgb(15 23 42 / 0.16);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):checked:focus-visible {
+      box-shadow: 0 0 0 3px rgb(16 185 129 / 0.26), inset 0 0 0 1px rgb(255 255 255 / 0.24), 0 7px 16px rgb(5 150 105 / 0.34);
+    }
+    input[type="checkbox"]:not(.ui-checkbox-native):disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .dark input[type="checkbox"]:not(.ui-checkbox-native) {
+      border-color: rgb(148 163 184 / 0.3);
+      background: linear-gradient(180deg, rgb(30 41 59 / 0.78), rgb(15 23 42 / 0.82));
+      box-shadow: inset 0 1px 0 rgb(148 163 184 / 0.14), 0 4px 10px rgb(2 6 23 / 0.28);
+    }
+    .dark input[type="checkbox"]:not(.ui-checkbox-native)::after {
+      background: linear-gradient(180deg, rgb(226 232 240), rgb(148 163 184));
+      box-shadow: 0 1px 3px rgb(2 6 23 / 0.5);
+    }
+    .dark input[type="checkbox"]:not(.ui-checkbox-native):hover {
+      border-color: rgb(129 140 248 / 0.5);
+    }
+    .dark input[type="checkbox"]:not(.ui-checkbox-native):checked {
+      border-color: rgb(52 211 153 / 0.88);
+      background: linear-gradient(180deg, rgb(52 211 153 / 0.96), rgb(5 150 105 / 0.92));
+      box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.22), 0 7px 16px rgb(4 120 87 / 0.5);
+    }
+    .dark input[type="checkbox"]:not(.ui-checkbox-native):checked::after {
+      background: linear-gradient(180deg, rgb(134 239 172), rgb(16 185 129));
+      box-shadow: 0 1px 5px rgb(16 185 129 / 0.45), 0 0 0 1px rgb(15 23 42 / 0.25) inset;
+    }
+    .dark input[type="checkbox"]:not(.ui-checkbox-native):focus-visible {
+      box-shadow: 0 0 0 3px rgb(129 140 248 / 0.26), inset 0 1px 0 rgb(148 163 184 / 0.2), 0 6px 14px rgb(2 6 23 / 0.35);
+    }
+    .dark input[type="checkbox"]:not(.ui-checkbox-native):checked:focus-visible {
+      box-shadow: 0 0 0 3px rgb(16 185 129 / 0.3), inset 0 0 0 1px rgb(15 23 42 / 0.22), 0 7px 16px rgb(4 120 87 / 0.5);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgb(99 102 241 / 0.58) transparent;
+    }
+    *::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    *::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 9999px;
+      margin: 6px 2px;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgb(129 140 248 / 0.9), rgb(79 70 229 / 0.82));
+      border-radius: 9999px;
+      border: 3px solid transparent;
+      background-clip: padding-box;
+      min-height: 28px;
+      transition: background .16s ease, box-shadow .16s ease;
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, rgb(99 102 241 / 0.95), rgb(67 56 202 / 0.9));
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3), 0 0 0 2px rgb(99 102 241 / 0.12);
+    }
+    .dark * {
+      scrollbar-color: rgb(129 140 248 / 0.74) transparent;
+    }
+    .dark *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark *::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgb(129 140 248 / 0.86), rgb(99 102 241 / 0.74));
+      box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.35);
+    }
+
+    .ui-dropdown-menu {
+      scrollbar-width: thin;
+      scrollbar-color: rgb(99 102 241 / 0.58) transparent;
+      scrollbar-gutter: stable;
+    }
+    .ui-dropdown-menu::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    .ui-dropdown-menu::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 9999px;
+      margin: 6px 2px;
+    }
+    .ui-dropdown-menu::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgb(129 140 248 / 0.9), rgb(79 70 229 / 0.82));
+      border-radius: 9999px;
+      border: 3px solid transparent;
+      background-clip: padding-box;
+      min-height: 28px;
+      transition: background .16s ease, box-shadow .16s ease;
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
+    }
+    .ui-dropdown-menu::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, rgb(99 102 241 / 0.95), rgb(67 56 202 / 0.9));
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3), 0 0 0 2px rgb(99 102 241 / 0.12);
+    }
+    .dark .ui-dropdown-menu {
+      scrollbar-color: rgb(129 140 248 / 0.74) transparent;
+    }
+    .dark .ui-dropdown-menu::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark .ui-dropdown-menu::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgb(129 140 248 / 0.86), rgb(99 102 241 / 0.74));
+      box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.35);
     }
 
     .ui-file-input {
@@ -296,8 +552,76 @@
 
     .ui-table {
       min-width: 100%;
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: separate;
+      border-spacing: 0;
       font-size: 0.875rem;
       line-height: 1.25rem;
+    }
+    .ui-table th,
+    .ui-table td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ui-th-actions,
+    .ui-td-actions {
+      overflow: visible !important;
+      text-overflow: clip !important;
+      white-space: nowrap;
+    }
+    .ui-table-bulk {
+      table-layout: auto;
+      min-width: 1100px;
+    }
+    .ui-table-bulk th,
+    .ui-table-bulk td {
+      overflow: visible;
+      text-overflow: clip;
+    }
+    @media (max-width: 767px) {
+      .ui-table {
+        table-layout: auto;
+        width: max-content;
+        min-width: 100%;
+      }
+      .ui-table th,
+      .ui-table td {
+        overflow: visible;
+        text-overflow: clip;
+      }
+    }
+    .ui-cell-tooltip {
+      position: fixed;
+      z-index: 1700;
+      max-width: min(42rem, calc(100vw - 1.5rem));
+      padding: 0.5rem 0.7rem;
+      border-radius: 0.7rem;
+      border: 1px solid rgb(148 163 184 / 0.35);
+      background: linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(248 250 252 / 0.92));
+      color: rgb(15 23 42);
+      font-size: 0.78rem;
+      line-height: 1.15rem;
+      box-shadow: 0 14px 34px rgb(15 23 42 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      white-space: normal;
+      word-break: break-word;
+      pointer-events: none;
+      transition: opacity .12s ease, transform .12s ease;
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    .ui-cell-tooltip.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .dark .ui-cell-tooltip {
+      border-color: rgb(148 163 184 / 0.32);
+      background: linear-gradient(180deg, rgb(15 23 42 / 0.96), rgb(2 6 23 / 0.94));
+      color: rgb(226 232 240);
+      box-shadow: 0 16px 38px rgb(2 6 23 / 0.55), inset 0 1px 0 rgb(148 163 184 / 0.15);
     }
     .ui-thead-row {
       text-align: left;
@@ -311,14 +635,17 @@
     .ui-th-sticky {
       position: sticky;
       top: 0;
+      z-index: 30;
       background-color: rgb(255 255 255 / 0.72);
       padding-top: 0.5rem;
       padding-bottom: 0.5rem;
+      box-shadow: inset 0 -1px 0 rgb(203 213 225 / 0.8);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
     .dark .ui-th-sticky {
       background-color: rgb(15 23 42 / 0.72);
+      box-shadow: inset 0 -1px 0 rgb(51 65 85 / 0.9);
     }
     .ui-row {
       border-bottom: 1px solid rgb(226 232 240);
@@ -408,18 +735,50 @@
       background-color: rgb(120 53 15 / 0.35);
       color: rgb(253 230 138);
     }
+
+    .privacy-sensitive {
+      transition: filter .16s ease;
+    }
+    body.privacy-blur .privacy-sensitive {
+      filter: blur(0.32rem);
+      user-select: none;
+    }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100{% if privacy_blur %} privacy-blur{% endif %}">
   <header class="sticky top-0 z-50 bg-gradient-to-r from-indigo-600/85 to-violet-600/85 text-white border-b border-white/20 backdrop-blur-xl">
-    <div class="max-w-screen-2xl mx-auto px-4 py-4">
-      <div class="flex items-center justify-between gap-4">
-        <div>
-        <h1 class="text-2xl font-semibold tracking-tight"><a href="/dashboard" class="hover:underline">{{ t('app_title') }}</a></h1>
-        <p class="text-indigo-100 text-sm">{{ t('app_subtitle') }}</p>
+    <div class="relative max-w-screen-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h1 class="text-xl sm:text-2xl font-semibold tracking-tight"><a href="/dashboard" class="hover:underline">{{ t('app_title') }}</a></h1>
+            <p class="text-indigo-100 text-sm">{{ t('app_subtitle') }}</p>
+          </div>
+          <a
+            href="{{ mobile_entry_url }}"
+            class="hidden sm:flex items-center rounded-lg border border-white/30 bg-white/10 p-1.5"
+            title="Mobile öffnen"
+            aria-label="Mobile öffnen"
+          >
+            <img
+              src="{{ mobile_entry_qr_data_url }}"
+              alt="Mobile QR"
+              class="h-12 w-12 rounded bg-white p-1 cursor-zoom-in"
+              data-qr-popup="1"
+              loading="lazy"
+              decoding="async"
+            >
+          </a>
+          <button
+            type="button"
+            id="mobile-nav-toggle"
+            class="md:hidden ui-btn ui-btn-sm ui-btn-nav"
+            aria-expanded="false"
+            aria-controls="mobile-nav-panel"
+          >☰ {{ t('nav_menu') }}</button>
         </div>
-        <div class="flex items-start gap-3 flex-wrap justify-end">
-          <div class="min-w-[250px]">
+        <div id="mobile-nav-panel" class="w-full hidden md:flex items-start gap-3 flex-wrap md:justify-end">
+          <div class="w-full md:w-auto md:min-w-[250px]">
             <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Bestand</p>
             <div class="grid grid-cols-2 gap-2">
               <a href="/dashboard" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_home') }}</a>
@@ -430,29 +789,33 @@
             </div>
           </div>
 
-          <div class="min-w-[250px]">
+          <div class="w-full md:w-auto md:min-w-[250px]">
             <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Produktion</p>
             <div class="grid grid-cols-2 gap-2">
               <a href="/booking" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_booking') }}</a>
               <a href="/booking/tracking" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_tracking') }}</a>
+              <a href="/printers" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_printers') }}</a>
               <a href="/slot-status" class="ui-btn ui-btn-sm ui-btn-nav w-full col-span-2">{{ t('nav_slot_status') }}</a>
             </div>
           </div>
 
-          <div class="min-w-[250px]">
+          <div class="w-full md:w-auto md:min-w-[250px]">
             <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Analyse & Tools</p>
             <div class="grid grid-cols-2 gap-2">
               <a href="/analysis" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('analysis_tab') }}</a>
               <a href="/thresholds" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('thresholds_tab') }}</a>
               <a href="/presets" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('manage_presets') }}</a>
-              <a href="/help" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_help') }}</a>
+              <a href="/labels" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('label_print') }}</a>
+              <a href="/qr-scan" class="ui-btn ui-btn-sm ui-btn-nav w-full text-xs col-span-2">{{ t('qr') }}</a>
             </div>
           </div>
 
-          <details id="settings-menu" class="relative min-w-[250px]">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Einstellungen</p>
-            <summary class="list-none cursor-pointer ui-btn ui-btn-sm ui-btn-nav rounded-full">{{ t('settings') }}</summary>
-            <div class="absolute right-0 mt-2 w-64 rounded-xl border border-slate-200 bg-white/80 text-slate-800 shadow-lg p-3 z-30 backdrop-blur-xl dark:bg-slate-900/70">
+          <div class="w-full md:w-auto md:min-w-[250px]">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">System</p>
+            <div class="grid grid-cols-2 gap-2">
+              <details id="settings-menu" class="relative col-span-1">
+                <summary class="list-none cursor-pointer ui-btn ui-btn-sm ui-btn-nav w-full text-center">{{ t('settings') }}</summary>
+                <div class="absolute right-0 left-0 md:left-auto mt-2 w-full md:w-64 rounded-xl border border-slate-200 bg-white/80 text-slate-800 shadow-lg p-3 z-30 backdrop-blur-xl dark:bg-slate-900/70">
               <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{{ t('settings_language') }}</p>
               <div class="flex gap-2 mb-3">
                 <form method="post" action="/settings">
@@ -530,20 +893,50 @@
                   <button class="w-full ui-btn ui-btn-sm ui-btn-secondary">{{ business_label }}</button>
                 </form>
               </div>
-            </div>
-          </details>
-          <div class="min-w-[250px]">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-100/90 mb-1">Support</p>
-            <div class="grid grid-cols-1 gap-2">
-              <a href="/help" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('nav_help') }}</a>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{{ t('settings_privacy_blur') }}</p>
+              <form method="post" action="/settings" class="mb-1">
+                <input type="hidden" name="lang" value="{{ lang }}">
+                <input type="hidden" name="theme" value="{{ theme }}">
+                <input type="hidden" name="project" value="{{ project }}">
+                <input type="hidden" name="privacy_blur" value="{% if privacy_blur %}0{% else %}1{% endif %}">
+                <input type="hidden" name="persist_db" value="1">
+                <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                <button class="w-full ui-btn ui-btn-sm ui-btn-secondary">
+                  {% if privacy_blur %}{{ t('settings_privacy_blur_disable') }}{% else %}{{ t('settings_privacy_blur_enable') }}{% endif %}
+                </button>
+              </form>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{{ t('settings_auto_refresh') }}</p>
+              <div class="grid grid-cols-2 gap-2 mb-1">
+                {% for option in (auto_refresh_options or [0, 5, 10, 30]) %}
+                <form method="post" action="/settings">
+                  <input type="hidden" name="lang" value="{{ lang }}">
+                  <input type="hidden" name="theme" value="{{ theme }}">
+                  <input type="hidden" name="project" value="{{ project }}">
+                  <input type="hidden" name="privacy_blur" value="{% if privacy_blur %}1{% else %}0{% endif %}">
+                  <input type="hidden" name="auto_refresh_seconds" value="{{ option }}">
+                  <input type="hidden" name="persist_db" value="1">
+                  <input type="hidden" name="next_url" value="{{ settings_return_url }}">
+                  {% set option_label_key = 'auto_refresh_off' if option == 0 else ('auto_refresh_' ~ option ~ 's') %}
+                  <button class="w-full ui-btn ui-btn-sm {% if auto_refresh_seconds == option %}ui-btn-primary{% else %}ui-btn-secondary{% endif %}">
+                    {{ t(option_label_key) }}
+                  </button>
+                </form>
+                {% endfor %}
+              </div>
+                </div>
+              </details>
+              <a href="/audit" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('audit_tab') }}</a>
+              <a href="/import-export" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('import_export') }}</a>
+              <a href="/backup" class="ui-btn ui-btn-sm ui-btn-nav w-full">{{ t('backup_title') }}</a>
             </div>
           </div>
         </div>
       </div>
+      <p id="live-refresh-indicator" class="absolute right-3 bottom-1 sm:right-4 sm:bottom-1 text-[10px] md:text-[11px] text-indigo-100/85 pointer-events-none max-w-[45vw] truncate" data-live-label="{{ t('live_updated') }}" data-live-now="{{ t('live_updated_now') }}">{{ t('live_updated') }}: {{ t('live_updated_now') }}</p>
     </div>
   </header>
 
-  <main class="max-w-screen-2xl mx-auto px-4 py-8">
+  <main class="max-w-screen-2xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
     {% block content %}{% endblock %}
   </main>
 
@@ -569,6 +962,99 @@
       }
     });
 
+    (function () {
+      const loadBoolean = (key, fallback = null) => {
+        const normalizedKey = String(key || '').trim();
+        if (!normalizedKey) {
+          return fallback;
+        }
+        try {
+          const raw = globalThis.localStorage.getItem(normalizedKey);
+          if (raw === null) {
+            return fallback;
+          }
+          return raw === '1';
+        } catch (_error) {
+          return fallback;
+        }
+      };
+
+      const saveBoolean = (key, value) => {
+        const normalizedKey = String(key || '').trim();
+        if (!normalizedKey) {
+          return;
+        }
+        try {
+          globalThis.localStorage.setItem(normalizedKey, value ? '1' : '0');
+        } catch (_error) {
+        }
+      };
+
+      globalThis.__uiPersistLoadBoolean = loadBoolean;
+      globalThis.__uiPersistSaveBoolean = saveBoolean;
+
+      const applyPersistedCheckboxes = () => {
+        document.querySelectorAll('input[type="checkbox"][data-persist-key]').forEach((checkbox) => {
+          if (!(checkbox instanceof HTMLInputElement)) {
+            return;
+          }
+          const key = checkbox.dataset.persistKey;
+          const persisted = loadBoolean(key, null);
+          if (typeof persisted === 'boolean') {
+            checkbox.checked = persisted;
+          }
+          if (checkbox.dataset.persistBound === '1') {
+            return;
+          }
+          checkbox.addEventListener('change', () => {
+            saveBoolean(key, checkbox.checked);
+          });
+          checkbox.dataset.persistBound = '1';
+        });
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyPersistedCheckboxes, { once: true });
+      } else {
+        applyPersistedCheckboxes();
+      }
+
+      document.addEventListener('ui:after-soft-refresh', applyPersistedCheckboxes);
+    })();
+
+    (function () {
+      const bindAutoSubmitSelects = () => {
+        document.querySelectorAll('select[data-submit-on-change="1"]').forEach((select) => {
+          if (!(select instanceof HTMLSelectElement)) {
+            return;
+          }
+          if (select.dataset.submitOnChangeBound === '1') {
+            return;
+          }
+          select.addEventListener('change', () => {
+            const form = select.closest('form');
+            if (!(form instanceof HTMLFormElement)) {
+              return;
+            }
+            if (typeof form.requestSubmit === 'function') {
+              form.requestSubmit();
+              return;
+            }
+            form.submit();
+          });
+          select.dataset.submitOnChangeBound = '1';
+        });
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindAutoSubmitSelects, { once: true });
+      } else {
+        bindAutoSubmitSelects();
+      }
+
+      document.addEventListener('ui:after-soft-refresh', bindAutoSubmitSelects);
+    })();
+
     (function() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('settings') === '1') {
@@ -588,6 +1074,567 @@
         menu.open = false;
       }
     });
+
+    (function() {
+      const toggle = document.getElementById('mobile-nav-toggle');
+      const panel = document.getElementById('mobile-nav-panel');
+      if (!toggle || !panel) {
+        return;
+      }
+
+      const setExpanded = (expanded) => {
+        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        panel.classList.toggle('hidden', !expanded);
+      };
+
+      setExpanded(false);
+
+      toggle.addEventListener('click', () => {
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        setExpanded(!expanded);
+      });
+
+      panel.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        if (!target.closest('a')) {
+          return;
+        }
+        if (window.matchMedia('(max-width: 767px)').matches) {
+          setExpanded(false);
+        }
+      });
+    })();
+
+    (function () {
+      const UI_STATE_KEY = 'ui_overlay_state_v1';
+      const UI_STATE_APPLY_KEY = 'ui_overlay_state_apply_v1';
+
+      const collectOverlayState = () => {
+        const detailsOpen = Array.from(document.querySelectorAll('details[open][id]'))
+          .map((node) => node.id)
+          .filter(Boolean);
+        const dialogOpen = Array.from(document.querySelectorAll('dialog[open][id]'))
+          .map((node) => node.id)
+          .filter(Boolean);
+        const expandedControls = Array.from(document.querySelectorAll('[aria-expanded="true"][id][aria-controls]'))
+          .map((node) => ({
+            id: node.id,
+            controls: node.getAttribute('aria-controls') || '',
+          }))
+          .filter((entry) => entry.id && entry.controls);
+
+        return {
+          detailsOpen,
+          dialogOpen,
+          expandedControls,
+        };
+      };
+
+      const persistOverlayState = () => {
+        try {
+          globalThis.sessionStorage.setItem(UI_STATE_KEY, JSON.stringify(collectOverlayState()));
+          globalThis.sessionStorage.setItem(UI_STATE_APPLY_KEY, '1');
+        } catch (_error) {
+        }
+      };
+
+      const restoreOverlayState = () => {
+        let raw = null;
+        let shouldApply = false;
+        try {
+          shouldApply = globalThis.sessionStorage.getItem(UI_STATE_APPLY_KEY) === '1';
+          raw = globalThis.sessionStorage.getItem(UI_STATE_KEY);
+          globalThis.sessionStorage.removeItem(UI_STATE_APPLY_KEY);
+          globalThis.sessionStorage.removeItem(UI_STATE_KEY);
+        } catch (_error) {
+          raw = null;
+        }
+        if (!shouldApply) {
+          return;
+        }
+        if (!raw) {
+          return;
+        }
+
+        let parsed = null;
+        try {
+          parsed = JSON.parse(raw);
+        } catch (_error) {
+          parsed = null;
+        }
+        if (!parsed || typeof parsed !== 'object') {
+          return;
+        }
+
+        const detailsOpen = Array.isArray(parsed.detailsOpen) ? parsed.detailsOpen : [];
+        detailsOpen.forEach((id) => {
+          const node = document.getElementById(String(id));
+          if (node instanceof HTMLDetailsElement) {
+            node.open = true;
+          }
+        });
+
+        const expandedControls = Array.isArray(parsed.expandedControls) ? parsed.expandedControls : [];
+        expandedControls.forEach((entry) => {
+          const controlId = String(entry && entry.id ? entry.id : '');
+          const targetId = String(entry && entry.controls ? entry.controls : '');
+          if (!controlId || !targetId) {
+            return;
+          }
+          const control = document.getElementById(controlId);
+          const target = document.getElementById(targetId);
+          if (!(control instanceof HTMLElement) || !(target instanceof HTMLElement)) {
+            return;
+          }
+          control.setAttribute('aria-expanded', 'true');
+          target.classList.remove('hidden');
+        });
+
+        const dialogOpen = Array.isArray(parsed.dialogOpen) ? parsed.dialogOpen : [];
+        dialogOpen.forEach((id) => {
+          const node = document.getElementById(String(id));
+          if (!(node instanceof HTMLDialogElement)) {
+            return;
+          }
+          if (node.open) {
+            return;
+          }
+          try {
+            if (typeof node.showModal === 'function') {
+              node.showModal();
+            } else {
+              node.setAttribute('open', '');
+            }
+          } catch (_error) {
+          }
+        });
+      };
+
+      restoreOverlayState();
+      globalThis.__persistUiOverlayState = persistOverlayState;
+      globalThis.__restoreUiOverlayState = restoreOverlayState;
+    })();
+
+    (function () {
+      const captureDialogRuntimeState = () => {
+        return Array.from(document.querySelectorAll('dialog[open][id]')).map((dialog) => {
+          const activeTabButton = dialog.querySelector('[data-printer-tab-active="1"][data-printer-tab]');
+          const scrollContainer = dialog.querySelector('.min-h-0.overflow-y-auto, [data-printer-panels-container]');
+          return {
+            id: dialog.id,
+            activeTab: activeTabButton instanceof HTMLElement ? (activeTabButton.dataset.printerTab || '') : '',
+            scrollTop: scrollContainer instanceof HTMLElement ? scrollContainer.scrollTop : 0,
+          };
+        });
+      };
+
+      const restoreDialogRuntimeState = (states) => {
+        if (!Array.isArray(states)) {
+          return;
+        }
+        states.forEach((state) => {
+          const id = String(state && state.id ? state.id : '');
+          if (!id) {
+            return;
+          }
+          const dialog = document.getElementById(id);
+          if (!(dialog instanceof HTMLDialogElement)) {
+            return;
+          }
+          if (!dialog.open) {
+            try {
+              if (typeof dialog.showModal === 'function') {
+                dialog.showModal();
+              } else {
+                dialog.setAttribute('open', '');
+              }
+            } catch (_error) {
+            }
+          }
+
+          const activeTab = String(state && state.activeTab ? state.activeTab : '');
+          if (activeTab) {
+            const tabButton = dialog.querySelector(`[data-printer-tab="${activeTab}"]`);
+            if (tabButton instanceof HTMLElement) {
+              tabButton.click();
+            }
+          }
+
+          const scrollTop = Number(state && Number.isFinite(Number(state.scrollTop)) ? Number(state.scrollTop) : 0);
+          const scrollContainer = dialog.querySelector('.min-h-0.overflow-y-auto, [data-printer-panels-container]');
+          if (scrollContainer instanceof HTMLElement) {
+            scrollContainer.scrollTop = Math.max(0, scrollTop);
+          }
+        });
+      };
+
+      const applySoftRefreshDocument = (nextDoc, targetUrl) => {
+        if (!(nextDoc instanceof Document)) {
+          throw new Error('soft_refresh_invalid_document');
+        }
+
+        const currentUrl = new URL(window.location.href);
+        const dialogState = captureDialogRuntimeState();
+        if (typeof globalThis.__persistUiOverlayState === 'function') {
+          globalThis.__persistUiOverlayState();
+        }
+
+        const nextMain = nextDoc.querySelector('main');
+        const currentMain = document.querySelector('main');
+        if (!(nextMain instanceof HTMLElement) || !(currentMain instanceof HTMLElement)) {
+          throw new Error('soft_refresh_main_missing');
+        }
+
+        if (typeof globalThis.morphdom === 'function') {
+          globalThis.morphdom(currentMain, nextMain, {
+            childrenOnly: true,
+            onBeforeElUpdated: (fromEl, _toEl) => {
+              if (fromEl.tagName === 'SCRIPT') {
+                return false;
+              }
+              return true;
+            },
+          });
+        } else {
+          currentMain.innerHTML = nextMain.innerHTML;
+        }
+
+        const nextTitle = nextDoc.querySelector('title');
+        if (nextTitle && typeof nextTitle.textContent === 'string') {
+          document.title = nextTitle.textContent;
+        }
+
+        const target = targetUrl ? new URL(String(targetUrl), currentUrl.origin) : currentUrl;
+        const targetPath = `${target.pathname}${target.search}${target.hash}`;
+        const currentPath = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+        if (targetPath !== currentPath) {
+          window.history.replaceState({}, '', targetPath);
+        }
+
+        if (typeof globalThis.__restoreUiOverlayState === 'function') {
+          globalThis.__restoreUiOverlayState();
+        }
+        restoreDialogRuntimeState(dialogState);
+        if (typeof globalThis.__setLiveRefreshIndicator === 'function') {
+          globalThis.__setLiveRefreshIndicator();
+        }
+
+        document.dispatchEvent(new CustomEvent('ui:after-soft-refresh'));
+      };
+
+      globalThis.__softRefreshMainFromHtml = async (html, targetUrl = null) => {
+        const parser = new DOMParser();
+        const nextDoc = parser.parseFromString(String(html || ''), 'text/html');
+        applySoftRefreshDocument(nextDoc, targetUrl);
+      };
+
+      globalThis.__softRefreshMain = async (urlOverride = null) => {
+        const currentUrl = new URL(window.location.href);
+        const targetUrl = urlOverride ? new URL(String(urlOverride), currentUrl.origin) : currentUrl;
+
+        const fetchUrl = new URL(targetUrl.toString());
+        fetchUrl.searchParams.set('__sr', String(Date.now()));
+
+        const response = await fetch(fetchUrl.toString(), {
+          credentials: 'same-origin',
+          headers: {
+            'X-Requested-With': 'soft-refresh',
+          },
+          cache: 'no-store',
+        });
+        if (!response.ok) {
+          throw new Error(`soft_refresh_failed_${response.status}`);
+        }
+
+        const html = await response.text();
+        await globalThis.__softRefreshMainFromHtml(html, targetUrl);
+      };
+    })();
+
+    (function () {
+      const AUTO_REFRESH_SECONDS = Number({{ (auto_refresh_seconds or 0) | tojson }});
+      const MIN_IDLE_MS = 3000;
+      const disableMarker = document.querySelector('[data-disable-auto-refresh="1"]');
+      if (disableMarker || !Number.isFinite(AUTO_REFRESH_SECONDS) || AUTO_REFRESH_SECONDS <= 0) {
+        return;
+      }
+
+      const refreshSeconds = AUTO_REFRESH_SECONDS;
+
+      let hasUnsavedInput = false;
+      let lastInteractionAt = Date.now();
+      let refreshInFlight = false;
+
+      const editableSelector = [
+        'input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"])',
+        'textarea',
+        'select',
+        '[contenteditable=""]',
+        '[contenteditable="true"]',
+      ].join(', ');
+
+      const isEditableElement = (element) => {
+        return element instanceof HTMLElement && element.matches(editableSelector);
+      };
+
+      const hasFocusedEditable = () => {
+        return isEditableElement(document.activeElement);
+      };
+
+      const hasSelectedFiles = () => {
+        return Array.from(document.querySelectorAll('input[type="file"]')).some((input) => {
+          return input.files && input.files.length > 0;
+        });
+      };
+
+      const hasOpenDialog = () => {
+        return document.querySelector('dialog[open]') instanceof HTMLElement;
+      };
+
+      const performSoftRefresh = async () => {
+        if (refreshInFlight) {
+          return;
+        }
+        refreshInFlight = true;
+
+        try {
+          if (typeof globalThis.__softRefreshMain !== 'function') {
+            return;
+          }
+          await globalThis.__softRefreshMain();
+        } catch (_error) {
+          console.warn('Soft refresh skipped: request failed');
+        } finally {
+          refreshInFlight = false;
+        }
+      };
+
+      const markInteraction = () => {
+        lastInteractionAt = Date.now();
+      };
+
+      ['pointerdown', 'keydown', 'touchstart', 'focusin', 'scroll'].forEach((eventName) => {
+        document.addEventListener(eventName, markInteraction, true);
+      });
+
+      document.addEventListener('input', (event) => {
+        if (isEditableElement(event.target)) {
+          hasUnsavedInput = true;
+        }
+        markInteraction();
+      }, true);
+
+      document.addEventListener('change', (event) => {
+        if (isEditableElement(event.target)) {
+          hasUnsavedInput = true;
+        }
+        markInteraction();
+      }, true);
+
+      document.addEventListener('submit', () => {
+        hasUnsavedInput = false;
+        markInteraction();
+      }, true);
+
+      window.addEventListener('beforeunload', () => {
+        hasUnsavedInput = false;
+      });
+
+      const refreshIntervalMs = refreshSeconds * 1000;
+      window.setInterval(() => {
+        if (document.hidden) {
+          return;
+        }
+        if (Date.now() - lastInteractionAt < MIN_IDLE_MS) {
+          return;
+        }
+        if (hasUnsavedInput) {
+          return;
+        }
+        if (hasFocusedEditable()) {
+          return;
+        }
+        if (hasSelectedFiles()) {
+          return;
+        }
+        if (hasOpenDialog()) {
+          return;
+        }
+        performSoftRefresh();
+      }, refreshIntervalMs);
+    })();
+
+    (function () {
+      const fallbackToNativeSubmit = (form, submitter) => {
+        if (!(form instanceof HTMLFormElement)) {
+          return;
+        }
+
+        form.dataset.hardSubmit = '1';
+        window.setTimeout(() => {
+          if (form.dataset.hardSubmit === '1') {
+            delete form.dataset.hardSubmit;
+          }
+        }, 1500);
+
+        if (typeof form.requestSubmit === 'function') {
+          if (submitter instanceof HTMLElement) {
+            form.requestSubmit(submitter);
+          } else {
+            form.requestSubmit();
+          }
+          return;
+        }
+        form.submit();
+      };
+
+      const buildFormData = (form, submitter) => {
+        try {
+          return submitter ? new FormData(form, submitter) : new FormData(form);
+        } catch (_error) {
+          const formData = new FormData(form);
+          if (
+            submitter instanceof HTMLButtonElement
+            || submitter instanceof HTMLInputElement
+          ) {
+            const name = String(submitter.name || '').trim();
+            if (name) {
+              formData.append(name, submitter.value);
+            }
+          }
+          return formData;
+        }
+      };
+
+      const isSoftSubmitCandidate = (form, submitter) => {
+        if (!(form instanceof HTMLFormElement)) {
+          return false;
+        }
+        if (String(form.method || 'get').toLowerCase() !== 'post') {
+          return false;
+        }
+        if (form.dataset.hardSubmit === '1' || form.hasAttribute('data-hard-submit')) {
+          return false;
+        }
+        if (submitter instanceof HTMLElement && (submitter.dataset.hardSubmit === '1' || submitter.hasAttribute('data-hard-submit'))) {
+          return false;
+        }
+        if (form.hasAttribute('onsubmit')) {
+          return false;
+        }
+        if ((form.enctype || '').toLowerCase() === 'multipart/form-data') {
+          return false;
+        }
+        if (form.querySelector('input[type="file"]')) {
+          return false;
+        }
+        if (form.matches('[data-ams-mapping-form]')) {
+          return false;
+        }
+        try {
+          const actionUrl = new URL(form.action || window.location.href, window.location.origin);
+          if (actionUrl.pathname === '/settings') {
+            return false;
+          }
+        } catch (_error) {
+        }
+        return true;
+      };
+
+      document.addEventListener('submit', async (event) => {
+        const form = event.target instanceof HTMLFormElement ? event.target : null;
+        const submitter = event.submitter instanceof HTMLElement ? event.submitter : null;
+        if (!isSoftSubmitCandidate(form, submitter)) {
+          return;
+        }
+
+        event.preventDefault();
+
+        const submitButton = submitter || form.querySelector('button[type="submit"], button:not([type]), input[type="submit"]');
+        if (submitButton instanceof HTMLButtonElement || submitButton instanceof HTMLInputElement) {
+          submitButton.disabled = true;
+        }
+
+        try {
+          const actionUrl = form.action || window.location.href;
+          const formData = buildFormData(form, submitter);
+
+          const response = await fetch(actionUrl, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+              'X-Requested-With': 'soft-submit',
+              'Accept': 'text/html,application/json',
+            },
+          });
+
+          if (!response.ok) {
+            console.warn('Soft submit skipped: non-OK response', response.status);
+            fallbackToNativeSubmit(form, submitter);
+            return;
+          }
+
+          const html = await response.text();
+          const targetUrl = response.redirected ? response.url : window.location.href;
+          if (typeof globalThis.__softRefreshMainFromHtml === 'function') {
+            await globalThis.__softRefreshMainFromHtml(html, targetUrl);
+          } else if (typeof globalThis.__softRefreshMain === 'function') {
+            await globalThis.__softRefreshMain(targetUrl);
+          }
+        } catch (_error) {
+          console.warn('Soft submit skipped: request failed');
+          fallbackToNativeSubmit(form, submitter);
+        } finally {
+          if (submitButton instanceof HTMLButtonElement || submitButton instanceof HTMLInputElement) {
+            submitButton.disabled = false;
+          }
+        }
+      }, true);
+    })();
+
+    (function () {
+      const indicator = document.getElementById('live-refresh-indicator');
+      if (!(indicator instanceof HTMLElement)) {
+        return;
+      }
+
+      const label = indicator.dataset.liveLabel || 'Live updated';
+      const nowLabel = indicator.dataset.liveNow || 'just now';
+
+      const renderElapsed = (date) => {
+        const elapsedSec = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+        if (elapsedSec < 5) {
+          return `${label}: ${nowLabel}`;
+        }
+        if (elapsedSec < 60) {
+          return `${label}: ${elapsedSec}s`;
+        }
+        const elapsedMin = Math.floor(elapsedSec / 60);
+        if (elapsedMin < 60) {
+          return `${label}: ${elapsedMin}m`;
+        }
+        const elapsedHr = Math.floor(elapsedMin / 60);
+        return `${label}: ${elapsedHr}h`;
+      };
+
+      let lastUpdatedAt = new Date();
+
+      const updateIndicator = () => {
+        indicator.textContent = renderElapsed(lastUpdatedAt);
+      };
+
+      globalThis.__setLiveRefreshIndicator = () => {
+        lastUpdatedAt = new Date();
+        updateIndicator();
+      };
+
+      updateIndicator();
+      window.setInterval(updateIndicator, 1000);
+    })();
 
     (function() {
       const root = document.getElementById('toast-root');
@@ -628,6 +1675,757 @@
         }, 4900 + index * 120);
       });
     })();
+
+    (function () {
+      function normalizeText(text) {
+        return String(text || '').replace(/\s+/g, ' ').trim();
+      }
+
+      function isOptInTruncateElement(el) {
+        if (!(el instanceof HTMLElement)) {
+          return false;
+        }
+        return el.matches('.ui-tooltip-truncate, .truncate[data-ui-tooltip="1"], .truncate[data-ui-tooltip-source], .truncate[title]');
+      }
+
+      function getTooltipTarget(node) {
+        if (!(node instanceof HTMLElement)) {
+          return null;
+        }
+        const truncateTarget = node.closest('.ui-tooltip-truncate, .truncate[data-ui-tooltip="1"], .truncate[data-ui-tooltip-source], .truncate[title]');
+        if (truncateTarget instanceof HTMLElement && truncateTarget.dataset.uiTooltipText) {
+          return truncateTarget;
+        }
+        const cell = node.closest('.ui-table th, .ui-table td');
+        if (!cell) {
+          return null;
+        }
+        if (cell.classList.contains('ui-th-actions') || cell.classList.contains('ui-td-actions')) {
+          return null;
+        }
+        if (cell.querySelector('button, input, select, textarea, a, form')) {
+          return null;
+        }
+        return cell;
+      }
+
+      function updateTruncationTooltips(scope) {
+        const root = scope || document;
+        const tableCandidates = root.querySelectorAll('.ui-table th, .ui-table td');
+
+        tableCandidates.forEach((el) => {
+          if (el.classList.contains('ui-th-actions') || el.classList.contains('ui-td-actions')) {
+            delete el.dataset.uiTooltipText;
+            return;
+          }
+          if (el.querySelector('button, input, select, textarea, a, form')) {
+            delete el.dataset.uiTooltipText;
+            return;
+          }
+
+          const text = normalizeText(el.textContent);
+          if (!text) {
+            delete el.dataset.uiTooltipText;
+            return;
+          }
+
+          const isTruncated = (el.scrollWidth > el.clientWidth + 1) || (el.scrollHeight > el.clientHeight + 1);
+          if (isTruncated) {
+            el.dataset.uiTooltipText = text;
+          } else {
+            delete el.dataset.uiTooltipText;
+          }
+        });
+
+        const truncateCandidates = root.querySelectorAll('.ui-tooltip-truncate, .truncate[data-ui-tooltip="1"], .truncate[data-ui-tooltip-source], .truncate[title]');
+        truncateCandidates.forEach((el) => {
+          if (!(el instanceof HTMLElement) || !isOptInTruncateElement(el)) {
+            return;
+          }
+
+          if (el.hasAttribute('title')) {
+            const sourceTitle = normalizeText(el.getAttribute('title'));
+            if (sourceTitle) {
+              el.dataset.uiTooltipSource = sourceTitle;
+            }
+            el.removeAttribute('title');
+          }
+
+          const text = normalizeText(el.dataset.uiTooltipSource || el.textContent);
+          if (!text) {
+            delete el.dataset.uiTooltipText;
+            return;
+          }
+
+          const isTruncated = (el.scrollWidth > el.clientWidth + 1) || (el.scrollHeight > el.clientHeight + 1);
+          if (isTruncated) {
+            el.dataset.uiTooltipText = text;
+          } else {
+            delete el.dataset.uiTooltipText;
+          }
+        });
+      }
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'ui-cell-tooltip hidden';
+      document.body.appendChild(tooltip);
+
+      let activeTarget = null;
+
+      function hideTooltip() {
+        activeTarget = null;
+        tooltip.classList.remove('is-visible');
+        tooltip.classList.add('hidden');
+        tooltip.textContent = '';
+      }
+
+      function positionTooltip(target) {
+        if (!target || tooltip.classList.contains('hidden')) {
+          return;
+        }
+        const rect = target.getBoundingClientRect();
+        const pad = 10;
+        const gap = 8;
+        const maxWidth = Math.min(window.innerWidth - (pad * 2), 672);
+
+        tooltip.style.maxWidth = `${maxWidth}px`;
+        const ttRect = tooltip.getBoundingClientRect();
+
+        let left = rect.left + (rect.width / 2) - (ttRect.width / 2);
+        left = Math.max(pad, Math.min(left, window.innerWidth - ttRect.width - pad));
+
+        let top = rect.top - ttRect.height - gap;
+        if (top < pad) {
+          top = rect.bottom + gap;
+        }
+        top = Math.max(pad, Math.min(top, window.innerHeight - ttRect.height - pad));
+
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
+      function showTooltip(target) {
+        if (!target || !target.dataset.uiTooltipText) {
+          hideTooltip();
+          return;
+        }
+
+        activeTarget = target;
+        tooltip.textContent = target.dataset.uiTooltipText;
+        tooltip.classList.remove('hidden');
+        positionTooltip(target);
+        requestAnimationFrame(() => {
+          tooltip.classList.add('is-visible');
+        });
+      }
+
+      updateTruncationTooltips(document);
+
+      document.addEventListener('mouseover', (event) => {
+        const target = getTooltipTarget(event.target);
+        if (!target || !target.dataset.uiTooltipText) {
+          hideTooltip();
+          return;
+        }
+        showTooltip(target);
+      });
+
+      document.addEventListener('mouseout', (event) => {
+        if (!activeTarget) {
+          return;
+        }
+        const related = event.relatedTarget;
+        if (related instanceof Node && (activeTarget.contains(related) || tooltip.contains(related))) {
+          return;
+        }
+        hideTooltip();
+      });
+
+      document.addEventListener('focusin', (event) => {
+        const target = getTooltipTarget(event.target);
+        if (target && target.dataset.uiTooltipText) {
+          showTooltip(target);
+        }
+      });
+
+      document.addEventListener('focusout', () => {
+        hideTooltip();
+      });
+
+      const observer = new MutationObserver((records) => {
+        records.forEach((record) => {
+          record.addedNodes.forEach((node) => {
+            if (node instanceof HTMLElement) {
+              updateTruncationTooltips(node);
+            }
+          });
+        });
+        updateTruncationTooltips(document);
+        if (activeTarget && !document.body.contains(activeTarget)) {
+          hideTooltip();
+        } else if (activeTarget) {
+          positionTooltip(activeTarget);
+        }
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      window.addEventListener('resize', () => {
+        updateTruncationTooltips(document);
+        if (activeTarget) {
+          positionTooltip(activeTarget);
+        }
+      });
+      window.addEventListener('scroll', () => {
+        if (activeTarget) {
+          positionTooltip(activeTarget);
+        }
+      }, true);
+    })();
+
+    (function () {
+      const ORIGINAL_DISPLAY_ATTR = 'data-dropdown-original-display';
+      const instances = [];
+      const instanceBySelect = new WeakMap();
+
+      function restoreNativeSelectState(select) {
+        if (!(select instanceof HTMLSelectElement)) {
+          return;
+        }
+        const originalDisplay = select.getAttribute(ORIGINAL_DISPLAY_ATTR);
+        if (originalDisplay === null) {
+          select.style.removeProperty('display');
+        } else {
+          select.style.display = originalDisplay;
+          select.removeAttribute(ORIGINAL_DISPLAY_ATTR);
+        }
+        select.classList.remove('hidden');
+        select.removeAttribute('aria-hidden');
+        select.tabIndex = 0;
+        delete select.dataset.dropdownEnhanced;
+      }
+
+      function getSelectableElements(scope) {
+        return Array.from((scope || document).querySelectorAll('select.ui-select'))
+          .filter((select) => !select.dataset.dropdownEnhanced)
+          .filter((select) => !select.multiple)
+          .filter((select) => Number(select.size || 0) <= 1)
+          .filter((select) => select.dataset.nativeSelect !== '1');
+      }
+
+      function closeAllDropdowns() {
+        cleanupStaleInstances();
+        instances.forEach((instance) => {
+          instance.menu.classList.add('hidden');
+          instance.trigger.setAttribute('aria-expanded', 'false');
+          instance.activeIndex = -1;
+          instance.optionButtons.forEach((button) => {
+            button.classList.remove('ring-1', 'ring-indigo-400', 'dark:ring-indigo-500');
+          });
+        });
+      }
+
+      function createMenuLayer() {
+        const menu = document.createElement('div');
+        menu.className = 'ui-dropdown-menu hidden fixed z-[1400] overflow-auto max-h-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 shadow-2xl backdrop-blur-xl p-0';
+        menu.setAttribute('role', 'listbox');
+        menu.addEventListener('click', (event) => event.stopPropagation());
+        document.body.appendChild(menu);
+        return menu;
+      }
+
+      function cleanupStaleInstances() {
+        for (let index = instances.length - 1; index >= 0; index -= 1) {
+          const instance = instances[index];
+          const select = instance?.select;
+          const wrapper = instance?.wrapper;
+          const menu = instance?.menu;
+          const optionObserver = instance?.optionObserver;
+          const stillAttached = (
+            select instanceof HTMLElement
+            && wrapper instanceof HTMLElement
+            && menu instanceof HTMLElement
+            && document.body.contains(select)
+            && document.body.contains(wrapper)
+            && document.body.contains(menu)
+          );
+          if (stillAttached) {
+            continue;
+          }
+          try {
+            optionObserver?.disconnect();
+          } catch (_error) {
+          }
+          if (menu instanceof HTMLElement) {
+            menu.remove();
+          }
+          if (select instanceof HTMLSelectElement) {
+            instanceBySelect.delete(select);
+            restoreNativeSelectState(select);
+          }
+          instances.splice(index, 1);
+        }
+      }
+
+      function teardownInstance(instance) {
+        if (!instance) {
+          return;
+        }
+        const { select, wrapper, menu, optionObserver } = instance;
+        try {
+          optionObserver?.disconnect();
+        } catch (_error) {
+        }
+        if (select instanceof HTMLSelectElement && wrapper instanceof HTMLElement) {
+          const parent = wrapper.parentElement;
+          if (parent) {
+            parent.insertBefore(select, wrapper);
+          }
+        }
+        if (wrapper instanceof HTMLElement) {
+          wrapper.remove();
+        }
+        if (menu instanceof HTMLElement) {
+          menu.remove();
+        }
+        if (select instanceof HTMLSelectElement) {
+          instanceBySelect.delete(select);
+          restoreNativeSelectState(select);
+        }
+      }
+
+      function resetEnhancedSelect(select) {
+        if (!(select instanceof HTMLSelectElement)) {
+          return;
+        }
+        const existing = instanceBySelect.get(select);
+        if (existing) {
+          const index = instances.indexOf(existing);
+          if (index >= 0) {
+            instances.splice(index, 1);
+          }
+          teardownInstance(existing);
+          return;
+        }
+        restoreNativeSelectState(select);
+      }
+
+      function positionMenu(instance) {
+        if (instance.menu.classList.contains('hidden')) {
+          return;
+        }
+
+        const triggerRect = instance.trigger.getBoundingClientRect();
+        const viewportPadding = 8;
+        const width = Math.max(160, triggerRect.width);
+        const menuHeight = Math.min(instance.menu.scrollHeight || 0, 256);
+
+        const spaceBelow = window.innerHeight - triggerRect.bottom;
+        const spaceAbove = triggerRect.top;
+        const openUpward = spaceBelow < (menuHeight + 12) && spaceAbove > spaceBelow;
+
+        const left = Math.max(
+          viewportPadding,
+          Math.min(triggerRect.left, window.innerWidth - width - viewportPadding)
+        );
+        const top = openUpward
+          ? Math.max(viewportPadding, triggerRect.top - menuHeight - 6)
+          : Math.min(window.innerHeight - viewportPadding, triggerRect.bottom + 6);
+
+        instance.menu.style.left = `${left}px`;
+        instance.menu.style.top = `${top}px`;
+        instance.menu.style.width = `${width}px`;
+      }
+
+      function enhanceSelect(select) {
+        cleanupStaleInstances();
+        select.dataset.dropdownEnhanced = '1';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'relative overflow-visible';
+
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        const triggerBaseClass = (select.className || '')
+          .replace(/\bui-select\b/g, 'ui-input')
+          .trim();
+        trigger.className = `${triggerBaseClass} flex items-center justify-between gap-3 text-left`;
+        trigger.setAttribute('aria-haspopup', 'listbox');
+        trigger.setAttribute('aria-expanded', 'false');
+
+        const triggerText = document.createElement('span');
+        triggerText.className = 'truncate';
+
+        const triggerIcon = document.createElement('span');
+        triggerIcon.className = 'text-slate-400 dark:text-slate-500';
+        triggerIcon.textContent = '▾';
+
+        trigger.appendChild(triggerText);
+        trigger.appendChild(triggerIcon);
+
+        const menu = createMenuLayer();
+        menu.tabIndex = -1;
+        const instance = { select, wrapper, trigger, triggerText, menu, optionButtons: [], activeIndex: -1 };
+
+        function getEnabledButtons() {
+          return instance.optionButtons.filter((button) => !button.disabled);
+        }
+
+        function setActiveButtonByIndex(index) {
+          const enabledButtons = getEnabledButtons();
+          if (!enabledButtons.length) {
+            instance.activeIndex = -1;
+            return;
+          }
+
+          const safeIndex = Math.max(0, Math.min(index, enabledButtons.length - 1));
+          instance.activeIndex = safeIndex;
+
+          instance.optionButtons.forEach((button) => {
+            button.classList.remove('ring-1', 'ring-indigo-400', 'dark:ring-indigo-500');
+          });
+
+          const activeButton = enabledButtons[safeIndex];
+          activeButton.classList.add('ring-1', 'ring-indigo-400', 'dark:ring-indigo-500');
+          activeButton.scrollIntoView({ block: 'nearest' });
+        }
+
+        function moveActiveButton(delta) {
+          const enabledButtons = getEnabledButtons();
+          if (!enabledButtons.length) {
+            return;
+          }
+          const baseIndex = instance.activeIndex < 0 ? 0 : instance.activeIndex;
+          const nextIndex = (baseIndex + delta + enabledButtons.length) % enabledButtons.length;
+          setActiveButtonByIndex(nextIndex);
+        }
+
+        function openDropdown({ focusSelected = true, focusLast = false } = {}) {
+          renderOptions();
+          instance.menu.classList.remove('hidden');
+          positionMenu(instance);
+          trigger.setAttribute('aria-expanded', 'true');
+
+          const enabledButtons = getEnabledButtons();
+          if (!enabledButtons.length) {
+            instance.menu.focus();
+            return;
+          }
+
+          if (focusLast) {
+            setActiveButtonByIndex(enabledButtons.length - 1);
+          } else if (focusSelected) {
+            const selectedIndex = enabledButtons.findIndex((button) => button.dataset.value === select.value);
+            setActiveButtonByIndex(selectedIndex >= 0 ? selectedIndex : 0);
+          } else {
+            setActiveButtonByIndex(0);
+          }
+
+          instance.menu.focus();
+        }
+
+        function renderOptions() {
+          menu.innerHTML = '';
+          instance.optionButtons = [];
+
+          const appendOptionButton = (option, { indented = false } = {}) => {
+            const optionButton = document.createElement('button');
+            optionButton.type = 'button';
+            optionButton.dataset.value = option.value;
+            optionButton.className = `w-[calc(100%-0.5rem)] mx-1 my-0.5 rounded-lg px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 ${indented ? 'pl-6' : ''}`;
+            optionButton.textContent = option.text;
+            optionButton.disabled = !!option.disabled;
+            optionButton.tabIndex = -1;
+
+            optionButton.addEventListener('click', () => {
+              if (option.disabled) {
+                return;
+              }
+              select.value = option.value;
+              select.dispatchEvent(new Event('change', { bubbles: true }));
+              syncSelectedState();
+              closeAllDropdowns();
+              trigger.focus();
+            });
+
+            instance.optionButtons.push(optionButton);
+            menu.appendChild(optionButton);
+          };
+
+          Array.from(select.children || []).forEach((child) => {
+            if (child.tagName === 'OPTGROUP') {
+              const groupLabel = document.createElement('div');
+              const isFirstInMenu = menu.childElementCount === 0;
+              groupLabel.className = `sticky top-0 z-10 px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 bg-white/95 dark:bg-slate-900/95 border-b border-slate-100 dark:border-slate-800 ${isFirstInMenu ? 'rounded-t-[11px]' : ''}`;
+              groupLabel.textContent = child.label || '';
+              menu.appendChild(groupLabel);
+
+              Array.from(child.children || []).forEach((groupOption) => {
+                if (groupOption.tagName === 'OPTION') {
+                  appendOptionButton(groupOption, { indented: true });
+                }
+              });
+              return;
+            }
+
+            if (child.tagName === 'OPTION') {
+              appendOptionButton(child, { indented: false });
+            }
+          });
+
+          syncSelectedState();
+        }
+
+        function syncSelectedState() {
+          const options = Array.from(select.options || []);
+          const selected = options.find((entry) => entry.value === select.value) || options[select.selectedIndex] || options[0];
+          triggerText.textContent = selected ? selected.text : '';
+
+          instance.optionButtons.forEach((button) => {
+            const isSelected = button.dataset.value === select.value;
+            button.classList.toggle('bg-indigo-50', isSelected);
+            button.classList.toggle('dark:bg-indigo-900/40', isSelected);
+            button.classList.toggle('text-indigo-700', isSelected);
+            button.classList.toggle('dark:text-indigo-200', isSelected);
+            button.classList.toggle('font-medium', isSelected);
+            button.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+          });
+
+          if (instance.activeIndex >= 0) {
+            setActiveButtonByIndex(instance.activeIndex);
+          }
+        }
+
+        trigger.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const opening = instance.menu.classList.contains('hidden');
+          closeAllDropdowns();
+          if (opening) {
+            openDropdown({ focusSelected: true });
+          }
+        });
+
+        trigger.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            closeAllDropdowns();
+            return;
+          }
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            const opening = instance.menu.classList.contains('hidden');
+            closeAllDropdowns();
+            if (opening) {
+              openDropdown({ focusSelected: false, focusLast: true });
+            }
+            return;
+          }
+          if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            const opening = instance.menu.classList.contains('hidden');
+            closeAllDropdowns();
+            if (opening) {
+              openDropdown({ focusSelected: true });
+            }
+          }
+        });
+
+        menu.addEventListener('keydown', (event) => {
+          if (menu.classList.contains('hidden')) {
+            return;
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            closeAllDropdowns();
+            trigger.focus();
+            return;
+          }
+          if (event.key === 'Tab') {
+            closeAllDropdowns();
+            return;
+          }
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            moveActiveButton(1);
+            return;
+          }
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            moveActiveButton(-1);
+            return;
+          }
+          if (event.key === 'Home') {
+            event.preventDefault();
+            setActiveButtonByIndex(0);
+            return;
+          }
+          if (event.key === 'End') {
+            event.preventDefault();
+            const enabledButtons = getEnabledButtons();
+            if (enabledButtons.length) {
+              setActiveButtonByIndex(enabledButtons.length - 1);
+            }
+            return;
+          }
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            const enabledButtons = getEnabledButtons();
+            const activeButton = enabledButtons[instance.activeIndex] || enabledButtons[0];
+            if (activeButton) {
+              activeButton.click();
+            }
+          }
+        });
+
+        select.addEventListener('change', syncSelectedState);
+
+        const optionObserver = new MutationObserver(() => {
+          renderOptions();
+          positionMenu(instance);
+        });
+        optionObserver.observe(select, { childList: true, subtree: true, attributes: true });
+        instance.optionObserver = optionObserver;
+
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.appendChild(select);
+        wrapper.appendChild(trigger);
+
+        if (!select.hasAttribute(ORIGINAL_DISPLAY_ATTR)) {
+          select.setAttribute(ORIGINAL_DISPLAY_ATTR, select.style.display || '');
+        }
+        select.style.display = 'none';
+        select.setAttribute('aria-hidden', 'true');
+        select.tabIndex = -1;
+
+        renderOptions();
+        instanceBySelect.set(select, instance);
+        instances.push(instance);
+      }
+
+      function enhanceAll(scope) {
+        cleanupStaleInstances();
+        getSelectableElements(scope).forEach(enhanceSelect);
+      }
+
+      enhanceAll(document);
+
+      const domObserver = new MutationObserver((records) => {
+        records.forEach((record) => {
+          record.addedNodes.forEach((node) => {
+            if (node instanceof HTMLElement) {
+              enhanceAll(node);
+            }
+          });
+        });
+      });
+      domObserver.observe(document.body, { childList: true, subtree: true });
+
+      document.addEventListener('ui:after-soft-refresh', () => {
+        document.querySelectorAll('select.ui-select[data-dropdown-enhanced="1"]').forEach((select) => {
+          resetEnhancedSelect(select);
+        });
+        enhanceAll(document);
+      });
+
+      document.addEventListener('click', () => closeAllDropdowns());
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeAllDropdowns();
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        instances.forEach(positionMenu);
+      });
+
+      window.addEventListener('scroll', () => {
+        instances.forEach(positionMenu);
+      }, true);
+
+    })();
+
+    (function () {
+      const popup = document.createElement('dialog');
+      popup.className = 'rounded-2xl p-0 w-full max-w-[min(92vw,28rem)] bg-transparent backdrop:bg-slate-900/55';
+      popup.innerHTML = `
+        <div class="ui-card ui-card-lg w-full">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <p class="text-sm font-semibold">QR</p>
+            <button type="button" class="ui-btn ui-btn-secondary ui-btn-sm" data-qr-popup-close="1">{{ t('cancel') }}</button>
+          </div>
+          <div class="flex items-center justify-center p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+            <img data-qr-popup-image="1" alt="QR" class="w-full max-w-[24rem] h-auto rounded" loading="eager" decoding="async" />
+          </div>
+        </div>
+      `;
+      document.body.appendChild(popup);
+
+      const popupImage = popup.querySelector('[data-qr-popup-image="1"]');
+      const closeButton = popup.querySelector('[data-qr-popup-close="1"]');
+      if (!(popupImage instanceof HTMLImageElement) || !(closeButton instanceof HTMLElement)) {
+        return;
+      }
+
+      const openPopup = (src, alt) => {
+        if (!src) {
+          return;
+        }
+        popupImage.src = src;
+        popupImage.alt = alt || 'QR';
+        if (typeof popup.showModal === 'function') {
+          popup.showModal();
+        } else {
+          popup.setAttribute('open', '');
+        }
+      };
+
+      closeButton.addEventListener('click', () => {
+        if (popup.open) {
+          popup.close();
+        }
+      });
+
+      popup.addEventListener('click', (event) => {
+        const card = popup.querySelector('.ui-card');
+        if (card instanceof HTMLElement && !card.contains(event.target)) {
+          popup.close();
+        }
+      });
+
+      document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+        const imageTrigger = target.closest('[data-qr-popup="1"]');
+        if (imageTrigger instanceof HTMLImageElement) {
+          event.preventDefault();
+          event.stopPropagation();
+          openPopup(imageTrigger.currentSrc || imageTrigger.src || '', imageTrigger.alt || 'QR');
+          return;
+        }
+
+        const linkTrigger = target.closest('[data-qr-popup-link="1"]');
+        if (!(linkTrigger instanceof HTMLElement)) {
+          return;
+        }
+
+        let qrUrl = '';
+        let qrAlt = 'QR';
+        if (linkTrigger instanceof HTMLAnchorElement) {
+          qrUrl = linkTrigger.href || '';
+          qrAlt = (linkTrigger.textContent || '').trim() || 'QR';
+        } else {
+          qrUrl = String(linkTrigger.getAttribute('data-qr-src') || '').trim();
+        }
+        if (!qrUrl) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        openPopup(qrUrl, qrAlt);
+      });
+    })();
+
   </script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ui-card ui-card-lg max-w-5xl">
+<div class="ui-card ui-card-lg w-full">
   <h2 class="text-lg font-semibold mb-2">{{ t('booking_area_title') }}</h2>
-  <div class="flex items-center justify-between gap-3 mb-3">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
     <h3 class="text-sm font-semibold">{{ t('booking_section_tracking') }}</h3>
     <form method="post" action="/booking/tracking">
       <input type="hidden" name="action" value="undo_last">
@@ -51,17 +51,17 @@
 
         {% if row.spool_items and row.spool_items|length > 0 %}
         <div class="mt-2">
-          <div class="grid grid-cols-[1fr_170px] items-center gap-3 text-xs text-slate-500 pb-1 border-b border-slate-200">
+          <div class="grid grid-cols-1 sm:grid-cols-[1fr_170px] items-center gap-3 text-xs text-slate-500 pb-1 border-b border-slate-200">
             <span>{{ t('usage_history_breakdown') }}</span>
-            <span class="text-right">{{ t('usage_history_amount') }}</span>
+            <span class="text-left sm:text-right">{{ t('usage_history_amount') }}</span>
           </div>
           {% for item in row.spool_items %}
-          <div class="grid grid-cols-[1fr_auto] items-center gap-3 text-sm border-b border-slate-200 py-1 last:border-b-0">
+          <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center gap-3 text-sm border-b border-slate-200 py-1 last:border-b-0">
             <span class="min-w-0 truncate text-slate-700" title="{{ item.spool_index_label }} · {{ item.brand or '-' }} · {{ item.material or '-' }} · {{ item.color or '-' }}">
               <span class="font-medium">{{ item.spool_index_label }}</span>
               · {{ item.brand or '-' }} · {{ item.material or '-' }} · {{ item.color or '-' }}
             </span>
-            <span class="shrink-0 font-medium text-rose-600 tabular-nums font-mono text-right w-[170px]">-{{ format_number_compact(item.deducted_g, 1, lang) }} g</span>
+            <span class="shrink-0 font-medium text-rose-600 tabular-nums font-mono text-left sm:text-right w-full sm:w-[170px]">-{{ format_number_compact(item.deducted_g, 1, lang) }} g</span>
           </div>
           {% endfor %}
         </div>

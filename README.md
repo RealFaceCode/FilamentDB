@@ -22,8 +22,12 @@ Docker-Compose Web-App zum Verwalten von Filamentspulen mit modernem UI, 3MF-Usa
 - Kapitel:
   - `/help/inventory`
   - `/help/booking`
+  - `/help/printers-ams`
   - `/help/slot-status`
   - `/help/labels-qr`
+  - `/help/storage-qr`
+  - `/help/analysis-audit`
+  - `/help/presets`
   - `/help/backup`
 
 Die Seiten enthalten Ablaufbeschreibungen, praxisnahe Schritte und Bildmaterial (`app/static/help/*`).
@@ -44,16 +48,67 @@ docker compose exec web python scripts/help_demo_cleanup.py --project private --
 2. Starten: `docker compose up -d --build`
 3. App öffnen: `http://127.0.0.1:8000`
 
+### Lokales HTTPS (ohne Domain)
+
+Für lokales HTTPS-Testing gibt es ein separates Compose-Profil mit internem Zertifikat:
+
+```bash
+docker compose --profile https-local up -d --build
+```
+
+Aufruf lokal:
+
+- `https://localhost:8443`
+
+Hinweis: Der Browser zeigt beim ersten Aufruf eine Zertifikatswarnung (lokales internes Zertifikat). Für lokalen Testbetrieb ist das erwartetes Verhalten.
+
+### Lokales HTTPS vom Handy (gleiches WLAN)
+
+1. In `.env` setzen: `LAN_HOST=<DEINE_PC_LAN_IP>` (z. B. `192.168.178.50`)
+2. Profil starten:
+
+```bash
+docker compose --profile https-lan up -d --build
+```
+
+3. Am Handy aufrufen:
+
+- `https://<DEINE_PC_LAN_IP>:8443`
+
+Hinweise:
+
+- Handy und PC müssen im selben Netzwerk sein.
+- Windows-Firewall muss eingehend `8443` (und optional `8080`) erlauben.
+- Das lokale Zertifikat ist nicht öffentlich vertrauenswürdig; für produktive Handy-Nutzung ohne Warnung nutze die Domain-Variante mit `--profile https`.
+
+### HTTPS für externe Nutzung (Handy/Kamera/QR)
+
+Für produktive/externe Nutzung läuft HTTPS vollständig im Compose-Stack über Caddy (Let's Encrypt automatisch):
+
+1. In `.env` setzen:
+  - `DOMAIN=deine-domain.tld`
+  - `TLS_EMAIL=admin@deine-domain.tld`
+  - `FORCE_HTTPS_REDIRECT=1`
+  - optional `PUBLIC_BASE_URL=https://deine-domain.tld` (Header-QR nutzt sonst den aktuellen Request-Host)
+2. DNS A/AAAA Record der Domain auf den Zielhost zeigen lassen
+3. Ports `80` und `443` in der Host-Firewall freigeben
+4. Stack mit HTTPS-Profil starten:
+
+```bash
+docker compose --profile https up -d --build
+```
+
+Danach ist die App unter `https://deine-domain.tld` erreichbar.
+
 Stoppen:
 
 ```bash
 docker compose down
 ```
 
-## Produktion / VPS Vorbereitung
+## Produktion / Betrieb
 
-Der verbindliche Produktionspfad ist Docker Compose auf VPS (siehe `DEPLOY_HOSTINGER_VPS.md`).
-Zielbetrieb bleibt ein externer Server (z. B. Hostinger VPS); lokale Dienste liefern Daten nur zu.
+Der Betrieb erfolgt über Docker Compose mit PostgreSQL (Compose-Service `db`).
 
 Das Projekt ist dafür vorbereitet:
 
@@ -65,7 +120,7 @@ Das Projekt ist dafür vorbereitet:
   - `.env.example`
   - `Dockerfile`
   - `docker-compose.yml`
-  - `DEPLOY_HOSTINGER_VPS.md`
+  - Externe Deploy-Dokumentation im `deploy/` Bereich
 
 ### Docker-Start
 
@@ -74,6 +129,12 @@ Das Projekt ist dafür vorbereitet:
 
 ```bash
 docker compose up -d --build
+```
+
+Für HTTPS-Betrieb auf externer Domain:
+
+```bash
+docker compose --profile https up -d --build
 ```
 
 Wichtig:
@@ -101,15 +162,17 @@ GitHub Actions Workflow unter `.github/workflows/ci.yml` prüft bei Push/PR:
 
 ### Ops / Betrieb
 
-Für Produktionsbetrieb auf VPS:
+Für den regulären Betrieb:
 
+- In-App Backup-Management unter `/backup` (manuell erstellen, gespeicherte Backups wiederherstellen/löschen, Auto-Backup-Intervalle)
+- Persistenter Backup-Speicher über Bind-Mount `./artifacts/db-backups` nach `/home/appuser/backups`
 - Backup-Retention Script: `deploy/postgres_backup.sh`
 - Restore-Drill Script: `deploy/postgres_restore_drill.sh`
 - Rollback-Runbook: `deploy/ROLLBACK_RUNBOOK.md`
 - Go-Live-Runbook: `deploy/GO_LIVE_CHECKLIST.md`
 - One-Command Go-Live-Check: `deploy/go_live_check.sh`
 
-## Lokaler Preflight vor Hostinger-VPS (Docker-only, empfohlen)
+## Lokaler Preflight (Docker-only, empfohlen)
 
 ### One-Command (Windows / PowerShell)
 
@@ -153,14 +216,14 @@ docker compose exec web alembic upgrade head
 - Healthcheck: `http://127.0.0.1:8000/healthz`
 - Kernfunktionen prüfen: Spulenliste, Buchung, Labeldruck, Import/Export
 
-Wenn das lokal sauber läuft, kannst du denselben Stack 1:1 auf den VPS übernehmen.
+Wenn das lokal sauber läuft, ist dein Docker-Compose-Setup einsatzbereit.
 
 ## Slicer Auto-Abbuchung (Bambu/Prusa/Orca)
 
 Der Slicer kann nach dem Slicen die erzeugte Datei (`.3mf`, `.gcode`, `.gco`, `.bgcode`) an die App senden und den Verbrauch abbuchen.
 
 1. App starten (`docker compose up -d --build`)
-2. Im Slicer ein Post-Processing-Kommando hinterlegen, das den Endpoint direkt aufruft, im Zielbetrieb per HTTPS auf deinen externen Server (`https://DEINE_DOMAIN/api/usage/auto-from-file`).
+2. Im Slicer ein Post-Processing-Kommando hinterlegen, das den Endpoint direkt aufruft (z. B. `https://DEINE_DOMAIN/api/usage/auto-from-file`).
 3. Bei aktivierter App-Basic-Auth müssen Auth-Credentials mitgesendet werden.
 4. Gleiches Prinzip funktioniert in Bambu Studio, PrusaSlicer und OrcaSlicer.
 
@@ -259,6 +322,28 @@ Die Seite `/slot-status` vergleicht:
 - **Soll**: Spulen-Mapping aus `spools` (`ams_printer` + `ams_slot`)
 - **Ist**: letzte Live-Daten aus `device_slot_state`
 
+## Druckerverwaltung (mehrere Drucker)
+
+Über die Seite `/printers` können mehrere Drucker im Web-Interface verwaltet werden (Name, Seriennummer, Host, Port, Access Code, Aktiv-Flag).
+
+- `serial` ist die technische Identität im Projekt.
+- `name` ist der Anzeigename im UI.
+- Live-Telemetrie (Status, letzter Kontakt, Job, Temperaturen, Firmware) wird automatisch aus Push/Poller-Daten aktualisiert.
+
+### Demo-Daten für UI-Checks
+
+Für reproduzierbare UI-Tests (inkl. AMS-Live-Slots im Drucker-Popup) kann jederzeit derselbe Demo-Drucker neu befüllt werden:
+
+```bash
+docker compose exec web python scripts/demo_printer_seed.py --project private
+```
+
+Der Seed aktualisiert/erstellt:
+
+- Demo-Drucker `DEMO-LIVE-001` mit kompletter Live-Telemetrie
+- AMS-Live-Slots 1-4 in `device_slot_state`
+- Demo-`usage_batch_context` mit AMS-Slotliste
+
 ### Empfohlen: lokal abgreifen und an Server senden
 
 Der Endnutzer-PC liest die Drucker lokal im LAN und pusht die Daten zum Server:
@@ -283,6 +368,17 @@ Format für den Push-Endpoint:
   "printers": [
     {
       "printer": "P1S-01",
+      "serial": "01S00XXXXXXXX",
+      "telemetry": {
+        "status": "online",
+        "job_name": "part.3mf",
+        "job_status": "RUNNING",
+        "progress": 42.3,
+        "nozzle_temp": 220.1,
+        "bed_temp": 59.7,
+        "chamber_temp": 35.0,
+        "firmware": "01.08.00.00"
+      },
       "slots": [
         { "slot": 1, "brand": "Bambu", "material": "PLA", "color": "Black" }
       ]
@@ -303,7 +399,7 @@ Standard-Start ohne Profil (`docker compose up -d --build`) startet **ohne** `sl
 
 ### Poller-Umgebungsvariablen
 
-- `SLOT_STATE_PROVIDER` (`feed` oder `bambu_mqtt`, Default `feed`)
+- `SLOT_STATE_PROVIDER` (`feed`, `bambu_mqtt` oder `multi_brand_http`, Default `feed`)
 - `SLOT_STATE_POLL_INTERVAL_SEC` (Default `45`)
 - `SLOT_STATE_FEED_URL` (optional, JSON-Endpoint)
 - `SLOT_STATE_FEED_TOKEN` (optional Bearer Token)
@@ -311,6 +407,15 @@ Standard-Start ohne Profil (`docker compose up -d --build`) startet **ohne** `sl
 - `SLOT_STATE_SOURCE` (Kennung in UI/DB, Default `slot-poller`)
 - `SLOT_STATE_PROJECT` (Default `private`)
 - `SLOT_STATE_STALE_MINUTES` (UI-Stale-Grenze, Default `10`)
+
+Hinweis:
+
+- Die Verbrauchsbuchung erfolgt über Slicer-Postprocessing (`scripts/slicer_auto_usage.py` / `scripts/bambu_studio_auto_usage.py`) und **nicht** über Polling.
+- Für sehr häufiges Polling kann `SLOT_STATE_POLL_INTERVAL_SEC=1` gesetzt werden.
+
+Bei `multi_brand_http` zusätzlich:
+
+- `MULTIBRAND_PRINTERS_JSON` (Array mit Drucker-Definitionen und Adapter-Typ)
 
 ### Direkt vom Bambu Drucker/AMS (ohne Zwischen-Feed)
 
@@ -328,6 +433,31 @@ Hinweise:
 - Der Poller verbindet sich per MQTT/TLS (`port` standardmäßig `8883`).
 - Mehrere Drucker sind über mehrere Einträge in `BAMBU_PRINTERS_JSON` möglich.
 
+### Multi-Brand Adapter (Creality, Prusa, OctoPrint, Klipper)
+
+Setze in `.env`:
+
+```env
+SLOT_STATE_PROVIDER=multi_brand_http
+MULTIBRAND_PRINTERS_JSON=[
+  {"name":"K1-Max","serial":"CREALITY-K1-001","brand":"creality","adapter":"moonraker","base_url":"http://192.168.1.70"},
+  {"name":"MK4","serial":"PRUSA-MK4-001","brand":"prusa","adapter":"prusalink","base_url":"http://192.168.1.80","api_key":"<PRUSA_API_KEY>"},
+  {"name":"Ender-3","serial":"ENDER3-001","brand":"creality","adapter":"octoprint","base_url":"http://192.168.1.90","api_key":"<OCTOPRINT_API_KEY>"}
+]
+```
+
+Unterstützte `adapter`-Werte:
+
+- `octoprint` (u. a. für viele Creality/Anycubic/Prusa Setups mit OctoPrint)
+- `moonraker` / `klipper` (z. B. Creality K1/K1C, Voron, QIDI, Elegoo mit Klipper)
+- `prusalink` / `prusa` (Prusa Link API)
+- `generic_http` (eigener Endpoint liefert bereits `telemetry` + `slots` im Standardformat)
+
+Hinweise:
+
+- AMS/MMU-Slots werden nur dann geschrieben, wenn der jeweilige Adapter Slotdaten liefert.
+- Telemetrie (Status/Job/Fortschritt/Temperaturen) wird für alle Adapter in die Druckeransicht übernommen.
+
 ### Erwartetes JSON-Format
 
 ```json
@@ -335,6 +465,12 @@ Hinweise:
   "printers": [
     {
       "printer": "P1S-01",
+      "serial": "01S00XXXXXXXX",
+      "telemetry": {
+        "status": "online",
+        "job_status": "RUNNING",
+        "progress": 42.3
+      },
       "slots": [
         { "slot": 1, "brand": "Bambu", "material": "PLA", "color": "Black" },
         { "slot": 2, "brand": "Bambu", "material": "PETG", "color": "White" }
@@ -345,3 +481,77 @@ Hinweise:
 ```
 
 Alternativ wird auch ein einzelner Printer-Block ohne `printers`-Array akzeptiert.
+
+### Smoke-Test: Mehrere Drucker E2E
+
+Die folgenden Schritte prüfen den kompletten Weg (UI-Verwaltung + API-Ingestion + Anzeige):
+
+1. Stack starten/aktualisieren:
+
+```bash
+docker compose up -d --build
+docker compose exec web alembic upgrade head
+```
+
+2. Drucker im UI anlegen:
+
+- Seite öffnen: `/printers`
+- Zwei Drucker anlegen (z. B. `P1S-01` und `X1C-01`) mit unterschiedlicher `serial`.
+
+3. Test-Payload für beide Drucker senden (PowerShell):
+
+```powershell
+$body = @{
+  project = "private"
+  source = "smoke-test"
+  printers = @(
+    @{
+      printer = "P1S-01"
+      serial = "SERIAL-P1S-01"
+      telemetry = @{
+        status = "online"
+        job_name = "benchy.3mf"
+        job_status = "RUNNING"
+        progress = 37.5
+        nozzle_temp = 220.0
+        bed_temp = 60.0
+        firmware = "01.08.00.00"
+      }
+      slots = @(
+        @{ slot = 1; brand = "Bambu"; material = "PLA"; color = "Black" }
+      )
+    },
+    @{
+      printer = "X1C-01"
+      serial = "SERIAL-X1C-01"
+      telemetry = @{
+        status = "online"
+        job_name = "gear.3mf"
+        job_status = "PAUSE"
+        progress = 82.0
+        nozzle_temp = 0
+        bed_temp = 0
+        firmware = "01.08.01.00"
+      }
+      slots = @(
+        @{ slot = 2; brand = "Bambu"; material = "PETG"; color = "White" }
+      )
+    }
+  )
+} | ConvertTo-Json -Depth 8
+
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/api/slot-state/push?project=private&source=smoke-test" -ContentType "application/json" -Body $body
+```
+
+4. Erwartete Ergebnisse prüfen:
+
+- `/printers`: beide Drucker sichtbar, `Last seen` gesetzt, Telemetrie/Status gefüllt.
+- `/slot-status`: je Slot ein aktueller Ist-Eintrag vorhanden.
+- Antwort von `/api/slot-state/push`: `ok=true`, `entries>=2`, `updated>=2`.
+
+5. Optional: Bridge-Weg testen:
+
+```powershell
+$env:BAMBU_PRINTERS_JSON='[{"name":"P1S-01","host":"192.168.1.50","serial":"01S00XXXXXXXX","access_code":"12345678"}]'
+python .\local_services\local_slot_bridge.py --endpoint "http://127.0.0.1:8000/api/slot-state/push" --project private --source local-slot-bridge
+```

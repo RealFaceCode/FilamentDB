@@ -22,6 +22,8 @@ services:
       - .env
     ports:
       - "127.0.0.1:${PORT:-8000}:8000"
+    volumes:
+      - ./artifacts/db-backups:/home/appuser/backups
     depends_on:
       db:
         condition: service_healthy
@@ -31,6 +33,61 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    restart: unless-stopped
+
+  https-proxy:
+    image: caddy:2-alpine
+    container_name: filament-db-https-proxy
+    profiles:
+      - https
+    env_file:
+      - .env
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+  https-proxy-local:
+    image: caddy:2-alpine
+    container_name: filament-db-https-proxy-local
+    profiles:
+      - https-local
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:80"
+      - "127.0.0.1:8443:443"
+    volumes:
+      - ./deploy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_local_data:/data
+      - caddy_local_config:/config
+    restart: unless-stopped
+
+  https-proxy-lan:
+    image: caddy:2-alpine
+    container_name: filament-db-https-proxy-lan
+    profiles:
+      - https-lan
+    env_file:
+      - .env
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./deploy/Caddyfile.lan:/etc/caddy/Caddyfile:ro
+      - caddy_lan_data:/data
+      - caddy_lan_config:/config
     restart: unless-stopped
 
   slot-poller:
@@ -50,3 +107,9 @@ services:
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
+  caddy_local_data:
+  caddy_local_config:
+  caddy_lan_data:
+  caddy_lan_config:

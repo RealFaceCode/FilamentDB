@@ -1,10 +1,10 @@
-# Go-Live Checklist (Hostinger VPS)
+# Go-Live Checklist
 
 Diese Checkliste ist als **sequentielle Runbook-Liste** gedacht. Jeder Schritt hat ein klares Erfolgskriterium.
 
 ## 0) Voraussetzungen
 
-- Domain zeigt auf VPS
+- Optional: Domain zeigt auf den Zielhost
 - Ports `22`, `80`, `443` offen
 - Repository unter `/opt/filament_datenbank` geklont
 - `.env` mit produktiven Werten vorhanden
@@ -41,7 +41,7 @@ Erwartung:
 cd /opt/filament_datenbank
 git pull
 docker compose pull
-docker compose up -d --build
+docker compose --profile https up -d --build
 ```
 
 Erwartung:

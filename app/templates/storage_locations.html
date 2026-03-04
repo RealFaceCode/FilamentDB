@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ui-card ui-card-lg max-w-5xl">
+<div class="ui-card ui-card-lg w-full">
   <h2 class="text-lg font-semibold mb-2">{{ t('storage_locations_title') }}</h2>
   <p class="text-sm text-slate-500 mb-6">{{ t('storage_locations_hint') }}</p>
 
@@ -22,11 +22,11 @@
       <input id="sub-name" name="sub_name" value="{{ form_data.sub_name or '' }}" class="mt-1 ui-input">
     </div>
     <div class="md:col-span-4 flex justify-end">
-      <button class="ui-btn ui-btn-primary">{{ t('storage_locations_add') }}</button>
+      <button class="ui-btn ui-btn-primary w-full md:w-auto">{{ t('storage_locations_add') }}</button>
     </div>
   </form>
 
-  <div class="overflow-auto rounded-xl border border-slate-200">
+  <div class="overflow-auto">
     <table class="ui-table">
       <thead>
         <tr class="ui-thead-row">
@@ -34,7 +34,7 @@
           <th class="ui-th-sticky">{{ t('storage_area_name') }}</th>
           <th class="ui-th-sticky">{{ t('storage_sub_name') }}</th>
           <th class="ui-th-sticky">{{ t('storage_usage') }}</th>
-          <th class="ui-th-sticky text-right">{{ t('actions') }}</th>
+          <th class="ui-th-sticky ui-th-actions text-right">{{ t('actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -44,9 +44,9 @@
           <td class="ui-td">{{ location.area_name or '-' }}</td>
           <td class="ui-td">{{ location.sub_name or '-' }}</td>
           <td class="ui-td">{{ location.usage_count or 0 }}</td>
-          <td class="ui-td text-right">
-            <div class="inline-flex items-center gap-2">
-              <a href="/storage-locations/{{ location.id }}/qr" class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('qr') }}</a>
+          <td class="ui-td ui-td-actions text-right">
+            <div class="flex flex-wrap justify-end items-center gap-2">
+              <a href="/storage-locations/{{ location.id }}/qr" class="ui-btn ui-btn-secondary ui-btn-sm" data-qr-popup-link="1">{{ t('qr') }}</a>
               <form method="post" action="/storage-locations/{{ location.id }}/delete" onsubmit="return confirm('{{ t('confirm_delete') }}');">
                 <button class="ui-btn ui-btn-danger ui-btn-sm">{{ t('delete') }}</button>
               </form>
