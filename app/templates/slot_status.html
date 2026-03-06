@@ -27,6 +27,17 @@
     </div>
   </div>
 
+  <div class="mb-4">
+    <div class="flex flex-wrap gap-2">
+      <form method="post" action="/slot-status/remap-ams" class="inline-flex">
+        <button class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('slot_remap_action') }}</button>
+      </form>
+      <form method="post" action="/slot-status/migrate-slot-format" class="inline-flex">
+        <button class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('slot_format_migrate_action') }}</button>
+      </form>
+    </div>
+  </div>
+
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
     <div class="ui-panel">
       <p class="text-xs text-slate-500">{{ t('slot_state_ok') }}</p>
@@ -57,6 +68,7 @@
         <tr class="ui-thead-row">
           <th class="ui-th-sticky">{{ t('slot_status_printer') }}</th>
           <th class="ui-th-sticky">{{ t('slot_status_slot') }}</th>
+          <th class="ui-th-sticky">{{ t('slot_status_ams') }}</th>
           <th class="ui-th-sticky">{{ t('slot_status_expected') }}</th>
           <th class="ui-th-sticky">{{ t('slot_status_observed') }}</th>
           <th class="ui-th-sticky">{{ t('slot_status_state') }}</th>
@@ -70,6 +82,12 @@
         <tr class="ui-row {% if state in ['mismatch', 'missing', 'stale'] %}ui-row-warn{% endif %}">
           <td class="ui-td">{{ row.printer or '-' }}</td>
           <td class="ui-td">{{ row.slot }}</td>
+          <td class="ui-td">
+            <div class="text-xs text-slate-700 dark:text-slate-300">{{ row.expected_ams or '-' }}</div>
+            {% if (row.observed_ams or '-') != (row.expected_ams or '-') %}
+            <div class="text-xs text-slate-500 dark:text-slate-400">{{ row.observed_ams or '-' }}</div>
+            {% endif %}
+          </td>
           <td class="ui-td">
             {% if row.spool %}
             <span class="font-medium">SP-{{ '%04d'|format(row.spool.id) }}</span>

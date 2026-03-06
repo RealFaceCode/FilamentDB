@@ -179,3 +179,30 @@ class ImportMappingProfile(Base):
     mapping_json = Column(Text, nullable=False)
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class SupplyCategory(Base):
+    __tablename__ = "supply_categories"
+    __table_args__ = (UniqueConstraint("project", "name", name="uq_supply_categories_project_name"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    name = Column(String(80), nullable=False, index=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class SupplyItem(Base):
+    __tablename__ = "supply_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    name = Column(String(120), nullable=False, index=True)
+    category = Column(String(80), nullable=False, default="Verbrauchsmaterial", index=True)
+    quantity = Column(Float, nullable=False, default=0.0)
+    unit = Column(String(32), nullable=False, default="Stk")
+    min_quantity = Column(Float, nullable=True)
+    location = Column(String(120), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)

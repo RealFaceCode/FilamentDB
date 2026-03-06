@@ -87,9 +87,9 @@ class SlotStatePushApiTests(unittest.TestCase):
                 .all()
             )
             self.assertEqual(len(rows), 2)
-            self.assertEqual(rows[0].slot, 1)
+            self.assertEqual(rows[0].slot, 101)
             self.assertEqual(rows[0].observed_material, "PLA")
-            self.assertEqual(rows[1].slot, 2)
+            self.assertEqual(rows[1].slot, 102)
             self.assertEqual(rows[1].observed_material, "PETG")
             self.assertEqual(rows[0].printer_serial, "SERIAL-001")
 
@@ -158,7 +158,7 @@ class SlotStatePushApiTests(unittest.TestCase):
                 .all()
             )
             self.assertEqual(len(rows), 2)
-            self.assertEqual(rows[0].slot, 1)
+            self.assertEqual(rows[0].slot, 101)
             self.assertEqual(rows[0].slot_local, 1)
             self.assertEqual(rows[0].ams_unit, 1)
             self.assertEqual(rows[0].ams_name, "AMS-A")
@@ -167,6 +167,58 @@ class SlotStatePushApiTests(unittest.TestCase):
             self.assertEqual(rows[1].slot_local, 1)
             self.assertEqual(rows[1].ams_unit, 2)
             self.assertEqual(rows[1].ams_name, "AMS-B")
+
+    def test_push_slot_state_maps_raw_bambu_ams_ids_stably(self):
+        payload = {
+            "project": "private",
+            "source": "local-slot-bridge",
+            "printers": [
+                {
+                    "printer": "X1C-Raw-AMS",
+                    "serial": "SERIAL-RAW-AMS",
+                    "telemetry": {"status": "online"},
+                    "slots": [
+                        {
+                            "slot_local": 1,
+                            "ams_id": 128,
+                            "brand": "Bambu",
+                            "material": "PETG",
+                            "color": "White",
+                        },
+                        {
+                            "slot_local": 1,
+                            "ams_id": 0,
+                            "brand": "Bambu",
+                            "material": "PLA",
+                            "color": "Black",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        response = self.client.post("/api/slot-state/push", json=payload)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get("ok"))
+        self.assertEqual(data.get("entries"), 2)
+
+        with self.SessionLocal() as db:
+            rows = (
+                db.query(DeviceSlotState)
+                .filter(DeviceSlotState.project == self.project_scope, DeviceSlotState.printer_name == "X1C-Raw-AMS")
+                .order_by(DeviceSlotState.slot.asc())
+                .all()
+            )
+            self.assertEqual(len(rows), 2)
+
+            self.assertEqual(rows[0].slot, 101)
+            self.assertEqual(rows[0].slot_local, 1)
+            self.assertEqual(rows[0].ams_unit, 1)
+
+            self.assertEqual(rows[1].slot, 201)
+            self.assertEqual(rows[1].slot_local, 1)
+            self.assertEqual(rows[1].ams_unit, 2)
 
     def test_printers_page_create_and_delete(self):
         create_response = self.client.post(
@@ -249,6 +301,8 @@ class SlotStatePushApiTests(unittest.TestCase):
         self.assertEqual(printers_response.status_code, 200)
         self.assertIn("TopLeft", printers_response.text)
         self.assertIn("TopRight", printers_response.text)
+        self.assertIn("<td class=\"ui-td font-medium\">101</td>", printers_response.text)
+        self.assertIn("<td class=\"ui-td font-medium\">201</td>", printers_response.text)
 
 
 if __name__ == "__main__":

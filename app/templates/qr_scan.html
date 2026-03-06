@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="ui-card ui-card-lg w-full">
+  <div data-disable-auto-refresh="1" class="hidden" aria-hidden="true"></div>
   <h2 class="text-lg font-semibold mb-2">{{ t('qr_scan_title') }}</h2>
   <p class="text-sm text-slate-500 mb-5">{{ t('qr_scan_hint') }}</p>
 
@@ -28,12 +29,31 @@
 <script>
 (() => {
   let teardownCurrentScan = null;
+  let scanRuntime = null;
+  let cameraStoppedByUser = false;
+  const CAMERA_STOPPED_KEY = 'ui:qr-scan:camera-stopped';
+
+  function loadCameraStoppedState() {
+    try {
+      return globalThis.sessionStorage?.getItem(CAMERA_STOPPED_KEY) === '1';
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function persistCameraStoppedState(value) {
+    try {
+      if (value) {
+        globalThis.sessionStorage?.setItem(CAMERA_STOPPED_KEY, '1');
+      } else {
+        globalThis.sessionStorage?.removeItem(CAMERA_STOPPED_KEY);
+      }
+    } catch (_error) {
+    }
+  }
 
   function initQrScanPage() {
-    if (typeof teardownCurrentScan === 'function') {
-      teardownCurrentScan();
-      teardownCurrentScan = null;
-    }
+    cameraStoppedByUser = loadCameraStoppedState();
 
     const input = document.getElementById('qr-payload');
     const stopBtn = document.getElementById('scan-stop');
@@ -46,9 +66,29 @@
       return;
     }
 
+    const isSameRuntime = (
+      !!scanRuntime
+      && scanRuntime.input === input
+      && scanRuntime.stopBtn === stopBtn
+      && scanRuntime.video === video
+      && scanRuntime.displayCanvas === displayCanvas
+      && scanRuntime.wrap === wrap
+      && scanRuntime.hint === hint
+      && video.isConnected
+    );
+    if (isSameRuntime) {
+      return;
+    }
+
+    if (typeof teardownCurrentScan === 'function') {
+      teardownCurrentScan();
+      teardownCurrentScan = null;
+    }
+
     let stream = null;
     let detector = null;
     let rafId = null;
+    let startTimerId = null;
     const msgHttps = hint.dataset.msgHttps || 'Camera access usually requires HTTPS (or localhost).';
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -112,6 +152,10 @@
     }
 
     async function stopScan() {
+      if (startTimerId) {
+        clearTimeout(startTimerId);
+        startTimerId = null;
+      }
       if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = null;
@@ -197,6 +241,8 @@
     }
 
     const onStopClick = () => {
+      cameraStoppedByUser = true;
+      persistCameraStoppedState(true);
       stopScan();
     };
     const onBeforeUnload = () => {
@@ -205,14 +251,29 @@
     stopBtn.addEventListener('click', onStopClick);
     window.addEventListener('beforeunload', onBeforeUnload);
 
-    setTimeout(() => {
-      startScan();
-    }, 120);
+    if (!cameraStoppedByUser) {
+      startTimerId = setTimeout(() => {
+        startTimerId = null;
+        startScan();
+      }, 120);
+    } else {
+      stopScan();
+    }
 
     teardownCurrentScan = () => {
       stopBtn.removeEventListener('click', onStopClick);
       window.removeEventListener('beforeunload', onBeforeUnload);
       stopScan();
+      scanRuntime = null;
+    };
+
+    scanRuntime = {
+      input,
+      stopBtn,
+      video,
+      displayCanvas,
+      wrap,
+      hint,
     };
   }
 

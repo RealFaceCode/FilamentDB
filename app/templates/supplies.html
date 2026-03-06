@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="ui-card ui-card-lg w-full">
+  <h2 class="text-lg font-semibold mb-2">{{ t('supplies_title') }}</h2>
+  <p class="text-sm text-slate-500 mb-6">{{ t('supplies_hint') }}</p>
+
+  <form method="post" action="/supplies/categories" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end mb-6">
+    <div class="md:col-span-3">
+      <label for="supply-category-new" class="text-xs text-slate-500">{{ t('supplies_category') }}</label>
+      <input id="supply-category-new" name="name" class="mt-1 ui-input" placeholder="{{ t('supplies_category') }}">
+    </div>
+    <div class="md:col-span-1 flex justify-end">
+      <button class="ui-btn ui-btn-secondary w-full md:w-auto">{{ t('supplies_category_add') }}</button>
+    </div>
+  </form>
+
+  <form method="post" action="/supplies" class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end mb-6">
+    <div class="md:col-span-2">
+      <label for="supply-name" class="text-xs text-slate-500">{{ t('supplies_name') }}</label>
+      <input id="supply-name" name="name" value="{{ form_data.name or '' }}" required class="mt-1 ui-input">
+    </div>
+    <div>
+      <label for="supply-category" class="text-xs text-slate-500">{{ t('supplies_category') }}</label>
+      <select id="supply-category" name="category" class="mt-1 ui-select">
+        {% if categories %}
+          {% for item in categories %}
+            <option value="{{ item }}" {% if (form_data.category or t('supplies_default_category')) == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        {% else %}
+          <option value="{{ t('supplies_default_category') }}">{{ t('supplies_default_category') }}</option>
+        {% endif %}
+      </select>
+    </div>
+    <div>
+      <label for="supply-quantity" class="text-xs text-slate-500">{{ t('supplies_quantity') }}</label>
+      <input id="supply-quantity" name="quantity" type="number" step="0.001" min="0" value="{{ form_data.quantity or '' }}" required class="mt-1 ui-input">
+    </div>
+    <div>
+      <label for="supply-unit" class="text-xs text-slate-500">{{ t('supplies_unit') }}</label>
+      <input id="supply-unit" name="unit" value="{{ form_data.unit or t('supplies_default_unit') }}" class="mt-1 ui-input">
+    </div>
+    <div>
+      <label for="supply-min" class="text-xs text-slate-500">{{ t('supplies_min_quantity') }}</label>
+      <input id="supply-min" name="min_quantity" type="number" step="0.001" min="0" value="{{ form_data.min_quantity or '' }}" class="mt-1 ui-input">
+    </div>
+    <div class="md:col-span-2">
+      <label for="supply-location" class="text-xs text-slate-500">{{ t('location') }}</label>
+      <select id="supply-location" name="storage_sub_location_id" class="mt-1 ui-select">
+        <option value="">-</option>
+        {% for option in storage_location_options %}
+          <option value="{{ option.id }}" {% if (form_data.storage_sub_location_id|string) == (option.id|string) %}selected{% endif %}>{{ option.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="md:col-span-3">
+      <label for="supply-notes" class="text-xs text-slate-500">{{ t('supplies_notes') }}</label>
+      <textarea id="supply-notes" name="notes" rows="2" class="mt-1 ui-input">{{ form_data.notes or '' }}</textarea>
+    </div>
+    <div class="md:col-span-1 flex justify-end">
+      <button class="ui-btn ui-btn-primary w-full md:w-auto">{{ t('supplies_add') }}</button>
+    </div>
+  </form>
+
+  <div class="mb-3 text-sm text-slate-600 dark:text-slate-300">
+    {{ t('analysis_kpi_low_stock_count') }}: <span class="font-semibold">{{ supplies_low_stock_count }}</span>
+  </div>
+
+  <div class="overflow-auto">
+    <table class="ui-table whitespace-nowrap">
+      <colgroup>
+        <col style="width: 13%;">
+        <col style="width: 12%;">
+        <col style="width: 9%;">
+        <col style="width: 11%;">
+        <col style="width: 11%;">
+        <col style="width: 24%;">
+        <col style="width: 8%;">
+        <col style="width: 12%;">
+      </colgroup>
+      <thead>
+        <tr class="ui-thead-row">
+          <th class="ui-th-sticky">{{ t('supplies_name') }}</th>
+          <th class="ui-th-sticky">{{ t('supplies_category') }}</th>
+          <th class="ui-th-sticky">{{ t('supplies_quantity') }}</th>
+          <th class="ui-th-sticky">{{ t('supplies_min_quantity') }}</th>
+          <th class="ui-th-sticky">{{ t('location') }}</th>
+          <th class="ui-th-sticky">{{ t('supplies_notes') }}</th>
+          <th class="ui-th-sticky">{{ t('status') }}</th>
+          <th class="ui-th-sticky ui-th-actions">{{ t('actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in supplies_rows %}
+        <tr class="ui-row {% if row.is_low_stock %}ui-row-warn{% endif %}">
+          <td class="ui-td font-medium">{{ row.name }}</td>
+          <td class="ui-td">{{ row.category }}</td>
+          <td class="ui-td">{{ '%.3f'|format(row.quantity) }} {{ row.unit }}</td>
+          <td class="ui-td">
+            {% if row.min_quantity is not none %}
+              {{ '%.3f'|format(row.min_quantity) }} {{ row.unit }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="ui-td">{{ row.location or '-' }}</td>
+          <td class="ui-td">{{ row.notes or '-' }}</td>
+          <td class="ui-td">
+            {% if row.is_low_stock %}
+              <span class="ui-badge ui-badge-low">{{ t('low_stock') }}</span>
+            {% else %}
+              <span class="ui-badge ui-badge-inuse">{{ t('in_use') }}</span>
+            {% endif %}
+          </td>
+          <td class="ui-td ui-td-actions">
+            <div class="flex justify-end items-center gap-2 whitespace-nowrap">
+              <button type="button" class="ui-btn ui-btn-secondary ui-btn-sm" data-supply-edit-open="supply-edit-{{ row.id }}">{{ t('edit') }}</button>
+              <form method="post" action="/supplies/{{ row.id }}/delete">
+                <button class="ui-btn ui-btn-danger ui-btn-sm">{{ t('delete') }}</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="py-8 text-center text-slate-500">{{ t('supplies_none') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% for row in supplies_rows %}
+  <dialog id="supply-edit-{{ row.id }}" class="rounded-2xl p-0 w-full max-w-3xl bg-transparent backdrop:bg-slate-900/40">
+    <div class="ui-card ui-card-lg w-full">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <h3 class="text-lg font-semibold">{{ t('edit') }} · {{ row.name }}</h3>
+        <button type="button" class="ui-btn ui-btn-secondary ui-btn-sm" data-supply-edit-close="supply-edit-{{ row.id }}">{{ t('cancel') }}</button>
+      </div>
+      <form method="post" action="/supplies/{{ row.id }}/update" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label for="supply-edit-name-{{ row.id }}" class="block text-xs text-slate-500">{{ t('supplies_name') }}</label>
+          <input id="supply-edit-name-{{ row.id }}" name="name" value="{{ row.name }}" required class="mt-1 ui-input">
+        </div>
+        <div>
+          <label for="supply-edit-category-{{ row.id }}" class="block text-xs text-slate-500">{{ t('supplies_category') }}</label>
+          <select id="supply-edit-category-{{ row.id }}" name="category" class="mt-1 ui-select">
+            {% for item in categories %}
+              <option value="{{ item }}" {% if row.category == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="supply-edit-quantity-{{ row.id }}" class="block text-xs text-slate-500">{{ t('supplies_quantity') }}</label>
+          <input id="supply-edit-quantity-{{ row.id }}" name="quantity" type="number" step="0.001" min="0" value="{{ '%.3f'|format(row.quantity) }}" required class="mt-1 ui-input">
+        </div>
+        <div>
+          <label for="supply-edit-unit-{{ row.id }}" class="block text-xs text-slate-500">{{ t('supplies_unit') }}</label>
+          <input id="supply-edit-unit-{{ row.id }}" name="unit" value="{{ row.unit }}" class="mt-1 ui-input">
+        </div>
+        <div>
+          <label for="supply-edit-min-{{ row.id }}" class="block text-xs text-slate-500">{{ t('supplies_min_quantity') }}</label>
+          <input id="supply-edit-min-{{ row.id }}" name="min_quantity" type="number" step="0.001" min="0" value="{% if row.min_quantity is not none %}{{ '%.3f'|format(row.min_quantity) }}{% endif %}" class="mt-1 ui-input">
+        </div>
+        <div>
+          <label for="supply-edit-location-{{ row.id }}" class="block text-xs text-slate-500">{{ t('location') }}</label>
+          <select id="supply-edit-location-{{ row.id }}" name="storage_sub_location_id" class="mt-1 ui-select">
+            <option value="">-</option>
+            {% for option in storage_location_options %}
+              <option value="{{ option.id }}" {% if row.storage_sub_location_id == option.id %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label for="supply-edit-notes-{{ row.id }}" class="block text-xs text-slate-500">{{ t('supplies_notes') }}</label>
+          <textarea id="supply-edit-notes-{{ row.id }}" name="notes" rows="4" class="mt-1 ui-input">{{ row.notes or '' }}</textarea>
+        </div>
+        <div class="md:col-span-2 flex justify-end gap-2">
+          <button type="button" class="ui-btn ui-btn-secondary" data-supply-edit-close="supply-edit-{{ row.id }}">{{ t('cancel') }}</button>
+          <button class="ui-btn ui-btn-primary">{{ t('save') }}</button>
+        </div>
+      </form>
+      <form method="post" action="/supplies/{{ row.id }}/adjust" class="mt-3 pt-3 border-t border-slate-200/70 dark:border-slate-700/70">
+        <div class="flex flex-wrap items-end justify-end gap-2">
+          <div>
+            <label for="supply-edit-delta-{{ row.id }}" class="block text-xs text-slate-500">{{ t('supplies_adjust') }}</label>
+            <input id="supply-edit-delta-{{ row.id }}" name="delta_quantity" type="number" step="0.001" class="mt-1 ui-input w-28" placeholder="-1">
+          </div>
+          <button class="ui-btn ui-btn-secondary">{{ t('supplies_adjust') }}</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+  {% endfor %}
+  <p class="text-xs text-slate-500 mt-3">{{ t('supplies_adjust_hint') }}</p>
+</div>
+
+<script>
+  (function () {
+    const bindSupplyEditDialogs = () => {
+      document.querySelectorAll('dialog[id^="supply-edit-"]').forEach((dialog) => {
+        if (!(dialog instanceof HTMLDialogElement)) {
+          return;
+        }
+        if (dialog.dataset.supplyBackdropBound === '1') {
+          return;
+        }
+        dialog.addEventListener('click', (event) => {
+          const box = dialog.querySelector('.ui-card');
+          if (box && !box.contains(event.target)) {
+            dialog.close();
+          }
+        });
+        dialog.dataset.supplyBackdropBound = '1';
+      });
+    };
+
+    const initSuppliesPage = () => {
+      bindSupplyEditDialogs();
+    };
+
+    if (document.documentElement.dataset.suppliesDialogClicksBound !== '1') {
+      document.addEventListener('click', (event) => {
+        const openTrigger = event.target.closest('[data-supply-edit-open]');
+        if (openTrigger) {
+          const id = openTrigger.dataset.supplyEditOpen;
+          const dialog = document.getElementById(id);
+          if (dialog && typeof dialog.showModal === 'function') {
+            dialog.showModal();
+          }
+          return;
+        }
+
+        const closeTrigger = event.target.closest('[data-supply-edit-close]');
+        if (closeTrigger) {
+          const id = closeTrigger.dataset.supplyEditClose;
+          const dialog = document.getElementById(id);
+          if (dialog) {
+            dialog.close();
+          }
+        }
+      });
+      document.documentElement.dataset.suppliesDialogClicksBound = '1';
+    }
+
+    initSuppliesPage();
+    document.addEventListener('ui:after-soft-refresh', initSuppliesPage);
+  })();
+</script>
+{% endblock %}

@@ -265,7 +265,7 @@
             {% for group in printer.ams_slot_groups %}
             <div>
               <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <div class="text-sm font-medium text-slate-700" data-ams-group-label data-ams-unit="{{ group.ams_unit }}">{{ group.label }}</div>
+                <div class="text-sm font-medium text-slate-700" data-ams-group-label data-ams-unit="{{ group.ams_unit }}">{{ group.label }} · U{{ group.ams_unit }}</div>
                 <form method="post" action="/printers/{{ printer.id }}/ams-mapping" class="flex items-center gap-2" data-ams-mapping-form>
                   <input type="hidden" name="ams_unit" value="{{ group.ams_unit }}">
                   <input type="hidden" name="open_printer_tab" value="ams">

@@ -43,6 +43,8 @@ from .models import (
     UsageBatchContext,
     DeviceSlotState,
     Printer,
+    SupplyCategory,
+    SupplyItem,
     AppSetting,
     AuditLog,
     ImportMappingProfile,
@@ -97,6 +99,7 @@ BACKUP_MIN_INTERVAL_HOURS = 1
 BACKUP_MAX_INTERVAL_HOURS = 168
 BACKUP_MIN_RETENTION_DAYS = 1
 BACKUP_MAX_RETENTION_DAYS = 365
+BACKUP_RESET_CONFIRM_PHRASE = "DELETE ALL"
 BACKUP_LOCKFILE_NAME = ".backup.lock"
 BACKUP_LOCK_STALE_SECONDS = 10 * 60
 BACKUP_AUTO_CHECK_COOLDOWN_SECONDS = 30
@@ -180,6 +183,16 @@ def _extract_host_port(raw_host: str) -> tuple[str, Optional[str]]:
     return hostname, port_value
 
 
+def _get_configured_lan_host(fallback_port: str = "8443") -> tuple[str, str]:
+    configured_value = str(os.getenv("LOCAL_IP", "")).strip() or str(os.getenv("LAN_HOST", "")).strip()
+    if not configured_value:
+        return "", fallback_port
+    host_value, host_port = _extract_host_port(configured_value)
+    normalized_host = str(host_value).strip().strip("[]")
+    normalized_port = str(host_port or fallback_port).strip() or fallback_port
+    return normalized_host, normalized_port
+
+
 def _resolve_mobile_entry_url(request: Request) -> str:
     forwarded_proto = str(request.headers.get("x-forwarded-proto") or "").split(",", 1)[0].strip().lower()
     forwarded_host = str(request.headers.get("x-forwarded-host") or "").split(",", 1)[0].strip()
@@ -190,14 +203,7 @@ def _resolve_mobile_entry_url(request: Request) -> str:
         normalized_host = str(extracted_host).strip().lower()
         loopback_hosts = {"localhost", "127.0.0.1", "::1", "testserver"}
         fallback_port = extracted_port or "8443"
-        configured_lan_host = str(os.getenv("LAN_HOST", "")).strip()
-        configured_lan_host_value = ""
-        configured_lan_port = fallback_port
-        if configured_lan_host:
-            configured_lan_host_value = configured_lan_host
-            if ":" in configured_lan_host and not configured_lan_host.startswith("["):
-                configured_lan_host_value, configured_lan_port = configured_lan_host.rsplit(":", 1)
-            configured_lan_host_value = configured_lan_host_value.strip().strip("[]")
+        configured_lan_host_value, configured_lan_port = _get_configured_lan_host(fallback_port)
 
         discovered_lan_ip = _discover_preferred_lan_ip()
         if normalized_host in loopback_hosts:
@@ -247,8 +253,15 @@ BASIC_AUTH_PASSWORD = str(os.getenv("BASIC_AUTH_PASSWORD", "")).strip()
 CSRF_PROTECT = _env_truthy(os.getenv("CSRF_PROTECT"), default=True)
 STRICT_CSRF_CHECK = _env_truthy(os.getenv("STRICT_CSRF_CHECK"), default=False)
 FORCE_HTTPS_REDIRECT = _env_truthy(os.getenv("FORCE_HTTPS_REDIRECT"), default=False)
-ALLOWED_HOSTS = _merge_allowed_hosts(_env_csv_list(os.getenv("ALLOWED_HOSTS"), ["localhost", "127.0.0.1", "testserver"]))
-TRUSTED_ORIGINS = set(_env_csv_list(os.getenv("TRUSTED_ORIGINS"), []))
+configured_lan_host_for_security, _ = _get_configured_lan_host("8443")
+allowed_hosts_config = _env_csv_list(os.getenv("ALLOWED_HOSTS"), ["localhost", "127.0.0.1", "testserver"])
+if configured_lan_host_for_security:
+    allowed_hosts_config.append(configured_lan_host_for_security)
+ALLOWED_HOSTS = _merge_allowed_hosts(allowed_hosts_config)
+trusted_origins_config = _env_csv_list(os.getenv("TRUSTED_ORIGINS"), [])
+if configured_lan_host_for_security:
+    trusted_origins_config.append(f"https://{configured_lan_host_for_security}:8443")
+TRUSTED_ORIGINS = set(trusted_origins_config)
 MAX_UPLOAD_MB = max(1, int(float(str(os.getenv("MAX_UPLOAD_MB", "25")).strip() or "25")))
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 SLOT_STATE_STALE_MINUTES = max(1, int(float(str(os.getenv("SLOT_STATE_STALE_MINUTES", "10")).strip() or "10")))
@@ -504,7 +517,7 @@ TRANSLATIONS = {
         "nav_slot_status": "Slotstatus",
         "nav_printers": "Drucker",
         "nav_storage_locations": "Lagerorte",
-        "nav_help": "Hilfe",
+        "nav_supplies": "Verbrauchsmaterial",
         "nav_menu": "Menü",
         "nav_home": "Dashboard",
         "settings_language": "Sprache",
@@ -659,6 +672,30 @@ TRANSLATIONS = {
         "storage_location_invalid": "Ausgewählter Lagerort ist ungültig.",
         "storage_filter": "Lagerort-Filter",
         "storage_filter_all": "Alle Lagerorte",
+        "supplies_title": "Verbrauchsmaterial",
+        "supplies_hint": "Einfacher Bestand für Verbrauchsmaterial wie Kleber, Düsen oder Reinigungsmittel.",
+        "supplies_add": "Eintrag hinzufügen",
+        "supplies_category_add": "Kategorie hinzufügen",
+        "supplies_category_exists": "Kategorie existiert bereits.",
+        "supplies_category_saved": "Kategorie wurde gespeichert.",
+        "supplies_name": "Name",
+        "supplies_category": "Kategorie",
+        "supplies_quantity": "Menge",
+        "supplies_unit": "Einheit",
+        "supplies_min_quantity": "Mindestbestand",
+        "supplies_notes": "Notiz",
+        "supplies_adjust": "Zu-/Abbuchung",
+        "supplies_adjust_hint": "Wert mit + oder - eingeben, z. B. -1 oder +2.",
+        "supplies_none": "Noch kein Verbrauchsmaterial erfasst.",
+        "supplies_category_none": "Keine Kategorie",
+        "supplies_saved": "Eintrag wurde gespeichert.",
+        "supplies_updated": "Eintrag wurde aktualisiert.",
+        "supplies_deleted": "Eintrag wurde gelöscht.",
+        "supplies_adjusted": "Bestand wurde angepasst.",
+        "supplies_invalid": "Bitte einen Namen und eine gültige Menge angeben.",
+        "supplies_invalid_adjust": "Bitte eine gültige Zu-/Abbuchung angeben.",
+        "supplies_default_category": "Verbrauchsmaterial",
+        "supplies_default_unit": "Stk",
         "ams_printer": "AMS Drucker",
         "ams_slot": "AMS Slot",
         "status": "Status",
@@ -761,6 +798,7 @@ TRANSLATIONS = {
         "slot_status_hint": "Vergleich zwischen gepflegter Spulenzuordnung und zuletzt gepolltem Gerätestatus.",
         "slot_status_printer": "Drucker",
         "slot_status_slot": "Slot",
+        "slot_status_ams": "AMS",
         "slot_status_expected": "Soll (Spule)",
         "slot_status_observed": "Ist (Live)",
         "slot_status_state": "Status",
@@ -778,6 +816,13 @@ TRANSLATIONS = {
         "slot_data_stale": "Veraltet",
         "slot_data_no_data": "Keine Live-Daten",
         "slot_data_age": "Alter",
+        "slot_remap_action": "AMS-Mapping aus Live-Daten korrigieren",
+        "slot_remap_done": "AMS-Mapping aktualisiert: {updated} Spule(n).",
+        "slot_remap_none": "Keine eindeutigen Korrekturen gefunden.",
+        "slot_remap_no_live": "Keine Live-Slotdaten vorhanden.",
+        "slot_format_migrate_action": "Slot-Format auf 1xx/2xx migrieren",
+        "slot_format_migrate_done": "Slot-Format migriert: Spulen={spools}, Live-Slots={states}, Verläufe={contexts}.",
+        "slot_format_migrate_skip": "Einige Einträge wurden wegen Konflikten übersprungen: {count}.",
         "printers_title": "Druckerverwaltung",
         "printers_hint": "Verwalte mehrere Drucker und deren Live-Telemetrie zentral.",
         "printers_add": "Drucker hinzufügen",
@@ -879,6 +924,19 @@ TRANSLATIONS = {
         "backup_sqlite_only": "Backup/Restore in der Oberfläche ist aktuell nur mit SQLite verfügbar. Für PostgreSQL nutze bitte pg_dump/pg_restore.",
         "backup_pg_tools_missing": "PostgreSQL-Backup erfordert pg_dump und pg_restore im App-Container.",
         "backup_unsupported": "Backup/Restore wird für diesen Datenbanktyp nicht unterstützt.",
+        "backup_reset_title": "Alle Daten löschen",
+        "backup_reset_hint": "Löscht alle Datenbank-Einträge unwiderruflich. Backup-Dateien im Backup-Speicher bleiben erhalten.",
+        "backup_reset_confirm_checkbox": "Ich verstehe, dass alle Datenbank-Einträge gelöscht werden.",
+        "backup_reset_confirm_phrase_label": "Bestätigungstext",
+        "backup_reset_confirm_phrase_hint": "Bitte exakt eingeben: {phrase}",
+        "backup_reset_confirm_phrase_placeholder": "Bestätigungstext eingeben",
+        "backup_reset_action": "Alle Daten jetzt löschen",
+        "backup_reset_create_backup": "Vor dem Löschen ein Backup erstellen",
+        "backup_reset_backup_failed": "Löschen abgebrochen: Backup vor dem Löschen konnte nicht erstellt werden.",
+        "backup_reset_confirm_required": "Löschen abgebrochen: Beide Bestätigungen sind erforderlich.",
+        "backup_reset_done": "Alle Datenbank-Einträge wurden gelöscht ({rows}). Backup-Dateien wurden nicht verändert.",
+        "backup_reset_done_with_backup": "Alle Datenbank-Einträge wurden gelöscht ({rows}). Vorher wurde ein Backup erstellt: {filename}",
+        "backup_reset_failed": "Datenbank konnte nicht vollständig geleert werden.",
         "upload_too_large": "Datei ist zu groß. Maximum: {max_mb} MB.",
         "label_print": "Etikettendruck",
         "label_print_title": "Etikettendruck",
@@ -1015,7 +1073,7 @@ TRANSLATIONS = {
         "nav_slot_status": "Slot status",
         "nav_printers": "Printers",
         "nav_storage_locations": "Storage locations",
-        "nav_help": "Help",
+        "nav_supplies": "Supplies",
         "nav_menu": "Menu",
         "nav_home": "Dashboard",
         "settings_language": "Language",
@@ -1170,6 +1228,30 @@ TRANSLATIONS = {
         "storage_location_invalid": "Selected storage location is invalid.",
         "storage_filter": "Location filter",
         "storage_filter_all": "All locations",
+        "supplies_title": "Supplies",
+        "supplies_hint": "Simple inventory for consumables like glue, nozzles, or cleaning material.",
+        "supplies_add": "Add item",
+        "supplies_category_add": "Add category",
+        "supplies_category_exists": "Category already exists.",
+        "supplies_category_saved": "Category saved.",
+        "supplies_name": "Name",
+        "supplies_category": "Category",
+        "supplies_quantity": "Quantity",
+        "supplies_unit": "Unit",
+        "supplies_min_quantity": "Minimum stock",
+        "supplies_notes": "Notes",
+        "supplies_adjust": "Adjust",
+        "supplies_adjust_hint": "Enter value with + or -, e.g. -1 or +2.",
+        "supplies_none": "No supplies yet.",
+        "supplies_category_none": "No category",
+        "supplies_saved": "Item saved.",
+        "supplies_updated": "Item updated.",
+        "supplies_deleted": "Item deleted.",
+        "supplies_adjusted": "Stock was adjusted.",
+        "supplies_invalid": "Please provide a name and valid quantity.",
+        "supplies_invalid_adjust": "Please provide a valid adjustment value.",
+        "supplies_default_category": "Consumables",
+        "supplies_default_unit": "pcs",
         "ams_printer": "AMS printer",
         "ams_slot": "AMS slot",
         "status": "Status",
@@ -1272,6 +1354,7 @@ TRANSLATIONS = {
         "slot_status_hint": "Compares configured spool mapping with the latest polled device state.",
         "slot_status_printer": "Printer",
         "slot_status_slot": "Slot",
+        "slot_status_ams": "AMS",
         "slot_status_expected": "Expected (spool)",
         "slot_status_observed": "Live",
         "slot_status_state": "State",
@@ -1289,6 +1372,13 @@ TRANSLATIONS = {
         "slot_data_stale": "Stale",
         "slot_data_no_data": "No live data",
         "slot_data_age": "Age",
+        "slot_remap_action": "Fix AMS mapping from live data",
+        "slot_remap_done": "AMS mapping updated: {updated} spool(s).",
+        "slot_remap_none": "No unambiguous corrections found.",
+        "slot_remap_no_live": "No live slot data available.",
+        "slot_format_migrate_action": "Migrate slot format to 1xx/2xx",
+        "slot_format_migrate_done": "Slot format migrated: spools={spools}, live slots={states}, history contexts={contexts}.",
+        "slot_format_migrate_skip": "Some entries were skipped because of conflicts: {count}.",
         "printers_title": "Printer management",
         "printers_hint": "Manage multiple printers and their live telemetry in one place.",
         "printers_add": "Add printer",
@@ -1390,6 +1480,19 @@ TRANSLATIONS = {
         "backup_sqlite_only": "In-app backup/restore is currently available for SQLite only. For PostgreSQL, use pg_dump/pg_restore.",
         "backup_pg_tools_missing": "PostgreSQL backup requires pg_dump and pg_restore in the app container.",
         "backup_unsupported": "Backup/restore is not supported for this database type.",
+        "backup_reset_title": "Delete all data",
+        "backup_reset_hint": "Irreversibly deletes all database records. Backup files in backup storage remain untouched.",
+        "backup_reset_confirm_checkbox": "I understand that all database records will be deleted.",
+        "backup_reset_confirm_phrase_label": "Confirmation text",
+        "backup_reset_confirm_phrase_hint": "Please type exactly: {phrase}",
+        "backup_reset_confirm_phrase_placeholder": "Enter confirmation text",
+        "backup_reset_action": "Delete all data now",
+        "backup_reset_create_backup": "Create a backup before deleting",
+        "backup_reset_backup_failed": "Deletion aborted: pre-delete backup could not be created.",
+        "backup_reset_confirm_required": "Deletion aborted: both confirmations are required.",
+        "backup_reset_done": "All database records were deleted ({rows}). Backup files were not changed.",
+        "backup_reset_done_with_backup": "All database records were deleted ({rows}). A backup was created first: {filename}",
+        "backup_reset_failed": "Database could not be fully cleared.",
         "upload_too_large": "File is too large. Maximum: {max_mb} MB.",
         "label_print": "Label printing",
         "label_print_title": "Label printing",
@@ -1554,6 +1657,8 @@ def _sync_postgres_id_sequences() -> None:
     sequence_targets = (
         ("spools", "id"),
         ("usage_history", "id"),
+        ("supply_categories", "id"),
+        ("supply_items", "id"),
     )
     with engine.begin() as conn:
         for table_name, column_name in sequence_targets:
@@ -2746,7 +2851,26 @@ def _build_backup_context(lang: str, **extra) -> dict:
     context.setdefault("backup_auto_retention_days", int(auto_settings.get("retention_days") or 14))
     context.setdefault("backup_auto_last_run_at", auto_settings.get("last_run_at"))
     context.setdefault("backup_active_tab", "manual")
+    context.setdefault("backup_reset_confirm_phrase", BACKUP_RESET_CONFIRM_PHRASE)
     return context
+
+
+def _delete_all_database_rows() -> int:
+    deleted_rows = 0
+    with engine.begin() as connection:
+        is_sqlite = str(getattr(engine.dialect, "name", "")).lower() == "sqlite"
+        if is_sqlite:
+            connection.execute(text("PRAGMA foreign_keys=OFF"))
+        try:
+            for table in reversed(Base.metadata.sorted_tables):
+                result = connection.execute(table.delete())
+                rowcount = int(result.rowcount or 0)
+                if rowcount > 0:
+                    deleted_rows += rowcount
+        finally:
+            if is_sqlite:
+                connection.execute(text("PRAGMA foreign_keys=ON"))
+    return deleted_rows
 
 
 def _parse_optional_float(value: Optional[str]) -> Optional[float]:
@@ -3032,11 +3156,52 @@ def _normalize_ams_slot(value: Optional[str]) -> Optional[int]:
     return parsed if parsed > 0 else None
 
 
+def _normalize_ams_raw_id(value: object) -> Optional[int]:
+    if value is None:
+        return None
+    raw = str(value).strip()
+    if not raw:
+        return None
+    try:
+        return int(float(raw))
+    except ValueError:
+        return None
+
+
+def _first_present_value(*values: object) -> object:
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        return value
+    return None
+
+
+_AMS_RAW_ID_TO_UNIT = {
+    0: 1,
+    128: 2,
+    129: 3,
+    130: 4,
+}
+
+
+def _resolve_ams_unit(raw_ams_id: Optional[int], fallback_unit: Optional[int] = None) -> Optional[int]:
+    if raw_ams_id is not None:
+        if raw_ams_id in _AMS_RAW_ID_TO_UNIT:
+            return _AMS_RAW_ID_TO_UNIT[raw_ams_id]
+        if 1 <= raw_ams_id <= 26:
+            return raw_ams_id
+    if fallback_unit is not None and fallback_unit > 0:
+        return fallback_unit
+    return None
+
+
 def _compose_ams_global_slot(ams_unit: Optional[int], slot_local: Optional[int]) -> Optional[int]:
     if slot_local is None:
         return None
-    if ams_unit is None or ams_unit <= 1:
-        return slot_local
+    if ams_unit is None or ams_unit <= 0:
+        ams_unit = 1
     return (ams_unit * 100) + slot_local
 
 
@@ -3049,6 +3214,29 @@ def _infer_ams_slot_parts(global_slot: Optional[int]) -> tuple[Optional[int], Op
         if ams_unit > 0 and slot_local > 0:
             return ams_unit, slot_local
     return 1, global_slot
+
+
+def _normalize_ams_slot_canonical(value: Optional[str]) -> Optional[int]:
+    parsed = _normalize_ams_slot(value)
+    if parsed is None:
+        return None
+    ams_unit, slot_local = _infer_ams_slot_parts(parsed)
+    return _compose_ams_global_slot(ams_unit, slot_local)
+
+
+def _equivalent_ams_slots(slot: int) -> set[int]:
+    if slot <= 0:
+        return set()
+    candidates: set[int] = {slot}
+    inferred_unit, inferred_local = _infer_ams_slot_parts(slot)
+    canonical = _compose_ams_global_slot(inferred_unit, inferred_local)
+    if canonical is not None:
+        candidates.add(canonical)
+    if inferred_unit == 1 and inferred_local is not None:
+        candidates.add(inferred_local)
+    if slot < 100:
+        candidates.add(100 + slot)
+    return {value for value in candidates if value > 0}
 
 
 _AMS_ID_NAME_FALLBACK = {
@@ -3170,22 +3358,23 @@ def _humanize_observed_color(value: Optional[str]) -> Optional[str]:
 
 def _slot_scoped_spools(spools: list[Spool], slot: int, printer_name: Optional[str]) -> list[Spool]:
     normalized_printer = _normalize_printer_name(printer_name)
+    slot_candidates = _equivalent_ams_slots(slot)
     if normalized_printer:
         exact = [
             spool for spool in spools
-            if spool.ams_slot == slot and (spool.ams_printer or "").strip() == normalized_printer
+            if int(spool.ams_slot or 0) in slot_candidates and (spool.ams_printer or "").strip() == normalized_printer
         ]
         if exact:
             return exact
         fallback_global = [
             spool for spool in spools
-            if spool.ams_slot == slot and not str(spool.ams_printer or "").strip()
+            if int(spool.ams_slot or 0) in slot_candidates and not str(spool.ams_printer or "").strip()
         ]
         if fallback_global:
             return fallback_global
         return []
 
-    return [spool for spool in spools if spool.ams_slot == slot]
+    return [spool for spool in spools if int(spool.ams_slot or 0) in slot_candidates]
 
 
 def _find_ams_slot_conflict(
@@ -3688,11 +3877,57 @@ def _group_usage_history_rows(rows: list[UsageHistory]) -> list[dict]:
 def _build_slot_status_rows(
     mapped_spools: list[Spool],
     live_states: list[DeviceSlotState],
+    printer_ams_name_maps: Optional[dict[str, dict[int, str]]] = None,
 ) -> tuple[list[dict], dict[str, int]]:
+    printer_has_ams_signal: dict[str, bool] = {}
+    for state in live_states:
+        printer_key = str(state.printer_name or state.printer_serial or "").strip()
+        if not printer_key:
+            continue
+        slot_value = int(state.slot or 0)
+        has_signal = (
+            int(state.ams_unit or 0) > 0
+            or int(state.slot_local or 0) > 0
+            or slot_value >= 100
+        )
+        if has_signal:
+            printer_has_ams_signal[printer_key] = True
+
+    def _canonical_slot_for_status(
+        printer_name: str,
+        slot: int,
+        ams_unit: Optional[int] = None,
+        slot_local: Optional[int] = None,
+    ) -> int:
+        if slot <= 0:
+            return slot
+        should_canonicalize = bool(printer_has_ams_signal.get(printer_name))
+        if not should_canonicalize and slot >= 100:
+            should_canonicalize = True
+        if not should_canonicalize:
+            return slot
+
+        normalized_unit = int(ams_unit or 0) or None
+        normalized_local = int(slot_local or 0) or None
+        inferred_unit, inferred_local = _infer_ams_slot_parts(slot)
+        if normalized_unit is None:
+            normalized_unit = inferred_unit
+        if normalized_local is None:
+            normalized_local = inferred_local
+        canonical = _compose_ams_global_slot(normalized_unit, normalized_local)
+        return int(canonical or slot)
+
     state_map: dict[tuple[str, int], DeviceSlotState] = {}
     for state in live_states:
         printer_key = str(state.printer_name or state.printer_serial or "").strip()
-        key = (printer_key, int(state.slot or 0))
+        slot_value = int(state.slot or 0)
+        canonical_slot = _canonical_slot_for_status(
+            printer_key,
+            slot_value,
+            int(state.ams_unit or 0) or None,
+            int(state.slot_local or 0) or None,
+        )
+        key = (printer_key, canonical_slot)
         if not key[0] or key[1] <= 0:
             continue
         current = state_map.get(key)
@@ -3721,6 +3956,29 @@ def _build_slot_status_rows(
     def _same_text(a: Optional[str], b: Optional[str]) -> bool:
         return str(a or "").strip().lower() == str(b or "").strip().lower()
 
+    normalized_maps: dict[str, dict[int, str]] = {}
+    for printer_key, mapping in (printer_ams_name_maps or {}).items():
+        normalized_printer = _normalize_printer_name(printer_key)
+        if not normalized_printer or not isinstance(mapping, dict):
+            continue
+        normalized_maps[normalized_printer] = mapping
+
+    def _resolve_ams_label_for_printer(printer_name: Optional[str], ams_unit: Optional[int], ams_name: Optional[str]) -> str:
+        normalized_printer = _normalize_printer_name(printer_name)
+        custom_mapping = normalized_maps.get(normalized_printer) if normalized_printer else None
+        return _resolve_ams_label(ams_name, ams_unit, custom_mapping)
+
+    def _format_ams_descriptor(
+        printer_name: Optional[str],
+        ams_unit: Optional[int],
+        slot_local: Optional[int],
+        ams_name: Optional[str] = None,
+    ) -> str:
+        label = _resolve_ams_label_for_printer(printer_name, ams_unit, ams_name)
+        if slot_local is not None and slot_local > 0:
+            return f"{label} · S{int(slot_local)}"
+        return label
+
     expected_map: dict[tuple[str, int], Spool] = {}
     ordered_spools = sorted(
         mapped_spools,
@@ -3728,7 +3986,7 @@ def _build_slot_status_rows(
     )
     for spool in ordered_spools:
         printer = str(spool.ams_printer or "").strip()
-        slot = int(spool.ams_slot or 0)
+        slot = _canonical_slot_for_status(printer, int(spool.ams_slot or 0))
         if not printer or slot <= 0:
             continue
         expected_map.setdefault((printer, slot), spool)
@@ -3765,10 +4023,32 @@ def _build_slot_status_rows(
                     state_label = "ok" if matches else "mismatch"
 
         summary[state_label] += 1
+        expected_ams = "-"
+        if spool is not None:
+            expected_unit, expected_local = _infer_ams_slot_parts(int(spool.ams_slot or 0))
+            expected_ams = _format_ams_descriptor(printer, expected_unit, expected_local)
+
+        observed_ams = "-"
+        if state is not None:
+            observed_unit = int(state.ams_unit or 0) or None
+            observed_local = int(state.slot_local or 0) or None
+            if observed_unit is None or observed_local is None:
+                inferred_unit, inferred_local = _infer_ams_slot_parts(int(state.slot or 0))
+                observed_unit = observed_unit or inferred_unit
+                observed_local = observed_local or inferred_local
+            observed_ams = _format_ams_descriptor(
+                printer,
+                observed_unit,
+                observed_local,
+                str(state.ams_name or "").strip() or None,
+            )
+
         rows.append(
             {
                 "printer": printer,
                 "slot": slot,
+                "expected_ams": expected_ams,
+                "observed_ams": observed_ams,
                 "spool": spool,
                 "observed_brand": state.observed_brand if state else None,
                 "observed_material": state.observed_material if state else None,
@@ -3806,6 +4086,170 @@ def _summarize_slot_data_freshness(observed_times: list[Optional[datetime]]) -> 
         "last_seen_at": latest_seen,
         "age_seconds": age_seconds,
     }
+
+
+def _normalize_signature_text(value: Optional[str]) -> str:
+    return str(value or "").strip().lower()
+
+
+def _build_slot_remap_plan(mapped_spools: list[Spool], live_states: list[DeviceSlotState]) -> list[tuple[Spool, int]]:
+    spools_by_printer: dict[str, list[Spool]] = {}
+    for spool in mapped_spools:
+        printer = _normalize_printer_name(spool.ams_printer)
+        slot = int(spool.ams_slot or 0)
+        if not printer or slot <= 0:
+            continue
+        spools_by_printer.setdefault(printer, []).append(spool)
+
+    states_by_printer: dict[str, list[DeviceSlotState]] = {}
+    for state in live_states:
+        printer = _normalize_printer_name(state.printer_name or state.printer_serial)
+        slot = int(state.slot or 0)
+        if not printer or slot <= 0:
+            continue
+        states_by_printer.setdefault(printer, []).append(state)
+
+    plan: list[tuple[Spool, int]] = []
+    for printer, printer_spools in spools_by_printer.items():
+        printer_states = states_by_printer.get(printer, [])
+        if not printer_states:
+            continue
+
+        spool_sig_counts: dict[tuple[str, str], int] = {}
+        state_sig_counts: dict[tuple[str, str], int] = {}
+        state_sig_to_slot: dict[tuple[str, str], int] = {}
+
+        for spool in printer_spools:
+            sig = (_normalize_signature_text(spool.material), _normalize_signature_text(spool.color))
+            if not sig[0] or not sig[1]:
+                continue
+            spool_sig_counts[sig] = int(spool_sig_counts.get(sig, 0)) + 1
+
+        for state in printer_states:
+            sig = (_normalize_signature_text(state.observed_material), _normalize_signature_text(state.observed_color))
+            if not sig[0] or not sig[1]:
+                continue
+            state_sig_counts[sig] = int(state_sig_counts.get(sig, 0)) + 1
+            state_sig_to_slot[sig] = int(state.slot or 0)
+
+        for spool in printer_spools:
+            current_slot = int(spool.ams_slot or 0)
+            sig = (_normalize_signature_text(spool.material), _normalize_signature_text(spool.color))
+            if not sig[0] or not sig[1]:
+                continue
+            if int(spool_sig_counts.get(sig, 0)) != 1:
+                continue
+            if int(state_sig_counts.get(sig, 0)) != 1:
+                continue
+
+            target_slot = int(state_sig_to_slot.get(sig, 0) or 0)
+            if target_slot <= 0 or target_slot == current_slot:
+                continue
+            plan.append((spool, target_slot))
+
+    return plan
+
+
+def _migrate_slot_format_to_canonical(db: Session, project: str) -> dict[str, int]:
+    result = {
+        "spools": 0,
+        "states": 0,
+        "contexts": 0,
+        "skipped": 0,
+    }
+
+    spool_rows = (
+        db.query(Spool)
+        .filter(Spool.project == project, Spool.ams_slot.is_not(None), Spool.ams_slot > 0)
+        .all()
+    )
+    for spool in spool_rows:
+        old_slot = int(spool.ams_slot or 0)
+        ams_unit, slot_local = _infer_ams_slot_parts(old_slot)
+        new_slot = _compose_ams_global_slot(ams_unit, slot_local)
+        if new_slot is None or new_slot == old_slot:
+            continue
+        conflict = (
+            db.query(Spool)
+            .filter(
+                Spool.project == project,
+                Spool.id != spool.id,
+                Spool.ams_printer == spool.ams_printer,
+                Spool.ams_slot == new_slot,
+            )
+            .first()
+        )
+        if conflict is not None:
+            result["skipped"] += 1
+            continue
+        spool.ams_slot = int(new_slot)
+        result["spools"] += 1
+
+    state_rows = (
+        db.query(DeviceSlotState)
+        .filter(DeviceSlotState.project == project, DeviceSlotState.slot.is_not(None), DeviceSlotState.slot > 0)
+        .all()
+    )
+    for state in state_rows:
+        old_slot = int(state.slot or 0)
+        ams_unit = int(state.ams_unit or 0) or None
+        slot_local = int(state.slot_local or 0) or None
+        if ams_unit is None and old_slot < 100:
+            continue
+        if slot_local is None:
+            _, inferred_local = _infer_ams_slot_parts(old_slot)
+            slot_local = inferred_local
+        if ams_unit is None:
+            inferred_unit, _ = _infer_ams_slot_parts(old_slot)
+            ams_unit = inferred_unit
+        new_slot = _compose_ams_global_slot(ams_unit, slot_local)
+        if new_slot is None or new_slot == old_slot:
+            continue
+        conflict = (
+            db.query(DeviceSlotState)
+            .filter(
+                DeviceSlotState.project == project,
+                DeviceSlotState.id != state.id,
+                DeviceSlotState.printer_name == state.printer_name,
+                DeviceSlotState.slot == new_slot,
+            )
+            .first()
+        )
+        if conflict is not None:
+            result["skipped"] += 1
+            continue
+        state.slot = int(new_slot)
+        if state.slot_local is None and slot_local is not None:
+            state.slot_local = int(slot_local)
+        if state.ams_unit is None and ams_unit is not None:
+            state.ams_unit = int(ams_unit)
+        result["states"] += 1
+
+    context_rows = (
+        db.query(UsageBatchContext)
+        .filter(UsageBatchContext.project == project, UsageBatchContext.ams_slots.is_not(None), UsageBatchContext.ams_slots != "")
+        .all()
+    )
+    for context in context_rows:
+        old_slots = _parse_slot_tokens(context.ams_slots)
+        if not old_slots:
+            continue
+        new_slots: list[int] = []
+        changed = False
+        for slot in old_slots:
+            ams_unit, slot_local = _infer_ams_slot_parts(slot)
+            canonical = _compose_ams_global_slot(ams_unit, slot_local)
+            if canonical is None:
+                continue
+            new_slots.append(int(canonical))
+            if int(canonical) != int(slot):
+                changed = True
+        if not changed:
+            continue
+        context.ams_slots = _serialize_ams_slots(new_slots)
+        result["contexts"] += 1
+
+    return result
 
 
 def _extract_slot_state_entries(payload: object) -> list[dict]:
@@ -3872,8 +4316,13 @@ def _extract_slot_state_entries(payload: object) -> list[dict]:
                 continue
 
             slot = _normalize_ams_slot(row.get("slot") or row.get("slot_id"))
-            slot_local = _normalize_ams_slot(row.get("slot_local") or row.get("ams_slot"))
-            ams_unit = _normalize_ams_slot(row.get("ams_unit") or row.get("ams_id") or row.get("ams_index"))
+            slot_local = _normalize_ams_slot(_first_present_value(row.get("slot_local"), row.get("ams_slot")))
+            raw_ams_id = _normalize_ams_raw_id(
+                _first_present_value(row.get("ams_id"), row.get("ams_unit"), row.get("ams_index"))
+            )
+            ams_unit = _resolve_ams_unit(raw_ams_id)
+            if ams_unit is None:
+                ams_unit = _normalize_ams_slot(_first_present_value(row.get("ams_unit"), row.get("ams_index")))
             ams_name = str(row.get("ams_name") or row.get("ams_label") or "").strip()[:120] or None
 
             if slot_local is None:
@@ -3889,6 +4338,11 @@ def _extract_slot_state_entries(payload: object) -> list[dict]:
                     ams_unit = inferred_ams_unit
                 if slot_local is None:
                     slot_local = inferred_slot_local
+
+            if ams_unit is not None and slot_local is not None:
+                canonical_slot = _compose_ams_global_slot(ams_unit, slot_local)
+                if canonical_slot is not None:
+                    slot = canonical_slot
 
             ams_name = _resolve_ams_label(ams_name, ams_unit)
 
@@ -5218,7 +5672,19 @@ def slot_status_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    slot_rows, slot_summary = _build_slot_status_rows(mapped_spools, live_states)
+    printers = (
+        db.query(Printer)
+        .filter(Printer.project == project)
+        .all()
+    )
+    printer_ams_name_maps: dict[str, dict[int, str]] = {}
+    for printer in printers:
+        printer_name = _normalize_printer_name(printer.name)
+        if not printer_name:
+            continue
+        printer_ams_name_maps[printer_name] = _parse_ams_name_mapping(printer.ams_name_map)
+
+    slot_rows, slot_summary = _build_slot_status_rows(mapped_spools, live_states, printer_ams_name_maps)
     slot_data_freshness = _summarize_slot_data_freshness([state.observed_at for state in live_states])
 
     return render(
@@ -5230,6 +5696,154 @@ def slot_status_page(request: Request, db: Session = Depends(get_db)):
             "has_live_data": len(live_states) > 0,
             "stale_minutes": SLOT_STATE_STALE_MINUTES,
             "slot_data_freshness": slot_data_freshness,
+        },
+        lang,
+    )
+
+
+@app.post("/slot-status/remap-ams")
+def slot_status_remap_ams(request: Request, db: Session = Depends(get_db)):
+    lang = get_lang(request)
+    project = get_project(request)
+    t = t_factory(lang)
+
+    mapped_spools = (
+        db.query(Spool)
+        .filter(Spool.project == project, Spool.ams_slot.is_not(None), Spool.ams_slot > 0)
+        .all()
+    )
+    live_states = (
+        db.query(DeviceSlotState)
+        .filter(DeviceSlotState.project == project)
+        .all()
+    )
+
+    printers = (
+        db.query(Printer)
+        .filter(Printer.project == project)
+        .all()
+    )
+    printer_ams_name_maps: dict[str, dict[int, str]] = {}
+    for printer in printers:
+        printer_name = _normalize_printer_name(printer.name)
+        if not printer_name:
+            continue
+        printer_ams_name_maps[printer_name] = _parse_ams_name_mapping(printer.ams_name_map)
+
+    message: Optional[str] = None
+    error: Optional[str] = None
+
+    if not live_states:
+        error = t("slot_remap_no_live")
+    else:
+        remap_plan = _build_slot_remap_plan(mapped_spools, live_states)
+        updated = 0
+        now = _utcnow().replace(tzinfo=None)
+        for spool, target_slot in remap_plan:
+            if int(spool.ams_slot or 0) == int(target_slot):
+                continue
+            spool.ams_slot = int(target_slot)
+            spool.updated_at = now
+            updated += 1
+
+        if updated > 0:
+            _audit_log(
+                db,
+                project,
+                "slot_status_remap_ams",
+                request=request,
+                entity_type="spool",
+                details={"updated": int(updated)},
+            )
+            db.commit()
+            message = t("slot_remap_done").format(updated=updated)
+        else:
+            message = t("slot_remap_none")
+
+    refreshed_spools = (
+        db.query(Spool)
+        .filter(Spool.project == project, Spool.ams_slot.is_not(None), Spool.ams_slot > 0)
+        .all()
+    )
+    refreshed_states = (
+        db.query(DeviceSlotState)
+        .filter(DeviceSlotState.project == project)
+        .all()
+    )
+
+    slot_rows, slot_summary = _build_slot_status_rows(refreshed_spools, refreshed_states, printer_ams_name_maps)
+    slot_data_freshness = _summarize_slot_data_freshness([state.observed_at for state in refreshed_states])
+
+    return render(
+        request,
+        "slot_status.html",
+        {
+            "slot_rows": slot_rows,
+            "slot_summary": slot_summary,
+            "has_live_data": len(refreshed_states) > 0,
+            "stale_minutes": SLOT_STATE_STALE_MINUTES,
+            "slot_data_freshness": slot_data_freshness,
+            "message": message,
+            "error": error,
+        },
+        lang,
+    )
+
+
+@app.post("/slot-status/migrate-slot-format")
+def slot_status_migrate_slot_format(request: Request, db: Session = Depends(get_db)):
+    lang = get_lang(request)
+    project = get_project(request)
+    t = t_factory(lang)
+
+    migration = _migrate_slot_format_to_canonical(db, project)
+    db.commit()
+
+    printers = (
+        db.query(Printer)
+        .filter(Printer.project == project)
+        .all()
+    )
+    printer_ams_name_maps: dict[str, dict[int, str]] = {}
+    for printer in printers:
+        printer_name = _normalize_printer_name(printer.name)
+        if not printer_name:
+            continue
+        printer_ams_name_maps[printer_name] = _parse_ams_name_mapping(printer.ams_name_map)
+
+    mapped_spools = (
+        db.query(Spool)
+        .filter(Spool.project == project, Spool.ams_slot.is_not(None), Spool.ams_slot > 0)
+        .all()
+    )
+    live_states = (
+        db.query(DeviceSlotState)
+        .filter(DeviceSlotState.project == project)
+        .all()
+    )
+
+    slot_rows, slot_summary = _build_slot_status_rows(mapped_spools, live_states, printer_ams_name_maps)
+    slot_data_freshness = _summarize_slot_data_freshness([state.observed_at for state in live_states])
+
+    message = t("slot_format_migrate_done").format(
+        spools=int(migration.get("spools", 0)),
+        states=int(migration.get("states", 0)),
+        contexts=int(migration.get("contexts", 0)),
+    )
+    skip_count = int(migration.get("skipped", 0))
+    if skip_count > 0:
+        message = f"{message} {t('slot_format_migrate_skip').format(count=skip_count)}"
+
+    return render(
+        request,
+        "slot_status.html",
+        {
+            "slot_rows": slot_rows,
+            "slot_summary": slot_summary,
+            "has_live_data": len(live_states) > 0,
+            "stale_minutes": SLOT_STATE_STALE_MINUTES,
+            "slot_data_freshness": slot_data_freshness,
+            "message": message,
         },
         lang,
     )
@@ -5552,6 +6166,24 @@ def _render_printers_page(
         .all()
     )
 
+    printer_has_ams_signal_by_serial: dict[str, bool] = {}
+    printer_has_ams_signal_by_name: dict[str, bool] = {}
+    for state in live_slot_states:
+        slot_number = int(state.slot or 0)
+        has_signal = (
+            int(state.ams_unit or 0) > 0
+            or int(state.slot_local or 0) > 0
+            or slot_number >= 100
+        )
+        if not has_signal:
+            continue
+        state_serial = _normalize_printer_serial(state.printer_serial)
+        if state_serial:
+            printer_has_ams_signal_by_serial[state_serial] = True
+        state_name = _normalize_printer_name(state.printer_name)
+        if state_name:
+            printer_has_ams_signal_by_name[state_name] = True
+
     slots_by_serial: dict[str, list[dict]] = {}
     slots_by_name: dict[str, list[dict]] = {}
     for state in live_slot_states:
@@ -5565,6 +6197,16 @@ def _render_printers_page(
         ams_name = str(state.ams_name or "").strip() or None
         ams_label = _resolve_ams_label(ams_name, ams_unit)
 
+        state_serial = _normalize_printer_serial(state.printer_serial)
+        state_name = _normalize_printer_name(state.printer_name)
+        should_canonicalize_slot = (
+            bool(state_serial and printer_has_ams_signal_by_serial.get(state_serial))
+            or bool(state_name and printer_has_ams_signal_by_name.get(state_name))
+            or slot_number >= 100
+        )
+        canonical_slot = _compose_ams_global_slot(ams_unit, slot_local) if should_canonicalize_slot else slot_number
+        slot_display = int(canonical_slot or slot_number)
+
         observed_color = _humanize_observed_color(state.observed_color)
         observed_parts = [
             str(state.observed_brand or "").strip(),
@@ -5575,7 +6217,7 @@ def _render_printers_page(
         observed_label = " · ".join(observed_parts) if observed_parts else "-"
 
         slot_item = {
-            "slot": slot_number,
+            "slot": slot_display,
             "slot_local": slot_local,
             "ams_unit": ams_unit,
             "ams_name": ams_name,
@@ -5585,11 +6227,9 @@ def _render_printers_page(
             "observed_at": state.observed_at,
         }
 
-        state_serial = _normalize_printer_serial(state.printer_serial)
         if state_serial:
             slots_by_serial.setdefault(state_serial, []).append(slot_item)
 
-        state_name = _normalize_printer_name(state.printer_name)
         if state_name:
             slots_by_name.setdefault(state_name, []).append(slot_item)
 
@@ -5687,6 +6327,103 @@ def _render_printers_page(
     )
 
 
+def _render_supplies_page(
+    request: Request,
+    db: Session,
+    lang: str,
+    message: Optional[str] = None,
+    error: Optional[str] = None,
+    form_data: Optional[dict] = None,
+):
+    project = get_project(request)
+    t = t_factory(lang)
+    rows = (
+        db.query(SupplyItem)
+        .filter(SupplyItem.project == project)
+        .order_by(SupplyItem.category.asc(), SupplyItem.name.asc(), SupplyItem.id.asc())
+        .all()
+    )
+    storage_location_options = _storage_location_options(db, project)
+    storage_path_to_id = {
+        str(item.get("path_code") or ""): int(item.get("id"))
+        for item in storage_location_options
+        if item.get("id") is not None
+    }
+
+    prepared_rows: list[dict] = []
+    low_stock_count = 0
+    for row in rows:
+        quantity = round(float(row.quantity or 0.0), 3)
+        minimum = round(float(row.min_quantity), 3) if row.min_quantity is not None else None
+        is_low_stock = minimum is not None and quantity <= minimum
+        if is_low_stock:
+            low_stock_count += 1
+        prepared_rows.append(
+            {
+                "id": row.id,
+                "name": row.name,
+                "category": row.category,
+                "quantity": quantity,
+                "unit": row.unit,
+                "min_quantity": minimum,
+                "location": row.location,
+                "storage_sub_location_id": storage_path_to_id.get(str(row.location or "").strip()),
+                "notes": row.notes,
+                "is_low_stock": is_low_stock,
+            }
+        )
+
+    category_rows = (
+        db.query(SupplyCategory)
+        .filter(SupplyCategory.project == project)
+        .order_by(SupplyCategory.name.asc(), SupplyCategory.id.asc())
+        .all()
+    )
+    categories = sorted(
+        {
+            *[str(item.name or "").strip() for item in category_rows if str(item.name or "").strip()],
+            *[str(item.category or "").strip() for item in rows if str(item.category or "").strip()],
+        },
+        key=lambda value: value.lower(),
+    )
+
+    return render(
+        request,
+        "supplies.html",
+        {
+            "title": t("supplies_title"),
+            "supplies_rows": prepared_rows,
+            "supplies_low_stock_count": low_stock_count,
+            "categories": categories,
+            "storage_location_options": storage_location_options,
+            "form_data": form_data or {},
+            "message": message,
+            "error": error,
+        },
+        lang,
+    )
+
+
+def _resolve_supply_location_path(
+    db: Session,
+    project: str,
+    storage_sub_location_id: Optional[str],
+) -> Optional[str]:
+    raw = str(storage_sub_location_id or "").strip()
+    if not raw:
+        return None
+    if not raw.isdigit():
+        return None
+    location = (
+        db.query(StorageSubLocation)
+        .filter(StorageSubLocation.project == project, StorageSubLocation.id == int(raw))
+        .first()
+    )
+    if location is None:
+        return None
+    return str(location.path_code or "").strip() or None
+
+
 @app.get("/printers")
 def printers_page(request: Request, db: Session = Depends(get_db)):
     lang = get_lang(request)
@@ -5702,6 +6439,285 @@ def printers_page(request: Request, db: Session = Depends(get_db)):
         open_printer_id=open_printer_id,
         open_printer_tab="ams" if open_printer_tab_raw == "ams" else "device",
     )
+
+
+@app.get("/supplies")
+def supplies_page(request: Request, db: Session = Depends(get_db)):
+    lang = get_lang(request)
+    return _render_supplies_page(request, db, lang)
+
+
+@app.post("/supplies")
+def create_supply_item(
+    request: Request,
+    name: str = Form(""),
+    category: Optional[str] = Form(None),
+    storage_sub_location_id: Optional[str] = Form(None),
+    quantity: Optional[str] = Form(None),
+    unit: Optional[str] = Form(None),
+    min_quantity: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    lang = get_lang(request)
+    t = t_factory(lang)
+    project = get_project(request)
+
+    normalized_name = str(name or "").strip()[:120]
+    normalized_category = str(category or "").strip()[:80] or t("supplies_default_category")
+    parsed_quantity = _parse_optional_float(quantity)
+    normalized_unit = str(unit or "").strip()[:32] or t("supplies_default_unit")
+    parsed_min_quantity = _parse_optional_float(min_quantity)
+    normalized_location = _resolve_supply_location_path(db, project, storage_sub_location_id)
+    normalized_notes = str(notes or "").strip() or None
+
+    form_data = {
+        "name": name,
+        "category": category,
+        "quantity": quantity,
+        "unit": unit,
+        "min_quantity": min_quantity,
+        "storage_sub_location_id": storage_sub_location_id,
+        "notes": notes,
+    }
+
+    if not normalized_name or parsed_quantity is None or float(parsed_quantity) < 0:
+        return _render_supplies_page(request, db, lang, error=t("supplies_invalid"), form_data=form_data)
+
+    item = SupplyItem(
+        project=project,
+        name=normalized_name,
+        category=normalized_category,
+        quantity=round(float(parsed_quantity), 3),
+        unit=normalized_unit,
+        min_quantity=(round(float(parsed_min_quantity), 3) if parsed_min_quantity is not None and float(parsed_min_quantity) >= 0 else None),
+        location=normalized_location,
+        notes=normalized_notes,
+        created_at=_utcnow(),
+        updated_at=_utcnow(),
+    )
+    db.add(item)
+    _audit_log(
+        db,
+        project,
+        "supply_create",
+        request=request,
+        entity_type="supply_item",
+        details={
+            "name": normalized_name,
+            "category": normalized_category,
+            "quantity": item.quantity,
+            "unit": normalized_unit,
+            "location": item.location,
+        },
+    )
+    db.commit()
+
+    return _render_supplies_page(request, db, lang, message=t("supplies_saved"))
+
+
+@app.post("/supplies/categories")
+def create_supply_category(
+    request: Request,
+    name: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    lang = get_lang(request)
+    t = t_factory(lang)
+    project = get_project(request)
+
+    normalized_name = str(name or "").strip()[:80]
+    if not normalized_name:
+        return _render_supplies_page(request, db, lang, error=t("supplies_invalid"))
+
+    exists = (
+        db.query(SupplyCategory)
+        .filter(SupplyCategory.project == project, SupplyCategory.name == normalized_name)
+        .first()
+    )
+    if exists is not None:
+        return _render_supplies_page(request, db, lang, error=t("supplies_category_exists"))
+
+    db.add(
+        SupplyCategory(
+            project=project,
+            name=normalized_name,
+            created_at=_utcnow(),
+            updated_at=_utcnow(),
+        )
+    )
+    _audit_log(
+        db,
+        project,
+        "supply_category_create",
+        request=request,
+        entity_type="supply_category",
+        entity_id=normalized_name,
+    )
+    db.commit()
+    return _render_supplies_page(request, db, lang, message=t("supplies_category_saved"))
+
+
+@app.post("/supplies/{supply_id}/adjust")
+def adjust_supply_item(
+    supply_id: int,
+    request: Request,
+    delta_quantity: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    lang = get_lang(request)
+    t = t_factory(lang)
+    project = get_project(request)
+
+    item = (
+        db.query(SupplyItem)
+        .filter(SupplyItem.project == project, SupplyItem.id == supply_id)
+        .first()
+    )
+    if item is None:
+        return _render_supplies_page(request, db, lang, error=t("supplies_invalid"))
+
+    delta = _parse_optional_float(delta_quantity)
+    if delta is None:
+        return _render_supplies_page(request, db, lang, error=t("supplies_invalid_adjust"))
+
+    before = float(item.quantity or 0.0)
+    after = max(0.0, before + float(delta))
+    item.quantity = round(after, 3)
+    item.updated_at = _utcnow()
+
+    _audit_log(
+        db,
+        project,
+        "supply_adjust",
+        request=request,
+        entity_type="supply_item",
+        entity_id=item.id,
+        details={
+            "delta": round(float(delta), 3),
+            "before": round(before, 3),
+            "after": item.quantity,
+        },
+    )
+    db.commit()
+    return _render_supplies_page(request, db, lang, message=t("supplies_adjusted"))
+
+
+@app.post("/supplies/{supply_id}/update")
+def update_supply_item(
+    supply_id: int,
+    request: Request,
+    name: str = Form(""),
+    category: Optional[str] = Form(None),
+    storage_sub_location_id: Optional[str] = Form(None),
+    quantity: Optional[str] = Form(None),
+    unit: Optional[str] = Form(None),
+    min_quantity: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    lang = get_lang(request)
+    t = t_factory(lang)
+    project = get_project(request)
+
+    item = (
+        db.query(SupplyItem)
+        .filter(SupplyItem.project == project, SupplyItem.id == supply_id)
+        .first()
+    )
+    if item is None:
+        return _render_supplies_page(request, db, lang, error=t("supplies_invalid"))
+
+    normalized_name = str(name or "").strip()[:120]
+    normalized_category = str(category or "").strip()[:80] or t("supplies_default_category")
+    parsed_quantity = _parse_optional_float(quantity)
+    normalized_unit = str(unit or "").strip()[:32] or t("supplies_default_unit")
+    parsed_min_quantity = _parse_optional_float(min_quantity)
+    normalized_location = _resolve_supply_location_path(db, project, storage_sub_location_id)
+    normalized_notes = str(notes or "").strip() or None
+
+    if not normalized_name or parsed_quantity is None or float(parsed_quantity) < 0:
+        return _render_supplies_page(request, db, lang, error=t("supplies_invalid"))
+
+    before = {
+        "name": item.name,
+        "category": item.category,
+        "quantity": round(float(item.quantity or 0.0), 3),
+        "unit": item.unit,
+        "min_quantity": round(float(item.min_quantity), 3) if item.min_quantity is not None else None,
+        "location": item.location,
+        "notes": item.notes,
+    }
+
+    item.name = normalized_name
+    item.category = normalized_category
+    item.quantity = round(float(parsed_quantity), 3)
+    item.unit = normalized_unit
+    item.min_quantity = round(float(parsed_min_quantity), 3) if parsed_min_quantity is not None and float(parsed_min_quantity) >= 0 else None
+    item.location = normalized_location
+    item.notes = normalized_notes
+    item.updated_at = _utcnow()
+
+    _audit_log(
+        db,
+        project,
+        "supply_update",
+        request=request,
+        entity_type="supply_item",
+        entity_id=item.id,
+        details={
+            "before": before,
+            "after": {
+                "name": item.name,
+                "category": item.category,
+                "quantity": item.quantity,
+                "unit": item.unit,
+                "min_quantity": item.min_quantity,
+                "location": item.location,
+                "notes": item.notes,
+            },
+        },
+    )
+    db.commit()
+    return _render_supplies_page(request, db, lang, message=t("supplies_updated"))
+
+
+@app.post("/supplies/{supply_id}/delete")
+def delete_supply_item(
+    supply_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    lang = get_lang(request)
+    t = t_factory(lang)
+    project = get_project(request)
+
+    item = (
+        db.query(SupplyItem)
+        .filter(SupplyItem.project == project, SupplyItem.id == supply_id)
+        .first()
+    )
+    if item is None:
+        return _render_supplies_page(request, db, lang)
+
+    deleted_snapshot = {
+        "name": item.name,
+        "category": item.category,
+        "quantity": round(float(item.quantity or 0.0), 3),
+        "unit": item.unit,
+    }
+    db.delete(item)
+    _audit_log(
+        db,
+        project,
+        "supply_delete",
+        request=request,
+        entity_type="supply_item",
+        entity_id=supply_id,
+        details=deleted_snapshot,
+    )
+    db.commit()
+    return _render_supplies_page(request, db, lang, message=t("supplies_deleted"))
 
 
 @app.post("/printers")
@@ -6045,7 +7061,7 @@ def create_spool(
     t = t_factory(lang)
     normalized_lifecycle_status = _normalize_lifecycle_status(lifecycle_status)
     normalized_ams_printer = _normalize_printer_name(ams_printer)
-    normalized_ams_slot = _normalize_ams_slot(ams_slot)
+    normalized_ams_slot = _normalize_ams_slot_canonical(ams_slot)
     storage_sub_location, storage_error_key = _resolve_storage_sub_location(
         db,
         project,
@@ -6887,7 +7903,7 @@ def qr_scan_action(
     elif action_key == "set_ams_mapping":
         target = str(mapping_target or "").strip().lower()
         normalized_printer = _normalize_printer_name(ams_printer)
-        normalized_slot = _normalize_ams_slot(ams_slot)
+        normalized_slot = _normalize_ams_slot_canonical(ams_slot)
 
         if target == "clear":
             spool.ams_printer = None
@@ -8641,6 +9657,90 @@ def backup_auto_settings(
         request,
         "backup.html",
         _build_backup_context(lang, message=t("backup_auto_settings_saved"), backup_active_tab="auto"),
+        lang,
+    )
+
+
+@app.post("/backup/reset-all")
+def backup_reset_all(
+    request: Request,
+    reset_confirm_ack: Optional[str] = Form(None),
+    reset_confirm_phrase: Optional[str] = Form(None),
+    reset_create_backup: Optional[str] = Form(None),
+):
+    lang = get_lang(request)
+    t = t_factory(lang)
+
+    expected_phrase = BACKUP_RESET_CONFIRM_PHRASE
+    has_ack = _is_truthy(reset_confirm_ack)
+    entered_phrase = str(reset_confirm_phrase or "").strip()
+    if not has_ack or entered_phrase != expected_phrase:
+        return render(
+            request,
+            "backup.html",
+            _build_backup_context(
+                lang,
+                error=t("backup_reset_confirm_required"),
+                backup_active_tab="manual",
+            ),
+            lang,
+        )
+
+    created_backup_filename: Optional[str] = None
+    if _is_truthy(reset_create_backup):
+        mode = _backup_mode()
+        if mode not in {"sqlite", "postgresql"}:
+            return render(
+                request,
+                "backup.html",
+                _build_backup_context(
+                    lang,
+                    error=t("backup_reset_backup_failed"),
+                    backup_active_tab="manual",
+                ),
+                lang,
+            )
+        created_path, _error_key = _create_backup_snapshot(mode, source="manual")
+        if created_path is None:
+            return render(
+                request,
+                "backup.html",
+                _build_backup_context(
+                    lang,
+                    error=t("backup_reset_backup_failed"),
+                    backup_active_tab="manual",
+                ),
+                lang,
+            )
+        created_backup_filename = created_path.name
+
+    try:
+        deleted_rows = _delete_all_database_rows()
+    except Exception:
+        return render(
+            request,
+            "backup.html",
+            _build_backup_context(
+                lang,
+                error=t("backup_reset_failed"),
+                backup_active_tab="manual",
+            ),
+            lang,
+        )
+
+    if created_backup_filename:
+        done_message = t("backup_reset_done_with_backup").format(rows=deleted_rows, filename=created_backup_filename)
+    else:
+        done_message = t("backup_reset_done").format(rows=deleted_rows)
+
+    return render(
+        request,
+        "backup.html",
+        _build_backup_context(
+            lang,
+            message=done_message,
+            backup_active_tab="manual",
+        ),
         lang,
     )
 

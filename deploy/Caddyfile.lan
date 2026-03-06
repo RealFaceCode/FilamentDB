@@ -1,16 +1,16 @@
 {
-    default_sni {$LAN_HOST}
+    default_sni {$LOCAL_IP:localhost}
 
     servers {
         protocols h1 h2
     }
 }
 
-http://{$LAN_HOST}:80 {
-    redir https://{$LAN_HOST}:8443{uri} 308
+http://{$LOCAL_IP:localhost}:80 {
+    redir https://{$LOCAL_IP:localhost}:8443{uri} 308
 }
 
-https://{$LAN_HOST}:443 {
+https://{$LOCAL_IP:localhost}:443 {
     tls internal {
         key_type rsa2048
     }

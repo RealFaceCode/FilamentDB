@@ -471,14 +471,43 @@ def _normalize_ams_unit_id(value: Any) -> int | None:
         parsed = int(float(raw))
     except ValueError:
         return None
-    return parsed if parsed > 0 else None
+    return parsed
+
+
+def _first_present_value(*values: Any) -> Any:
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        return value
+    return None
+
+
+_AMS_RAW_ID_TO_UNIT = {
+    0: 1,
+    128: 2,
+    129: 3,
+    130: 4,
+}
+
+
+def _resolve_ams_unit(raw_ams_id: int | None, fallback_index: int | None = None) -> int | None:
+    if raw_ams_id is not None:
+        if raw_ams_id in _AMS_RAW_ID_TO_UNIT:
+            return _AMS_RAW_ID_TO_UNIT[raw_ams_id]
+        if 1 <= raw_ams_id <= 26:
+            return raw_ams_id
+    if fallback_index is not None and fallback_index > 0:
+        return fallback_index
+    return None
 
 
 def _compose_global_slot(ams_unit: int | None, slot_local: int | None) -> int | None:
     if slot_local is None:
         return None
-    if ams_unit is None or ams_unit <= 1:
-        return slot_local
+    if ams_unit is None or ams_unit <= 0:
+        ams_unit = 1
     return (ams_unit * 100) + slot_local
 
 
@@ -500,23 +529,41 @@ def _fallback_ams_name(ams_unit: int | None, raw_ams_id: int | None) -> str | No
     return None
 
 
+def _serial_fallback_unit_map(candidates: list[dict[str, Any]]) -> dict[str, int]:
+    serials: list[str] = []
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        serial = _normalize_text(candidate.get("sn"), 120)
+        if serial:
+            serials.append(serial)
+    unique_sorted = sorted(set(serials), key=lambda value: value.lower())
+    return {serial: index for index, serial in enumerate(unique_sorted, start=1)}
+
+
 def _extract_bambu_ams_units(payload: Any) -> list[dict[str, Any]]:
     report = payload.get("print") if isinstance(payload, dict) and isinstance(payload.get("print"), dict) else payload
     ams_root = report.get("ams") if isinstance(report, dict) else None
 
     units: list[dict[str, Any]] = []
     if isinstance(ams_root, list):
-        for index, candidate in enumerate([item for item in ams_root if isinstance(item, dict)], start=1):
+        candidates = [item for item in ams_root if isinstance(item, dict)]
+        serial_unit_map = _serial_fallback_unit_map(candidates)
+        for index, candidate in enumerate(candidates, start=1):
             trays = _extract_trays(candidate)
             if not trays:
                 continue
+            candidate_serial = _normalize_text(candidate.get("sn"), 120)
             raw_ams_id = _normalize_ams_unit_id(
-                candidate.get("id")
-                or candidate.get("ams_id")
-                or candidate.get("index")
-                or candidate.get("unit")
+                _first_present_value(
+                    candidate.get("id"),
+                    candidate.get("ams_id"),
+                    candidate.get("index"),
+                    candidate.get("unit"),
+                )
             )
-            ams_unit = index
+            serial_fallback = serial_unit_map.get(candidate_serial) if candidate_serial else None
+            ams_unit = _resolve_ams_unit(raw_ams_id, serial_fallback or index)
             ams_name = _normalize_text(candidate.get("name") or candidate.get("ams_name") or candidate.get("sn"), 120)
             if not ams_name:
                 ams_name = _fallback_ams_name(ams_unit, raw_ams_id)
@@ -532,17 +579,23 @@ def _extract_bambu_ams_units(payload: Any) -> list[dict[str, Any]]:
         if not candidates and isinstance(ams_root.get("tray"), list):
             candidates = [ams_root]
 
+        serial_unit_map = _serial_fallback_unit_map(candidates)
+
         for index, candidate in enumerate(candidates, start=1):
             trays = _extract_trays(candidate)
             if not trays:
                 continue
+            candidate_serial = _normalize_text(candidate.get("sn"), 120)
             raw_ams_id = _normalize_ams_unit_id(
-                candidate.get("id")
-                or candidate.get("ams_id")
-                or candidate.get("index")
-                or candidate.get("unit")
+                _first_present_value(
+                    candidate.get("id"),
+                    candidate.get("ams_id"),
+                    candidate.get("index"),
+                    candidate.get("unit"),
+                )
             )
-            ams_unit = index
+            serial_fallback = serial_unit_map.get(candidate_serial) if candidate_serial else None
+            ams_unit = _resolve_ams_unit(raw_ams_id, serial_fallback or index)
             ams_name = _normalize_text(candidate.get("name") or candidate.get("ams_name") or candidate.get("sn"), 120)
             if not ams_name:
                 ams_name = _fallback_ams_name(ams_unit, raw_ams_id)
@@ -918,13 +971,30 @@ def _extract_printer_rows(payload: Any) -> list[dict[str, Any]]:
             if not isinstance(slot_row, dict):
                 continue
             slot_number = _normalize_slot(slot_row.get("slot") or slot_row.get("slot_id"))
-            if slot_number is None:
+            raw_ams_id = _normalize_ams_unit_id(
+                _first_present_value(slot_row.get("ams_id"), slot_row.get("ams_unit"), slot_row.get("ams_index"))
+            )
+            if slot_number is not None and slot_number >= 100:
+                inferred_ams_unit = slot_number // 100
+                inferred_slot_local = slot_number % 100
+            elif slot_number is not None:
+                inferred_ams_unit = 1
+                inferred_slot_local = slot_number
+            else:
+                inferred_ams_unit = 1
+                inferred_slot_local = None
+            slot_local = _normalize_slot(_first_present_value(slot_row.get("slot_local"), slot_row.get("ams_slot")))
+            if slot_local is None:
+                slot_local = inferred_slot_local
+            ams_unit = _resolve_ams_unit(raw_ams_id, inferred_ams_unit) or 1
+            canonical_slot = _compose_global_slot(ams_unit, slot_local)
+            if canonical_slot is None:
                 continue
             parsed_slots.append(
                 {
-                    "slot": slot_number,
-                    "slot_local": _normalize_slot(slot_row.get("slot_local") or slot_row.get("ams_slot")) or slot_number,
-                    "ams_unit": _normalize_slot(slot_row.get("ams_unit") or slot_row.get("ams_id") or slot_row.get("ams_index")) or 1,
+                    "slot": canonical_slot,
+                    "slot_local": slot_local,
+                    "ams_unit": ams_unit,
                     "ams_name": _normalize_text(slot_row.get("ams_name") or slot_row.get("ams_label"), 120),
                     "observed_brand": _normalize_text(slot_row.get("brand"), 120),
                     "observed_material": _normalize_text(slot_row.get("material"), 80),
@@ -1047,8 +1117,14 @@ def _upsert_printer_rows(project: str, source: str | None, rows: list[dict[str, 
                     db.add(state)
 
                 state.printer_serial = printer.serial
-                state.ams_unit = _normalize_slot(slot.get("ams_unit") or slot.get("ams_id") or slot.get("ams_index"))
-                state.slot_local = _normalize_slot(slot.get("slot_local") or slot.get("ams_slot"))
+                raw_ams_id = _normalize_ams_unit_id(
+                    _first_present_value(slot.get("ams_id"), slot.get("ams_unit"), slot.get("ams_index"))
+                )
+                inferred_ams_unit = slot_number // 100 if slot_number >= 100 else 1
+                state.ams_unit = _resolve_ams_unit(raw_ams_id, inferred_ams_unit)
+                state.slot_local = _normalize_slot(_first_present_value(slot.get("slot_local"), slot.get("ams_slot")))
+                if state.slot_local is None:
+                    state.slot_local = slot_number % 100 if slot_number >= 100 else slot_number
                 state.ams_name = _normalize_text(slot.get("ams_name") or slot.get("ams_label"), 120)
                 state.observed_brand = _normalize_text(slot.get("observed_brand"), 120)
                 state.observed_material = _normalize_text(slot.get("observed_material"), 80)
