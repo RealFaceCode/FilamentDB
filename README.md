@@ -396,6 +396,16 @@ If using local bridge, validate endpoint/auth/reachability via `local_services/R
 - Validate backup files (`*.dump`, `*.sha256`) and directory permissions.
 - Use rollback procedures from `deploy/ROLLBACK_RUNBOOK.md` for production incidents.
 
+## License
+
+This project is licensed under the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)** license.
+
+- ✅ Free to use and share
+- ❌ No modifications or derivative works
+- ❌ No commercial use or selling
+
+See the [LICENSE](LICENSE) file for full details.
+
 ## References
 
 - `DB_FUNKTIONSHANDBUCH.md`
