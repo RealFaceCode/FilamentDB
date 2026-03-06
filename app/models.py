@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, UniqueConstraint, ForeignKey, Text
 
 from .db import Base
 
@@ -25,7 +25,6 @@ class Spool(Base):
     ams_slot = Column(Integer, nullable=True, index=True)
     lifecycle_status = Column(String(32), nullable=False, default="new", index=True)
     in_use = Column(Boolean, default=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, default="private", index=True)
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
@@ -41,7 +40,6 @@ class UsageHistory(Base):
     source_app = Column(String(120), nullable=True)
     batch_id = Column(String(64), nullable=True, index=True)
     source_file = Column(String(255), nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, default="private", index=True)
 
     spool_id = Column(Integer, nullable=True, index=True)
@@ -61,7 +59,6 @@ class StorageArea(Base):
     __table_args__ = (UniqueConstraint("project", "code", name="uq_storage_areas_project_code"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, index=True)
     code = Column(String(32), nullable=False, index=True)
     name = Column(String(120), nullable=True)
@@ -77,7 +74,6 @@ class StorageSubLocation(Base):
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, index=True)
     area_id = Column(Integer, ForeignKey("storage_areas.id"), nullable=False, index=True)
     code = Column(String(32), nullable=False, index=True)
@@ -93,10 +89,10 @@ class UsageBatchContext(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=_utcnow, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, index=True)
     batch_id = Column(String(64), nullable=False, index=True)
     printer_name = Column(String(120), nullable=True)
+    printer_serial = Column(String(120), nullable=True, index=True)
     ams_slots = Column(String(255), nullable=True)
 
 
@@ -105,15 +101,50 @@ class DeviceSlotState(Base):
     __table_args__ = (UniqueConstraint("project", "printer_name", "slot", name="uq_device_slot_state_project_printer_slot"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     project = Column(String(40), nullable=False, index=True)
     printer_name = Column(String(120), nullable=False, index=True)
+    printer_serial = Column(String(120), nullable=True, index=True)
     slot = Column(Integer, nullable=False, index=True)
+    ams_unit = Column(Integer, nullable=True, index=True)
+    slot_local = Column(Integer, nullable=True, index=True)
+    ams_name = Column(String(120), nullable=True)
     observed_brand = Column(String(120), nullable=True)
     observed_material = Column(String(80), nullable=True)
     observed_color = Column(String(80), nullable=True)
     source = Column(String(120), nullable=True)
     observed_at = Column(DateTime, default=_utcnow, index=True)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class Printer(Base):
+    __tablename__ = "printers"
+    __table_args__ = (
+        UniqueConstraint("project", "serial", name="uq_printers_project_serial"),
+        UniqueConstraint("project", "name", name="uq_printers_project_name"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    serial = Column(String(120), nullable=False, index=True)
+    name = Column(String(120), nullable=False, index=True)
+    host = Column(String(255), nullable=True)
+    access_code = Column(String(120), nullable=True)
+    ams_name_map = Column(String(500), nullable=True)
+    port = Column(Integer, nullable=False, default=8883)
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    status = Column(String(32), nullable=True, index=True)
+    last_seen_at = Column(DateTime, nullable=True, index=True)
+    last_source = Column(String(120), nullable=True)
+    telemetry_job_name = Column(String(255), nullable=True)
+    telemetry_job_status = Column(String(80), nullable=True)
+    telemetry_progress = Column(Float, nullable=True)
+    telemetry_nozzle_temp = Column(Float, nullable=True)
+    telemetry_bed_temp = Column(Float, nullable=True)
+    telemetry_chamber_temp = Column(Float, nullable=True)
+    telemetry_firmware = Column(String(120), nullable=True)
+    telemetry_error = Column(String(255), nullable=True)
+    telemetry_external_spool_active = Column(Boolean, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
@@ -125,38 +156,53 @@ class AppSetting(Base):
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
-class User(Base):
-    __tablename__ = "users"
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), nullable=False, unique=True, index=True)
-    display_name = Column(String(120), nullable=True)
-    password_hash = Column(String(255), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=_utcnow, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    actor = Column(String(120), nullable=True)
+    action = Column(String(80), nullable=False, index=True)
+    entity_type = Column(String(80), nullable=True, index=True)
+    entity_id = Column(String(120), nullable=True, index=True)
+    details_json = Column(Text, nullable=True)
+
+
+class ImportMappingProfile(Base):
+    __tablename__ = "import_mapping_profiles"
+    __table_args__ = (UniqueConstraint("project", "name", name="uq_import_mapping_profiles_project_name"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    name = Column(String(120), nullable=False, index=True)
+    mapping_json = Column(Text, nullable=False)
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
-class UserSession(Base):
-    __tablename__ = "user_sessions"
+class SupplyCategory(Base):
+    __tablename__ = "supply_categories"
+    __table_args__ = (UniqueConstraint("project", "name", name="uq_supply_categories_project_name"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    token_hash = Column(String(128), nullable=False, unique=True, index=True)
-    user_agent = Column(String(255), nullable=True)
-    ip_address = Column(String(120), nullable=True)
-    expires_at = Column(DateTime, nullable=False, index=True)
+    project = Column(String(40), nullable=False, index=True)
+    name = Column(String(80), nullable=False, index=True)
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
 
-class UserApiToken(Base):
-    __tablename__ = "user_api_tokens"
+class SupplyItem(Base):
+    __tablename__ = "supply_items"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    name = Column(String(120), nullable=False, default="default")
-    token_hash = Column(String(128), nullable=False, unique=True, index=True)
-    is_active = Column(Boolean, nullable=False, default=True)
+    project = Column(String(40), nullable=False, index=True)
+    name = Column(String(120), nullable=False, index=True)
+    category = Column(String(80), nullable=False, default="Verbrauchsmaterial", index=True)
+    quantity = Column(Float, nullable=False, default=0.0)
+    unit = Column(String(32), nullable=False, default="Stk")
+    min_quantity = Column(Float, nullable=True)
+    location = Column(String(120), nullable=True)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=_utcnow)
-    last_used_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)

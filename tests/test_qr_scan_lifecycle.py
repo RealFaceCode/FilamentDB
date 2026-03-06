@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base, get_db
 from app.main import app
 import app.main as main_module
-from app.models import Spool, User
+from app.models import Spool, StorageArea, StorageSubLocation
 
 
 class QrScanLifecycleTests(unittest.TestCase):
@@ -39,19 +39,10 @@ class QrScanLifecycleTests(unittest.TestCase):
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app, base_url="https://testserver")
 
-        self.client.post(
-            "/auth/register",
-            data={"name": "Tester", "email": "tester@example.com", "password": "password123"},
-            follow_redirects=False,
-        )
         with self.SessionLocal() as db:
-            user = db.query(User).filter(User.email == "tester@example.com").first()
-            self.assertIsNotNone(user)
-            self.user_id = int(user.id)
-            self.project_scope = f"u{user.id}_private"
+            self.project_scope = "private"
 
             spool = Spool(
-                user_id=self.user_id,
                 brand="Bambu",
                 material="PLA",
                 color="Black",
@@ -89,6 +80,88 @@ class QrScanLifecycleTests(unittest.TestCase):
             spool = db.query(Spool).filter(Spool.id == self.spool_id).first()
             self.assertIsNotNone(spool)
             self.assertEqual(spool.lifecycle_status, "humidity_risk")
+
+    def test_qr_scan_set_empty_forces_empty_lifecycle(self):
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.id == self.spool_id).first()
+            spool.in_use = True
+            db.commit()
+
+        response = self.client.post(
+            "/qr-scan/action",
+            data={
+                "spool_id": str(self.spool_id),
+                "action": "set_empty",
+                "return_to_scan": "0",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.id == self.spool_id).first()
+            self.assertIsNotNone(spool)
+            self.assertEqual(float(spool.remaining_g), 0.0)
+            self.assertEqual(spool.lifecycle_status, "empty")
+            self.assertFalse(bool(spool.in_use))
+
+    def test_qr_scan_action_can_set_idle(self):
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.id == self.spool_id).first()
+            spool.in_use = True
+            db.commit()
+
+        response = self.client.post(
+            "/qr-scan/action",
+            data={
+                "spool_id": str(self.spool_id),
+                "action": "set_idle",
+                "return_to_scan": "0",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Spule wurde als nicht in Nutzung markiert.", response.text)
+
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.id == self.spool_id).first()
+            self.assertIsNotNone(spool)
+            self.assertFalse(bool(spool.in_use))
+
+    def test_qr_scan_action_can_update_storage_location(self):
+        with self.SessionLocal() as db:
+            area = StorageArea(project=self.project_scope, code="R1", name="Regal 1")
+            db.add(area)
+            db.flush()
+            location = StorageSubLocation(
+                project=self.project_scope,
+                area_id=int(area.id),
+                code="1",
+                path_code="R1/1",
+                name="Fach 1",
+            )
+            db.add(location)
+            db.commit()
+            location_id = int(location.id)
+
+        response = self.client.post(
+            "/qr-scan/action",
+            data={
+                "spool_id": str(self.spool_id),
+                "action": "set_storage",
+                "storage_sub_location_id": str(location_id),
+                "return_to_scan": "0",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Lagerplatz wurde aktualisiert.", response.text)
+
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.id == self.spool_id).first()
+            self.assertIsNotNone(spool)
+            self.assertEqual(int(spool.storage_sub_location_id or 0), location_id)
+            self.assertEqual(spool.location, "R1/1")
 
 
 if __name__ == "__main__":

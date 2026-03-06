@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ui-card ui-card-lg max-w-5xl">
+<div class="ui-card ui-card-lg w-full">
   <h2 class="text-lg font-semibold mb-2">{{ t('booking_area_title') }}</h2>
   <h3 class="text-sm font-semibold mb-2">{{ t('booking_section_book') }}</h3>
   <p class="text-sm text-slate-500 mb-6">{{ t('usage_hint') }}</p>
@@ -78,7 +78,7 @@
         <input type="hidden" name="spool_ids" value="{{ row.spool.id }}">
         <input type="hidden" name="deductions" value="{{ row.grams }}">
       {% endfor %}
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
         <button class="ui-btn ui-btn-primary">{{ t('usage_save_auto') }}</button>
         <button formaction="/booking" formmethod="post" name="action" value="manual_mode" class="ui-btn ui-btn-secondary">{{ t('usage_manual_mode') }}</button>
         <a href="/booking" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
@@ -93,7 +93,7 @@
       <label for="usage-file" class="text-xs text-slate-500">{{ t('upload_3mf') }}</label>
       <input id="usage-file" type="file" name="file" accept=".3mf" required class="mt-1 ui-file-input">
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3">
       <button class="ui-btn ui-btn-primary">{{ t('usage_preview') }}</button>
       <button formaction="/booking" formmethod="post" name="action" value="manual_mode" class="ui-btn ui-btn-secondary">{{ t('usage_manual_mode') }}</button>
     </div>
@@ -120,7 +120,7 @@
         </div>
       </div>
     {% endfor %}
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3">
       <button class="ui-btn ui-btn-primary">{{ t('usage_save_manual') }}</button>
       <a href="/booking" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
     </div>

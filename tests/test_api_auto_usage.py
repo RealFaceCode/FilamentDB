@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base, get_db
 from app.main import app
 import app.main as main_module
-from app.models import Spool, UsageHistory, UsageBatchContext, User
+from app.models import Spool, UsageHistory, UsageBatchContext, StorageArea, StorageSubLocation
 
 
 class AutoUsageApiTests(unittest.TestCase):
@@ -40,20 +40,10 @@ class AutoUsageApiTests(unittest.TestCase):
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app, base_url="https://testserver")
 
-        self.client.post(
-            "/auth/register",
-            data={"name": "Tester", "email": "tester@example.com", "password": "password123"},
-            follow_redirects=False,
-        )
-        with self.SessionLocal() as db:
-            user = db.query(User).filter(User.email == "tester@example.com").first()
-            self.assertIsNotNone(user)
-            self.user_id = int(user.id)
-            self.project_scope = f"u{user.id}_private"
+        self.project_scope = "private"
 
         with self.SessionLocal() as db:
             spool = Spool(
-                user_id=self.user_id,
                 brand="Bambu",
                 material="PLA",
                 color="Schwarz",
@@ -218,12 +208,50 @@ class AutoUsageApiTests(unittest.TestCase):
         self.assertEqual(dashboard_after.status_code, 200)
         self.assertIn("3.00 €", dashboard_after.text)
 
+    def test_auto_usage_sets_lifecycle_empty_when_depleted(self):
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.project == self.project_scope).first()
+            self.assertIsNotNone(spool)
+            area = StorageArea(project=self.project_scope, code="R1")
+            db.add(area)
+            db.flush()
+            sub_location = StorageSubLocation(
+                project=self.project_scope,
+                area_id=area.id,
+                code="A1",
+                path_code="R1/A1",
+            )
+            db.add(sub_location)
+            db.flush()
+            spool.storage_sub_location_id = sub_location.id
+            spool.location = sub_location.path_code
+            db.commit()
+
+        with patch("app.main.parse_3mf_filament_usage", return_value=self._parser_result(200.0)):
+            response = self.client.post(
+                "/api/usage/auto-from-3mf",
+                data={"project": "private", "job_id": "job-empty-1"},
+                files={"file": ("print.3mf", b"dummy-3mf-content", "application/octet-stream")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload.get("ok"))
+
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.project == self.project_scope).first()
+            self.assertIsNotNone(spool)
+            self.assertEqual(float(spool.remaining_g), 0.0)
+            self.assertEqual(spool.lifecycle_status, "empty")
+            self.assertFalse(bool(spool.in_use))
+            self.assertIsNone(spool.storage_sub_location_id)
+            self.assertIsNone(spool.location)
+
     def test_auto_usage_prefers_exact_ams_slot_mapping(self):
         with self.SessionLocal() as db:
             db.add_all(
                 [
                     Spool(
-                        user_id=self.user_id,
                         brand="Bambu",
                         material="PLA",
                         color="Schwarz",
@@ -235,7 +263,6 @@ class AutoUsageApiTests(unittest.TestCase):
                         ams_slot=1,
                     ),
                     Spool(
-                        user_id=self.user_id,
                         brand="Bambu",
                         material="PLA",
                         color="Schwarz",
@@ -288,6 +315,35 @@ class AutoUsageApiTests(unittest.TestCase):
             rows = db.query(UsageHistory).filter(UsageHistory.batch_id == "job-slot-1").all()
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0].spool_id, slot4_spool.id)
+
+    def test_auto_usage_falls_back_when_slot_mapping_missing(self):
+        parser_result = (
+            15.0,
+            6000.0,
+            {"__bambu_total_cost__": "1.23"},
+            {"materials": ["PLA"], "colors": ["Schwarz"], "brands": ["Bambu"]},
+            [{"material": "PLA", "grams": 15.0, "slot": 9}],
+        )
+
+        with patch("app.main.parse_3mf_filament_usage", return_value=parser_result):
+            response = self.client.post(
+                "/api/usage/auto-from-3mf",
+                data={"project": "private", "job_id": "job-slot-fallback-1", "printer": "P1S-01"},
+                files={"file": ("print.3mf", b"dummy-3mf-content", "application/octet-stream")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload.get("ok"))
+        self.assertEqual(payload.get("changed_spools"), 1)
+
+        with self.SessionLocal() as db:
+            spool = db.query(Spool).filter(Spool.project == self.project_scope).first()
+            self.assertIsNotNone(spool)
+            self.assertEqual(float(spool.remaining_g), 185.0)
+
+            rows = db.query(UsageHistory).filter(UsageHistory.batch_id == "job-slot-fallback-1").all()
+            self.assertEqual(len(rows), 1)
 
 
 if __name__ == "__main__":

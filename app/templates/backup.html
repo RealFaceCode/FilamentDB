@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ui-card ui-card-lg max-w-2xl">
+<div class="ui-card ui-card-lg w-full" data-backup-initial-tab="{{ backup_active_tab or 'manual' }}">
   <h2 class="text-lg font-semibold mb-4">{{ t('backup_title') }}</h2>
-  <p class="text-sm text-slate-500 mb-6">{{ backup_hint_text or t('backup_hint') }}</p>
+  <p class="text-sm text-slate-500 mb-3">{{ backup_hint_text or t('backup_hint') }}</p>
+  <p class="text-xs text-slate-500 mb-6">{{ t('backup_storage_path') }}: <span class="font-mono">{{ backup_storage_dir or '-' }}</span></p>
 
   {% if backup_notice %}
   <div class="mb-6 ui-panel">
@@ -11,28 +12,241 @@
   {% endif %}
 
   {% if backup_supported %}
-    <div class="mb-6 ui-panel">
-      <h3 class="text-sm font-semibold mb-3">{{ t('backup_export') }}</h3>
-      <a href="/backup/export" class="ui-btn ui-btn-primary">{{ t('backup_export') }}</a>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4" role="tablist" aria-label="Backup Management Tabs">
+      <button type="button" id="tab-backup-manual" class="ui-btn ui-btn-sm ui-btn-secondary w-full" role="tab" aria-selected="false">{{ t('backup_tab_manual') }}</button>
+      <button type="button" id="tab-backup-files" class="ui-btn ui-btn-sm ui-btn-secondary w-full" role="tab" aria-selected="false">{{ t('backup_tab_files') }}</button>
+      <button type="button" id="tab-backup-auto" class="ui-btn ui-btn-sm ui-btn-secondary w-full" role="tab" aria-selected="false">{{ t('backup_tab_auto') }}</button>
     </div>
 
-    <div class="ui-panel">
-      <h3 class="text-sm font-semibold mb-3">{{ t('backup_import') }}</h3>
-      <form method="post" action="/backup/import" enctype="multipart/form-data" class="space-y-4">
-        <div>
-          <label for="backup-file-input" class="text-xs text-slate-500">{{ t('backup_import_file') }}</label>
-          <input id="backup-file-input" type="file" name="file" accept="{{ backup_accept or '.db' }}" required class="mt-1 ui-file-input">
+    <section data-backup-panel="manual" class="space-y-4">
+      <div class="ui-panel">
+        <h3 class="text-sm font-semibold mb-3">{{ t('backup_create') }}</h3>
+        <form method="post" action="/backup/create" class="flex items-center gap-3">
+          <button class="ui-btn ui-btn-primary">{{ t('backup_create') }}</button>
+          <a href="/backup/export" class="ui-btn ui-btn-secondary">{{ t('backup_export') }}</a>
+        </form>
+      </div>
+
+      <div class="ui-panel">
+        <h3 class="text-sm font-semibold mb-3">{{ t('backup_import') }}</h3>
+        <form method="post" action="/backup/import" enctype="multipart/form-data" class="space-y-4">
+          <div>
+            <label for="backup-file-input" class="text-xs text-slate-500">{{ t('backup_import_file') }}</label>
+            <input id="backup-file-input" type="file" name="file" accept="{{ backup_accept or '.db' }}" required class="mt-1 ui-file-input">
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="ui-btn ui-btn-primary">{{ t('backup_import') }}</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="ui-panel border border-red-200 dark:border-red-900/60">
+        <h3 class="text-sm font-semibold mb-2 text-red-700 dark:text-red-300">{{ t('backup_reset_title') }}</h3>
+        <p class="text-xs text-slate-500 mb-4">{{ t('backup_reset_hint') }}</p>
+        <form method="post" action="/backup/reset-all" class="space-y-4" autocomplete="off">
+          <label class="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
+            <input type="checkbox" name="reset_create_backup" value="1" class="mt-0.5">
+            <span>{{ t('backup_reset_create_backup') }}</span>
+          </label>
+
+          <label class="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
+            <input type="checkbox" name="reset_confirm_ack" value="1" required class="mt-0.5">
+            <span>{{ t('backup_reset_confirm_checkbox') }}</span>
+          </label>
+
+          <div>
+            <label for="backup-reset-confirm-phrase" class="text-xs text-slate-500">{{ t('backup_reset_confirm_phrase_label') }}</label>
+            <input
+              id="backup-reset-confirm-phrase"
+              type="text"
+              name="reset_confirm_phrase"
+              required
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="{{ t('backup_reset_confirm_phrase_placeholder') }}"
+              class="mt-1 ui-input"
+            >
+            <p class="mt-1 text-xs text-slate-500">{{ t('backup_reset_confirm_phrase_hint').format(phrase=backup_reset_confirm_phrase) }}</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button class="ui-btn ui-btn-danger">{{ t('backup_reset_action') }}</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section data-backup-panel="files" class="space-y-4 hidden">
+      <div class="ui-panel">
+        <h3 class="text-sm font-semibold mb-3">{{ t('backup_files_title') }}</h3>
+        {% if backup_files %}
+        <div class="overflow-x-auto">
+          <table class="ui-table whitespace-nowrap">
+            <thead>
+              <tr class="ui-thead-row">
+                <th class="ui-th-sticky">{{ t('backup_file_name') }}</th>
+                <th class="ui-th-sticky">{{ t('backup_file_source') }}</th>
+                <th class="ui-th-sticky">{{ t('backup_file_size') }}</th>
+                <th class="ui-th-sticky">{{ t('backup_file_modified') }}</th>
+                <th class="ui-th-sticky ui-th-actions text-right">{{ t('actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in backup_files %}
+              <tr class="ui-row">
+                <td class="ui-td font-mono text-xs">{{ item.name }}</td>
+                <td class="ui-td">{{ t('backup_file_source_auto') if item.source == 'auto' else t('backup_file_source_manual') }}</td>
+                <td class="ui-td">{{ format_number_compact((item.size_bytes or 0) / 1024, 1, lang) }} KB</td>
+                <td class="ui-td">{% if item.modified_at %}{{ item.modified_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+                <td class="ui-td ui-td-actions text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <a href="/backup/download/{{ item.name }}" class="ui-btn ui-btn-sm ui-btn-secondary">{{ t('backup_download') }}</a>
+                    <form method="post" action="/backup/restore-file" class="inline-flex">
+                      <input type="hidden" name="filename" value="{{ item.name }}">
+                      <button class="ui-btn ui-btn-sm ui-btn-primary">{{ t('backup_restore_file') }}</button>
+                    </form>
+                    <form method="post" action="/backup/delete-file" class="inline-flex">
+                      <input type="hidden" name="filename" value="{{ item.name }}">
+                      <button class="ui-btn ui-btn-sm ui-btn-danger">{{ t('backup_delete') }}</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        <div class="flex items-center gap-3">
-          <button class="ui-btn ui-btn-primary">{{ t('backup_import') }}</button>
-          <a href="/" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
-        </div>
-      </form>
-    </div>
+        {% else %}
+        <p class="text-sm text-slate-500">{{ t('backup_files_empty') }}</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section data-backup-panel="auto" class="space-y-4 hidden">
+      <div class="ui-panel">
+        <h3 class="text-sm font-semibold mb-3">{{ t('backup_auto_title') }}</h3>
+        <form method="post" action="/backup/auto-settings" class="space-y-4 max-w-xl">
+          <div class="flex items-center gap-3">
+            <input id="backup-auto-enabled" type="checkbox" name="enabled" value="1" {% if backup_auto_enabled %}checked{% endif %}>
+            <label for="backup-auto-enabled" class="text-sm text-slate-700 dark:text-slate-300">{{ t('backup_auto_enabled') }}</label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="backup-auto-interval" class="text-xs text-slate-500">{{ t('backup_auto_interval_hours') }}</label>
+              <input id="backup-auto-interval" type="number" min="1" max="168" name="interval_hours" value="{{ backup_auto_interval_hours or 24 }}" class="mt-1 ui-input">
+            </div>
+            <div>
+              <label for="backup-auto-retention" class="text-xs text-slate-500">{{ t('backup_auto_retention_days') }}</label>
+              <input id="backup-auto-retention" type="number" min="1" max="365" name="retention_days" value="{{ backup_auto_retention_days or 14 }}" class="mt-1 ui-input">
+            </div>
+          </div>
+
+          <div class="text-xs text-slate-500">
+            {{ t('backup_auto_last_run') }}:
+            {% if backup_auto_last_run_at %}
+              {{ backup_auto_last_run_at.strftime('%Y-%m-%d %H:%M') }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+
+          <p class="text-xs text-slate-500">{{ t('backup_auto_hint') }}</p>
+
+          <div class="flex items-center gap-3">
+            <button class="ui-btn ui-btn-primary">{{ t('save') }}</button>
+          </div>
+        </form>
+      </div>
+    </section>
   {% else %}
     <div class="ui-panel">
       <a href="/" class="ui-btn ui-btn-secondary">{{ t('cancel') }}</a>
     </div>
   {% endif %}
 </div>
+
+<script>
+  (function () {
+    const STORAGE_KEY = 'ui:backup:tab';
+
+    const normalize = (name) => (name === 'files' || name === 'auto' ? name : 'manual');
+
+    const setTabState = (button, isActive) => {
+      if (!button) {
+        return;
+      }
+      button.dataset.backupTabActive = isActive ? '1' : '0';
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      button.classList.toggle('ui-btn-primary', isActive);
+      button.classList.toggle('ui-btn-secondary', !isActive);
+    };
+
+    const saveActiveTab = (name) => {
+      try {
+        globalThis.sessionStorage.setItem(STORAGE_KEY, normalize(name));
+      } catch (_error) {
+      }
+    };
+
+    const loadActiveTab = () => {
+      try {
+        const raw = String(globalThis.sessionStorage.getItem(STORAGE_KEY) || '').trim();
+        return normalize(raw);
+      } catch (_error) {
+        return 'manual';
+      }
+    };
+
+    const initBackupPage = () => {
+      const root = document.querySelector('[data-backup-initial-tab]');
+      if (!(root instanceof HTMLElement)) {
+        return;
+      }
+
+      const tabs = {
+        manual: document.getElementById('tab-backup-manual'),
+        files: document.getElementById('tab-backup-files'),
+        auto: document.getElementById('tab-backup-auto'),
+      };
+      const panels = {
+        manual: root.querySelector('[data-backup-panel="manual"]'),
+        files: root.querySelector('[data-backup-panel="files"]'),
+        auto: root.querySelector('[data-backup-panel="auto"]'),
+      };
+
+      const activate = (name) => {
+        const tab = normalize(name);
+        Object.entries(tabs).forEach(([key, button]) => {
+          setTabState(button, key === tab);
+        });
+        Object.entries(panels).forEach(([key, panel]) => {
+          if (!panel) {
+            return;
+          }
+          panel.classList.toggle('hidden', key !== tab);
+        });
+        saveActiveTab(tab);
+      };
+
+      Object.entries(tabs).forEach(([name, button]) => {
+        if (!(button instanceof HTMLElement)) {
+          return;
+        }
+        if (button.dataset.backupTabBound === '1') {
+          return;
+        }
+        button.dataset.backupTabBound = '1';
+        button.addEventListener('click', () => activate(name));
+      });
+
+      const initialFromDom = normalize(root.dataset.backupInitialTab || 'manual');
+      const initial = initialFromDom === 'manual' ? loadActiveTab() : initialFromDom;
+      activate(initial || initialFromDom);
+    };
+
+    initBackupPage();
+    document.addEventListener('ui:after-soft-refresh', initBackupPage);
+  })();
+</script>
 {% endblock %}

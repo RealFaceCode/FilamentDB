@@ -1,11 +1,142 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="ui-card ui-card-lg mb-6">
-  <div class="mb-2">
+  <div class="mb-2 flex items-start justify-between gap-4 flex-wrap">
     <h2 class="text-lg font-semibold">{{ t('analysis_title') }}</h2>
+    <form method="get" action="/analysis" class="flex items-end gap-2 flex-wrap">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <input type="hidden" name="project" value="{{ project }}">
+      <label class="text-xs text-slate-500">
+        {{ t('analysis_period_days') }}
+        <select name="period_days" class="ui-select mt-1 min-w-24">
+          <option value="14" {% if analysis_period_days == 14 %}selected{% endif %}>14</option>
+          <option value="30" {% if analysis_period_days == 30 %}selected{% endif %}>30</option>
+          <option value="60" {% if analysis_period_days == 60 %}selected{% endif %}>60</option>
+          <option value="90" {% if analysis_period_days == 90 %}selected{% endif %}>90</option>
+          <option value="180" {% if analysis_period_days == 180 %}selected{% endif %}>180</option>
+          <option value="365" {% if analysis_period_days == 365 %}selected{% endif %}>365</option>
+        </select>
+      </label>
+      <label class="text-xs text-slate-500">
+        {{ t('analysis_trend_months') }}
+        <select name="trend_months" class="ui-select mt-1 min-w-24">
+          <option value="3" {% if analysis_trend_months == 3 %}selected{% endif %}>3</option>
+          <option value="6" {% if analysis_trend_months == 6 %}selected{% endif %}>6</option>
+          <option value="9" {% if analysis_trend_months == 9 %}selected{% endif %}>9</option>
+          <option value="12" {% if analysis_trend_months == 12 %}selected{% endif %}>12</option>
+          <option value="18" {% if analysis_trend_months == 18 %}selected{% endif %}>18</option>
+          <option value="24" {% if analysis_trend_months == 24 %}selected{% endif %}>24</option>
+        </select>
+      </label>
+      <button class="ui-btn ui-btn-secondary">{{ t('analysis_apply_filters') }}</button>
+    </form>
   </div>
   <p class="text-sm text-slate-500">{{ t('analysis_hint') }}</p>
   <p class="text-sm mt-2"><span class="text-slate-500">{{ t('stat_total_remaining') }}:</span> <span class="font-semibold">{{ format_weight_text(total_remaining) }}</span></p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  <div class="ui-panel">
+    <p class="text-xs text-slate-500">{{ t('analysis_kpi_usage_period') }}</p>
+    <p class="text-2xl font-semibold">{{ format_weight_text(period_usage_g) }}</p>
+  </div>
+  <div class="ui-panel">
+    <p class="text-xs text-slate-500">{{ t('analysis_kpi_cost_period') }}</p>
+    <p class="text-2xl font-semibold">{{ format_currency_text(period_cost_eur, lang) }}</p>
+  </div>
+  <div class="p-4 rounded-xl bg-amber-50 border border-amber-200">
+    <p class="text-xs text-amber-700">{{ t('analysis_kpi_low_stock_count') }}</p>
+    <p class="text-2xl font-semibold text-amber-800">{{ format_number_compact(low_stock_count, 0, lang) }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+  <div class="ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{{ t('analysis_chart_usage_cost') }}</h3>
+    <div id="analysis-usage-cost-chart" class="space-y-2">
+      {% for row in usage_cost_trend %}
+      <div class="flex items-center gap-3 text-sm">
+        <div class="w-20 text-slate-600">{{ row.label }}</div>
+        <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-2 bg-indigo-500" style="width: 0%"></div>
+        </div>
+        <div class="w-24 text-right">{{ format_weight_text(row.usage_g) }}</div>
+        <div class="w-24 text-right">{{ format_currency_text(row.cost_eur, lang) }}</div>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-500">{{ t('analysis_no_data') }}</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{{ t('analysis_low_stock_items') }}</h3>
+    <div id="analysis-low-stock-list" class="space-y-2">
+      {% for row in low_stock_items %}
+      <div class="flex items-center justify-between text-sm gap-3">
+        <div class="min-w-0">
+          <p class="font-medium truncate">{{ row.name }} · {{ row.material }} · {{ row.color }}</p>
+          <p class="text-xs text-slate-500">{{ format_weight_text(row.remaining_g) }} / {{ format_weight_text(row.threshold_g) }}</p>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-500">{{ t('analysis_no_data') }}</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+  <div class="ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{{ t('analysis_kpi_top_material_usage') }}</h3>
+    <div id="analysis-top-material-chart" class="space-y-2">
+      {% for row in top_material_usage %}
+      <div class="flex items-center gap-3 text-sm">
+        <div class="w-24 truncate text-slate-600" title="{{ row.name }}">{{ row.name }}</div>
+        <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-2 bg-violet-500" style="width: {{ row.share_pct }}%"></div>
+        </div>
+        <div class="w-24 text-right">{{ format_weight_text(row.usage_g) }}</div>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-500">{{ t('analysis_no_data') }}</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="ui-card ui-card-md">
+    <h3 class="font-semibold mb-3">{{ t('analysis_kpi_top_color_usage') }}</h3>
+    <div id="analysis-top-color-chart" class="space-y-2">
+      {% for row in top_color_usage %}
+      <div class="flex items-center gap-3 text-sm">
+        <div class="w-24 truncate text-slate-600" title="{{ row.name }}">{{ row.name }}</div>
+        <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-2 bg-emerald-500" style="width: {{ row.share_pct }}%"></div>
+        </div>
+        <div class="w-24 text-right">{{ format_weight_text(row.usage_g) }}</div>
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-500">{{ t('analysis_no_data') }}</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="ui-card ui-card-md mb-6">
+  <h3 class="font-semibold mb-3">{{ t('analysis_kpi_printer_slot_usage') }}</h3>
+  <div id="analysis-printer-slot-chart" class="space-y-2">
+    {% for row in printer_slot_usage %}
+    <div class="flex items-center gap-3 text-sm">
+      <div class="w-44 truncate text-slate-600" title="{{ row.printer }} · {{ row.slot_label }}">{{ row.printer }} · {{ row.slot_label }}</div>
+      <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+        <div class="h-2 bg-indigo-500" style="width: 0%"></div>
+      </div>
+      <div class="w-24 text-right">{{ format_weight_text(row.usage_g) }}</div>
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-500">{{ t('analysis_no_data') }}</p>
+    {% endfor %}
+  </div>
 </div>
 
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -113,4 +244,109 @@
     </div>
   </div>
 </div>
+
+<script>
+  function hydrateAnalysisPage() {
+    const periodDays = {{ analysis_period_days|int }};
+    const trendMonths = {{ analysis_trend_months|int }};
+    const lang = {{ lang|tojson }};
+    const project = {{ project|tojson }};
+
+    const formatWeight = (value) => {
+      const grams = Number(value || 0);
+      if (!Number.isFinite(grams)) return '0 g';
+      if (Math.abs(grams) < 1000) return `${grams.toFixed(1).replace(/\.0$/, '')} g`;
+      const kg = Math.floor(Math.abs(grams) / 1000);
+      const rem = (Math.abs(grams) - kg * 1000).toFixed(1).replace(/\.0$/, '');
+      const sign = grams < 0 ? '-' : '';
+      return rem === '0' ? `${sign}${kg} kg` : `${sign}${kg} kg ${rem} g`;
+    };
+
+    const formatEuro = (value) => {
+      const amount = Number(value || 0);
+      try {
+        return new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US', { style: 'currency', currency: 'EUR' }).format(amount);
+      } catch (_) {
+        return `${amount.toFixed(2)} €`;
+      }
+    };
+
+    const fetchJson = async (path, extra = {}) => {
+      const params = new URLSearchParams({ lang, project, ...extra });
+      const response = await fetch(`${path}?${params.toString()}`);
+      if (!response.ok) return null;
+      return await response.json();
+    };
+
+    const renderBarRows = (targetId, rows, options = {}) => {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      if (!Array.isArray(rows) || rows.length === 0) return;
+
+      const colorClass = options.colorClass || 'bg-indigo-500';
+      const withCost = !!options.withCost;
+      const withSlot = !!options.withSlot;
+      const maxUsage = rows.reduce((max, row) => Math.max(max, Number(row.usage_g || 0)), 0) || 1;
+
+      target.innerHTML = rows.map((row) => {
+        const label = withSlot
+          ? `${row.printer || '-'} · ${row.slot_label || '-'}`
+          : (row.label || row.name || '-');
+        const usage = Number(row.usage_g || 0);
+        const width = Math.max(0, Math.min(100, (usage / maxUsage) * 100));
+        const rightSecondary = withCost
+          ? `<div class="w-24 text-right">${formatEuro(row.cost_eur || 0)}</div>`
+          : '';
+
+        return `
+          <div class="flex items-center gap-3 text-sm">
+            <div class="${withSlot ? 'w-44' : 'w-24'} truncate text-slate-600" title="${label}">${label}</div>
+            <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-2 ${colorClass}" style="width: ${width}%"></div>
+            </div>
+            <div class="w-24 text-right">${formatWeight(usage)}</div>
+            ${rightSecondary}
+          </div>
+        `;
+      }).join('');
+    };
+
+    fetchJson('/api/analysis/usage-cost-trend', { trend_months: trendMonths }).then((data) => {
+      if (!data || !data.ok) return;
+      renderBarRows('analysis-usage-cost-chart', data.series || [], { colorClass: 'bg-indigo-500', withCost: true });
+    }).catch(() => null);
+
+    fetchJson('/api/analysis/top-usage', { group_by: 'material', period_days: periodDays, limit: 5 }).then((data) => {
+      if (!data || !data.ok) return;
+      renderBarRows('analysis-top-material-chart', data.rows || [], { colorClass: 'bg-violet-500' });
+    }).catch(() => null);
+
+    fetchJson('/api/analysis/top-usage', { group_by: 'color', period_days: periodDays, limit: 5 }).then((data) => {
+      if (!data || !data.ok) return;
+      renderBarRows('analysis-top-color-chart', data.rows || [], { colorClass: 'bg-emerald-500' });
+    }).catch(() => null);
+
+    fetchJson('/api/analysis/printer-slot-usage', { period_days: periodDays, limit: 8 }).then((data) => {
+      if (!data || !data.ok) return;
+      renderBarRows('analysis-printer-slot-chart', data.rows || [], { colorClass: 'bg-indigo-500', withSlot: true });
+    }).catch(() => null);
+
+    fetchJson('/api/analysis/low-stock', { limit: 8 }).then((data) => {
+      if (!data || !data.ok || !Array.isArray(data.items)) return;
+      const target = document.getElementById('analysis-low-stock-list');
+      if (!target || data.items.length === 0) return;
+      target.innerHTML = data.items.map((row) => `
+        <div class="flex items-center justify-between text-sm gap-3">
+          <div class="min-w-0">
+            <p class="font-medium truncate">${row.name || '-'} · ${row.material || '-'} · ${row.color || '-'}</p>
+            <p class="text-xs text-slate-500">${formatWeight(row.remaining_g || 0)} / ${formatWeight(row.threshold_g || 0)}</p>
+          </div>
+        </div>
+      `).join('');
+    }).catch(() => null);
+  }
+
+  hydrateAnalysisPage();
+  document.addEventListener('ui:after-soft-refresh', hydrateAnalysisPage);
+</script>
 {% endblock %}

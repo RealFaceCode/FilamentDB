@@ -1,0 +1,24 @@
+{
+    default_sni localhost
+
+    servers {
+        protocols h1 h2
+    }
+}
+
+http://localhost:80 {
+    redir https://localhost:8443{uri} 308
+}
+
+https://localhost:443 {
+    tls internal {
+        key_type rsa2048
+    }
+    encode zstd gzip
+
+    reverse_proxy web:8000 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Real-IP {remote_host}
+    }
+}

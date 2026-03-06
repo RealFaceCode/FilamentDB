@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ui-card ui-card-lg max-w-3xl">
+<div class="ui-card ui-card-lg w-full">
+  <div data-disable-auto-refresh="1" class="hidden" aria-hidden="true"></div>
   <h2 class="text-lg font-semibold mb-2">{{ t('qr_scan_title') }}</h2>
   <p class="text-sm text-slate-500 mb-5">{{ t('qr_scan_hint') }}</p>
 
@@ -27,38 +28,85 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 (() => {
-  const input = document.getElementById('qr-payload');
-  const stopBtn = document.getElementById('scan-stop');
-  const video = document.getElementById('scan-video');
-  const displayCanvas = document.getElementById('scan-canvas');
-  const wrap = document.getElementById('scan-wrap');
-  const hint = document.getElementById('scan-hint');
+  let teardownCurrentScan = null;
+  let scanRuntime = null;
+  let cameraStoppedByUser = false;
+  const CAMERA_STOPPED_KEY = 'ui:qr-scan:camera-stopped';
 
-  if (!input || !stopBtn || !video || !displayCanvas || !wrap || !hint) {
-    return;
+  function loadCameraStoppedState() {
+    try {
+      return globalThis.sessionStorage?.getItem(CAMERA_STOPPED_KEY) === '1';
+    } catch (_error) {
+      return false;
+    }
   }
 
-  let stream = null;
-  let detector = null;
-  let rafId = null;
-  const msgHttps = hint.dataset.msgHttps || 'Camera access usually requires HTTPS (or localhost).';
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  const viewCtx = displayCanvas.getContext('2d', { willReadFrequently: true });
+  function persistCameraStoppedState(value) {
+    try {
+      if (value) {
+        globalThis.sessionStorage?.setItem(CAMERA_STOPPED_KEY, '1');
+      } else {
+        globalThis.sessionStorage?.removeItem(CAMERA_STOPPED_KEY);
+      }
+    } catch (_error) {
+    }
+  }
 
-  function isDarkTheme() {
-    const root = document.documentElement;
-    const body = document.body;
-    return (
-      root.classList.contains('dark') ||
-      body.classList.contains('dark') ||
-      root.dataset.theme === 'dark' ||
-      body.dataset.theme === 'dark'
+  function initQrScanPage() {
+    cameraStoppedByUser = loadCameraStoppedState();
+
+    const input = document.getElementById('qr-payload');
+    const stopBtn = document.getElementById('scan-stop');
+    const video = document.getElementById('scan-video');
+    const displayCanvas = document.getElementById('scan-canvas');
+    const wrap = document.getElementById('scan-wrap');
+    const hint = document.getElementById('scan-hint');
+
+    if (!input || !stopBtn || !video || !displayCanvas || !wrap || !hint) {
+      return;
+    }
+
+    const isSameRuntime = (
+      !!scanRuntime
+      && scanRuntime.input === input
+      && scanRuntime.stopBtn === stopBtn
+      && scanRuntime.video === video
+      && scanRuntime.displayCanvas === displayCanvas
+      && scanRuntime.wrap === wrap
+      && scanRuntime.hint === hint
+      && video.isConnected
     );
-  }
+    if (isSameRuntime) {
+      return;
+    }
 
-  function drawScannerOverlay(width, height) {
-    if (!viewCtx) return;
+    if (typeof teardownCurrentScan === 'function') {
+      teardownCurrentScan();
+      teardownCurrentScan = null;
+    }
+
+    let stream = null;
+    let detector = null;
+    let rafId = null;
+    let startTimerId = null;
+    const msgHttps = hint.dataset.msgHttps || 'Camera access usually requires HTTPS (or localhost).';
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const viewCtx = displayCanvas.getContext('2d', { willReadFrequently: true });
+
+    function isDarkTheme() {
+      const root = document.documentElement;
+      const body = document.body;
+      return (
+        root.classList.contains('dark') ||
+        body.classList.contains('dark') ||
+        root.dataset.theme === 'dark' ||
+        body.dataset.theme === 'dark'
+      );
+    }
+
+    function drawScannerOverlay(width, height) {
+      if (!viewCtx) return;
 
     const frameSize = Math.max(180, Math.min(width, height) * 0.6);
     const frameX = (width - frameSize) / 2;
@@ -66,134 +114,171 @@
     const corner = Math.max(24, frameSize * 0.16);
     const strokeColor = isDarkTheme() ? '#ffffff' : '#000000';
 
-    viewCtx.strokeStyle = strokeColor;
-    viewCtx.lineWidth = 6;
-    viewCtx.beginPath();
-    viewCtx.moveTo(frameX, frameY + corner);
-    viewCtx.lineTo(frameX, frameY);
-    viewCtx.lineTo(frameX + corner, frameY);
+      viewCtx.strokeStyle = strokeColor;
+      viewCtx.lineWidth = 6;
+      viewCtx.beginPath();
+      viewCtx.moveTo(frameX, frameY + corner);
+      viewCtx.lineTo(frameX, frameY);
+      viewCtx.lineTo(frameX + corner, frameY);
 
-    viewCtx.moveTo(frameX + frameSize - corner, frameY);
-    viewCtx.lineTo(frameX + frameSize, frameY);
-    viewCtx.lineTo(frameX + frameSize, frameY + corner);
+      viewCtx.moveTo(frameX + frameSize - corner, frameY);
+      viewCtx.lineTo(frameX + frameSize, frameY);
+      viewCtx.lineTo(frameX + frameSize, frameY + corner);
 
-    viewCtx.moveTo(frameX, frameY + frameSize - corner);
-    viewCtx.lineTo(frameX, frameY + frameSize);
-    viewCtx.lineTo(frameX + corner, frameY + frameSize);
+      viewCtx.moveTo(frameX, frameY + frameSize - corner);
+      viewCtx.lineTo(frameX, frameY + frameSize);
+      viewCtx.lineTo(frameX + corner, frameY + frameSize);
 
-    viewCtx.moveTo(frameX + frameSize - corner, frameY + frameSize);
-    viewCtx.lineTo(frameX + frameSize, frameY + frameSize);
-    viewCtx.lineTo(frameX + frameSize, frameY + frameSize - corner);
-    viewCtx.stroke();
-  }
-
-  function submitPayload(value) {
-    if (!value) return;
-    input.value = value;
-    input.form?.submit();
-  }
-
-  function decodeFromCanvas() {
-    if (!ctx) return null;
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    if (!globalThis.jsQR) return null;
-    const code = globalThis.jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: 'attemptBoth',
-    });
-    return code?.data || null;
-  }
-
-  async function stopScan() {
-    if (rafId) {
-      cancelAnimationFrame(rafId);
-      rafId = null;
+      viewCtx.moveTo(frameX + frameSize - corner, frameY + frameSize);
+      viewCtx.lineTo(frameX + frameSize, frameY + frameSize);
+      viewCtx.lineTo(frameX + frameSize, frameY + frameSize - corner);
+      viewCtx.stroke();
     }
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      stream = null;
+
+    function submitPayload(value) {
+      if (!value) return;
+      input.value = value;
+      input.form?.submit();
     }
-    video.srcObject = null;
-    wrap.classList.add('hidden');
-    stopBtn.disabled = true;
-  }
 
-  async function tick() {
-    if (!video || video.readyState < 2) {
-      rafId = requestAnimationFrame(tick);
-      return;
+    function decodeFromCanvas() {
+      if (!ctx) return null;
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if (!globalThis.jsQR) return null;
+      const code = globalThis.jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'attemptBoth',
+      });
+      return code?.data || null;
     }
-    try {
-      let value = null;
-      const width = video.videoWidth || 640;
-      const height = video.videoHeight || 480;
 
-      if (displayCanvas.width !== width || displayCanvas.height !== height) {
-        displayCanvas.width = width;
-        displayCanvas.height = height;
+    async function stopScan() {
+      if (startTimerId) {
+        clearTimeout(startTimerId);
+        startTimerId = null;
       }
-
-      if (viewCtx) {
-        viewCtx.drawImage(video, 0, 0, width, height);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
       }
-
-      if (detector) {
-        const barcodes = await detector.detect(video);
-        if (barcodes && barcodes.length > 0) {
-          value = barcodes[0].rawValue || null;
-        }
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        stream = null;
       }
+      video.srcObject = null;
+      wrap.classList.add('hidden');
+      stopBtn.disabled = true;
+    }
 
-      if (!value && ctx) {
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        value = decodeFromCanvas();
-      }
-
-      drawScannerOverlay(width, height);
-
-      if (value) {
-        await stopScan();
-        submitPayload(value);
+    async function tick() {
+      if (!video || video.readyState < 2) {
+        rafId = requestAnimationFrame(tick);
         return;
       }
-    } catch (err) {
-      console.warn(err);
-    }
-    rafId = requestAnimationFrame(tick);
-  }
+      try {
+        let value = null;
+        const width = video.videoWidth || 640;
+        const height = video.videoHeight || 480;
 
-  async function startScan() {
-    const hasMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    if (!hasMedia) {
-      hint.textContent = msgHttps;
-      hint.classList.remove('hidden');
-      return;
-    }
-    try {
-      detector = ('BarcodeDetector' in globalThis)
-        ? new BarcodeDetector({ formats: ['qr_code'] })
-        : null;
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      video.srcObject = stream;
-      await video.play();
-      wrap.classList.remove('hidden');
-      hint.classList.add('hidden');
-      stopBtn.disabled = false;
+        if (displayCanvas.width !== width || displayCanvas.height !== height) {
+          displayCanvas.width = width;
+          displayCanvas.height = height;
+        }
+
+        if (viewCtx) {
+          viewCtx.drawImage(video, 0, 0, width, height);
+        }
+
+        if (detector) {
+          const barcodes = await detector.detect(video);
+          if (barcodes && barcodes.length > 0) {
+            value = barcodes[0].rawValue || null;
+          }
+        }
+
+        if (!value && ctx) {
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          value = decodeFromCanvas();
+        }
+
+        drawScannerOverlay(width, height);
+
+        if (value) {
+          await stopScan();
+          submitPayload(value);
+          return;
+        }
+      } catch (err) {
+        console.warn(err);
+      }
       rafId = requestAnimationFrame(tick);
-    } catch (err) {
-      hint.textContent = msgHttps;
-      hint.classList.remove('hidden');
-      console.warn(err);
     }
+
+    async function startScan() {
+      const hasMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+      if (!hasMedia) {
+        hint.textContent = msgHttps;
+        hint.classList.remove('hidden');
+        return;
+      }
+      try {
+        detector = ('BarcodeDetector' in globalThis)
+          ? new BarcodeDetector({ formats: ['qr_code'] })
+          : null;
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = stream;
+        await video.play();
+        wrap.classList.remove('hidden');
+        hint.classList.add('hidden');
+        stopBtn.disabled = false;
+        rafId = requestAnimationFrame(tick);
+      } catch (err) {
+        hint.textContent = msgHttps;
+        hint.classList.remove('hidden');
+        console.warn(err);
+      }
+    }
+
+    const onStopClick = () => {
+      cameraStoppedByUser = true;
+      persistCameraStoppedState(true);
+      stopScan();
+    };
+    const onBeforeUnload = () => {
+      stopScan();
+    };
+    stopBtn.addEventListener('click', onStopClick);
+    window.addEventListener('beforeunload', onBeforeUnload);
+
+    if (!cameraStoppedByUser) {
+      startTimerId = setTimeout(() => {
+        startTimerId = null;
+        startScan();
+      }, 120);
+    } else {
+      stopScan();
+    }
+
+    teardownCurrentScan = () => {
+      stopBtn.removeEventListener('click', onStopClick);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      stopScan();
+      scanRuntime = null;
+    };
+
+    scanRuntime = {
+      input,
+      stopBtn,
+      video,
+      displayCanvas,
+      wrap,
+      hint,
+    };
   }
 
-  stopBtn.addEventListener('click', stopScan);
-  window.addEventListener('beforeunload', stopScan);
-
-  setTimeout(() => {
-    startScan();
-  }, 120);
+  initQrScanPage();
+  document.addEventListener('ui:after-soft-refresh', initQrScanPage);
 })();
 </script>
 {% endblock %}

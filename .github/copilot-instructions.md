@@ -15,10 +15,42 @@
 - SQLite und MySQL sind für den regulären Betrieb nicht erlaubt.
 - Neue Doku, Automationen und Skripte müssen diese Regel einhalten.
 
-## Verbindliche Externer-Server-Regel
+## Verbindliche Rebuild/Restart-Regel nach Änderungen
 
-- Design- und Architekturentscheidungen sind immer so zu treffen, dass der Betrieb auf einem externen Server zuverlässig funktioniert (z. B. Hostinger VPS).
-- Lokale Dienste dürfen als Datenquelle dienen, aber die zentrale Laufzeit, Persistenz und Business-Logik liegt auf dem externen Server.
-- Neue Features müssen ohne lokalen Sonderbetrieb auf dem Server deploybar und betreibbar sein.
-- Infrastruktur- und Netzwerkannahmen müssen extern-server-tauglich sein (Reverse Proxy, TLS, öffentliche Erreichbarkeit der App, keine Abhängigkeit von lokalem LAN am Server).
-- Bei Zielkonflikten gilt: Externer-Server-Betrieb hat Vorrang vor lokaler Bequemlichkeit.
+- Nach jeder inhaltlichen Änderung am Projekt muss der Docker-Stack neu gebaut und gestartet werden.
+- Standardablauf: `docker compose up -d --build` (mit Build-Cache, damit unveränderte Layer wie Dependencies nicht neu geladen werden).
+- `--no-cache` nur gezielt verwenden, wenn ein Cache-Problem vermutet wird oder Abhängigkeiten bewusst vollständig neu aufgebaut werden sollen.
+- Diese Pflicht gilt für Code-, Template-, Migrations-, Skript- und Konfigurationsänderungen.
+
+## Verbindliche Soft-Refresh-Regel bei Nutzer-Speicheraktionen
+
+- Beim Speichern von vom Nutzer eingegebenen Daten darf keine harte Seiten-Neuladung erfolgen.
+- Speichern/Ändern in Formularen muss per Soft-Refresh/AJAX erfolgen, damit Layout und Kontext stabil bleiben.
+- Voll-Reload ist nur erlaubt, wenn technisch unvermeidbar (z. B. Datei-Download/Browser-Navigation außerhalb des Daten-Speicherns).
+
+## Verbindliche Refresh-Init-Regel für Seiten-Skripte
+
+- Jede Seite mit eigenen JavaScript-Initialisierungen muss nach Soft-Refresh erneut korrekt aufgebaut werden.
+- Dafür ist die Initialisierung in eine wiederverwendbare Funktion zu kapseln und zusätzlich auf `ui:after-soft-refresh` zu binden.
+- Event-Handler müssen idempotent registriert werden (keine Mehrfach-Bindings bei wiederholten Refreshes).
+- Diese Regel gilt für alle Templates mit `<script>`-Blöcken.
+
+## Verbindliche Tabellen-Schema-Regel
+
+- Tabellen müssen im einheitlichen UI-Schema aufgebaut sein: Wrapper mit `overflow-auto`/`overflow-x-auto`, Tabelle mit `ui-table`, Header-Zeile mit `ui-thead-row`, Header-Zellen mit `ui-th-sticky`, Datenzeilen mit `ui-row`, Datenzellen mit `ui-td`.
+- Aktionsspalten müssen `ui-th-actions` und `ui-td-actions` verwenden.
+- Abweichende Einzelklassen für Tabellenkopf/-zeilen sind nicht erlaubt, sofern keine technisch zwingende Ausnahme dokumentiert ist.
+
+## Verbindliche Vollbreiten-Regel für Tabellen-Seiten
+
+- Seiten/Container mit Datentabellen müssen die verfügbare Inhaltsbreite vollständig nutzen (`w-full`).
+- Breitenbegrenzungen wie `max-w-*` auf Haupt-Containern von Tabellen-Seiten sind zu vermeiden.
+- Tabellen selbst müssen über das bestehende `ui-table`-Schema auf volle Breite laufen; horizontales Scrollen wird nur über den Wrapper gelöst.
+
+## Verbindliche Ausrichtungs-Regel für Tabellenwerte
+
+- Tabellenwerte müssen innerhalb ihrer Spalte immer am Spaltenanfang stehen (links/start ausgerichtet).
+- Rechts-/Endausrichtung (`text-right`, `justify-end`, `items-end`) ist in Tabellenköpfen und Tabellenzellen nicht erlaubt.
+- Ausnahme Aktionsspalten: Spaltenkopf `ui-th-actions` und Zellen `ui-td-actions` sind rechtsbündig auszurichten, sodass Aktions-Buttons immer am rechten Tabellenende sitzen.
+
+

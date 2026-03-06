@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="ui-card ui-card-lg max-w-3xl">
+<div class="ui-card ui-card-lg w-full">
   <h2 class="text-lg font-semibold mb-2">{{ t('qr_scan_manage_title') }}</h2>
   <p class="text-sm text-slate-500 mb-5">{{ t('qr_scan_manage_hint') }}</p>
 
   <div class="flex items-start gap-4">
-    <img src="/spools/{{ spool.id }}/qr" alt="QR" class="w-24 h-24 rounded-lg border border-slate-200">
+    <img src="/spools/{{ spool.id }}/qr" alt="QR" class="w-24 h-24 rounded-lg border border-slate-200 cursor-zoom-in" data-qr-popup="1">
     <div class="flex-1 min-w-0">
       <p class="text-lg font-semibold">SP-{{ '%04d'|format(spool.id) }}</p>
       <p class="text-sm text-slate-700">{{ spool.brand }}</p>
@@ -39,27 +39,93 @@
     </form>
   </div>
 
+  <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div class="ui-panel">
+      <p class="text-sm font-semibold text-slate-800 mb-1">{{ t('qr_scan_lifecycle_title') }}</p>
+      <p class="text-xs text-slate-500 mb-3">{{ t('qr_scan_lifecycle_hint') }}</p>
+      <form method="post" action="/qr-scan/action" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+        <input type="hidden" name="spool_id" value="{{ spool.id }}">
+        <input type="hidden" name="action" value="set_lifecycle">
+        <input type="hidden" name="return_to_scan" class="return-to-scan-field" value="1">
+        <div>
+          <label for="qr-lifecycle-status" class="text-xs text-slate-500">{{ t('qr_scan_lifecycle_label') }}</label>
+          <select id="qr-lifecycle-status" name="lifecycle_status" class="ui-select ui-select-native-reset">
+            {% set current_lifecycle = spool.lifecycle_status if spool and spool.lifecycle_status else 'new' %}
+            {% for option in (lifecycle_status_options or []) %}
+              <option value="{{ option.value }}" {% if option.value == current_lifecycle %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="ui-btn ui-btn-primary">{{ t('qr_scan_action_set_lifecycle') }}</button>
+      </form>
+    </div>
+
+    <div class="ui-panel">
+      <p class="text-sm font-semibold text-slate-800 mb-1">{{ t('qr_scan_storage_title') }}</p>
+      <p class="text-xs text-slate-500 mb-3">{{ t('qr_scan_storage_hint') }}</p>
+      <form method="post" action="/qr-scan/action" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+        <input type="hidden" name="spool_id" value="{{ spool.id }}">
+        <input type="hidden" name="action" value="set_storage">
+        <input type="hidden" name="return_to_scan" class="return-to-scan-field" value="1">
+        <div>
+          <label for="qr-storage-location" class="text-xs text-slate-500">{{ t('qr_scan_storage_label') }}</label>
+          <select id="qr-storage-location" name="storage_sub_location_id" class="ui-select ui-select-native-reset">
+            <option value="">{{ t('storage_location_none') }}</option>
+            {% for option in (storage_location_options or []) %}
+              <option value="{{ option.id }}" {% if spool.storage_sub_location_id and option.id == spool.storage_sub_location_id %}selected{% endif %}>{{ option.path_code }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="ui-btn ui-btn-primary">{{ t('qr_scan_storage_save') }}</button>
+      </form>
+    </div>
+  </div>
+
   <div class="mt-5 ui-panel">
-    <form method="post" action="/qr-scan/action" class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+    <h3 class="text-sm font-semibold text-slate-800 mb-1">{{ t('qr_scan_mapping_title') }}</h3>
+    <p class="text-xs text-slate-500 mb-3">{{ t('qr_scan_mapping_hint') }}</p>
+    <form method="post" action="/qr-scan/action" class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
       <input type="hidden" name="spool_id" value="{{ spool.id }}">
-      <input type="hidden" name="action" value="set_lifecycle">
+      <input type="hidden" name="action" value="set_ams_mapping">
       <input type="hidden" name="return_to_scan" class="return-to-scan-field" value="1">
+
+      {% set is_external_mapping = spool.ams_printer and (spool.ams_slot is none) %}
+      {% set mapping_target_value = 'external' if is_external_mapping else ('ams' if spool.ams_slot else 'clear') %}
+
       <div>
-        <label for="qr-lifecycle-status" class="text-xs text-slate-500">{{ t('qr_scan_lifecycle_label') }}</label>
-        <select id="qr-lifecycle-status" name="lifecycle_status" class="ui-select">
-          {% set current_lifecycle = spool.lifecycle_status if spool and spool.lifecycle_status else 'new' %}
-          {% for option in (lifecycle_status_options or []) %}
-            <option value="{{ option.value }}" {% if option.value == current_lifecycle %}selected{% endif %}>{{ option.label }}</option>
+        <label for="qr-mapping-target" class="text-xs text-slate-500">{{ t('qr_scan_mapping_target') }}</label>
+        <select id="qr-mapping-target" name="mapping_target" class="ui-select ui-select-native-reset" data-mapping-target>
+          <option value="ams" {% if mapping_target_value == 'ams' %}selected{% endif %}>{{ t('qr_scan_mapping_target_ams') }}</option>
+          <option value="external" {% if mapping_target_value == 'external' %}selected{% endif %}>{{ t('qr_scan_mapping_target_external') }}</option>
+          <option value="clear" {% if mapping_target_value == 'clear' %}selected{% endif %}>{{ t('qr_scan_mapping_target_clear') }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="qr-mapping-printer" class="text-xs text-slate-500">{{ t('qr_scan_mapping_printer') }}</label>
+        <select id="qr-mapping-printer" name="ams_printer" class="ui-select ui-select-native-reset" data-mapping-printer>
+          <option value="">{{ t('qr_scan_mapping_printer_placeholder') }}</option>
+          {% for printer in (printers or []) %}
+            {% set printer_value = (printer.name or '')|trim %}
+            <option value="{{ printer_value }}" {% if spool.ams_printer == printer_value %}selected{% endif %}>{{ printer_value }}</option>
           {% endfor %}
         </select>
       </div>
-      <button type="submit" class="ui-btn ui-btn-primary">{{ t('qr_scan_action_set_lifecycle') }}</button>
+
+      <div>
+        <label for="qr-mapping-slot" class="text-xs text-slate-500">{{ t('qr_scan_mapping_slot') }}</label>
+        <input id="qr-mapping-slot" name="ams_slot" type="number" min="1" step="1" class="ui-input" value="{{ spool.ams_slot if spool.ams_slot else '' }}" data-mapping-slot>
+      </div>
+
+      <div class="md:col-span-3">
+        <button type="submit" class="ui-btn ui-btn-primary">{{ t('qr_scan_mapping_save') }}</button>
+      </div>
     </form>
   </div>
 
   <div class="mt-4">
     <label class="inline-flex items-center gap-2 text-sm text-slate-600">
-      <input id="auto-back-toggle" type="checkbox" checked>
+      <input id="auto-back-toggle" type="checkbox" data-persist-key="qr_scan_auto_back_enabled" checked>
       {{ t('qr_scan_auto_back') }}
     </label>
   </div>
@@ -70,19 +136,59 @@
 </div>
 
 <script>
-(() => {
+function initQrScanManagePage() {
   const toggle = document.getElementById('auto-back-toggle');
-  if (!toggle) return;
 
   const applyValue = () => {
+    if (!toggle) return;
     const value = toggle.checked ? '1' : '0';
     document.querySelectorAll('.return-to-scan-field').forEach((field) => {
       field.value = value;
     });
   };
 
-  toggle.addEventListener('change', applyValue);
-  applyValue();
-})();
+  if (toggle) {
+    if (toggle.dataset.autoBackInit !== '1') {
+      if (typeof globalThis.__uiPersistLoadBoolean === 'function') {
+        const persisted = globalThis.__uiPersistLoadBoolean('qr_scan_auto_back_enabled', true);
+        if (typeof persisted === 'boolean') {
+          toggle.checked = persisted;
+        }
+      }
+      toggle.addEventListener('change', applyValue);
+      toggle.dataset.autoBackInit = '1';
+    }
+    applyValue();
+  }
+
+  const mappingTarget = document.querySelector('[data-mapping-target]');
+  const mappingPrinter = document.querySelector('[data-mapping-printer]');
+  const mappingSlot = document.querySelector('[data-mapping-slot]');
+
+  const applyMappingState = () => {
+    if (!mappingTarget || !mappingPrinter || !mappingSlot) return;
+    const mode = String(mappingTarget.value || '').toLowerCase();
+    const isAms = mode === 'ams';
+    const isExternal = mode === 'external';
+
+    mappingSlot.disabled = !isAms;
+    mappingSlot.required = isAms;
+    if (!isAms) mappingSlot.value = '';
+
+    mappingPrinter.disabled = mode === 'clear';
+    mappingPrinter.required = isExternal;
+  };
+
+  if (mappingTarget && mappingTarget.dataset.mappingInit !== '1') {
+    mappingTarget.addEventListener('change', applyMappingState);
+    mappingTarget.dataset.mappingInit = '1';
+  }
+  if (mappingTarget) {
+    applyMappingState();
+  }
+}
+
+initQrScanManagePage();
+document.addEventListener('ui:after-soft-refresh', initQrScanManagePage);
 </script>
 {% endblock %}

@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base, get_db
 from app.main import app
 import app.main as main_module
-from app.models import Spool, UsageHistory, User
+from app.models import Spool, UsageHistory
 
 
 class UsageUndoCapacityTests(unittest.TestCase):
@@ -38,16 +38,7 @@ class UsageUndoCapacityTests(unittest.TestCase):
         app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app, base_url="https://testserver")
 
-        self.client.post(
-            "/auth/register",
-            data={"name": "Tester", "email": "tester@example.com", "password": "password123"},
-            follow_redirects=False,
-        )
-        with self.SessionLocal() as db:
-            user = db.query(User).filter(User.email == "tester@example.com").first()
-            self.assertIsNotNone(user)
-            self.user_id = int(user.id)
-            self.project_scope = f"u{user.id}_private"
+        self.project_scope = "private"
 
     def tearDown(self):
         main_module.COOKIE_SECURE = self._orig_cookie_secure
@@ -59,7 +50,6 @@ class UsageUndoCapacityTests(unittest.TestCase):
     def test_undo_does_not_exceed_spool_capacity(self):
         with self.SessionLocal() as db:
             spool = Spool(
-                user_id=self.user_id,
                 brand="Bambu",
                 material="PLA",
                 color="Black",
@@ -72,7 +62,6 @@ class UsageUndoCapacityTests(unittest.TestCase):
             db.flush()
 
             usage = UsageHistory(
-                user_id=self.user_id,
                 actor="127.0.0.1",
                 mode="save_manual",
                 batch_id="undo-capacity-test",

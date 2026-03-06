@@ -101,6 +101,59 @@
         </div>
       </div>
 
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+        <div class="ui-panel">
+          <p class="text-xs text-slate-500">{{ t('forecast_card_30') }}</p>
+          {% if forecast_30 and forecast_30.days_left is not none %}
+          <p class="text-2xl font-semibold">{{ forecast_30.days_left|round(1) }} {{ t('forecast_days') }}</p>
+          <p class="text-xs text-slate-500">{{ t('forecast_daily_usage') }}: {{ format_weight_text(forecast_30.daily_usage_g) }}</p>
+          {% else %}
+          <p class="text-2xl font-semibold">{{ t('forecast_no_data') }}</p>
+          {% endif %}
+        </div>
+        <div class="ui-panel">
+          <p class="text-xs text-slate-500">{{ t('forecast_card_90') }}</p>
+          {% if forecast_90 and forecast_90.days_left is not none %}
+          <p class="text-2xl font-semibold">{{ forecast_90.days_left|round(1) }} {{ t('forecast_days') }}</p>
+          <p class="text-xs text-slate-500">{{ t('forecast_daily_usage') }}: {{ format_weight_text(forecast_90.daily_usage_g) }}</p>
+          {% else %}
+          <p class="text-2xl font-semibold">{{ t('forecast_no_data') }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mt-5 pt-5 border-t border-slate-200">
+        <h3 class="text-sm font-semibold mb-3">{{ t('reorder_list_title') }}</h3>
+        <div class="overflow-auto max-h-52">
+          <table class="ui-table whitespace-nowrap">
+            <thead>
+              <tr class="ui-thead-row">
+                <th class="ui-th-sticky">{{ t('material') }}</th>
+                <th class="ui-th-sticky">{{ t('color') }}</th>
+                <th class="ui-th-sticky">{{ t('remaining') }}</th>
+                <th class="ui-th-sticky">{{ t('material_total_threshold') }}</th>
+                <th class="ui-th-sticky">{{ t('reorder_missing') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in reorder_rows %}
+              <tr class="ui-row ui-row-warn">
+                <td class="ui-td font-medium">{{ row.material }}</td>
+                <td class="ui-td">{% if row.color == '*' %}{{ t('all_colors') }}{% else %}{{ row.color }}{% endif %}</td>
+                <td class="ui-td">{{ format_weight_text(row.total_remaining_g) }}</td>
+                <td class="ui-td">{{ format_weight_text(row.threshold_g) }}</td>
+                <td class="ui-td font-semibold text-amber-700 dark:text-amber-300">{{ format_weight_text(row.missing_g) }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="py-4 text-slate-500 text-center">{{ t('reorder_none') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <h3 class="text-sm font-semibold mb-1">{{ t('kpi_usage_trend') }}</h3>
@@ -171,35 +224,35 @@
 <div class="ui-card ui-card-lg">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <h2 class="text-lg font-semibold">{{ t('spool_list') }}</h2>
-    <form method="get" action="{{ current_list_base }}" class="flex gap-2" id="spool-search-form">
+    <form method="get" action="{{ current_list_base }}" class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto" id="spool-search-form">
       <input type="hidden" name="sort" value="{{ current_sort }}">
       <input type="hidden" name="dir" value="{{ current_sort_dir }}">
       <input type="hidden" name="page_size" value="{{ current_page_size }}">
       <input type="hidden" name="hide_empty" id="hide-empty-hidden" value="{{ 'true' if hide_empty else 'false' }}">
-      <select name="location_id" class="ui-select w-56">
+      <select name="location_id" data-submit-on-change="1" class="ui-select w-full md:w-56">
         <option value="">{{ t('storage_filter_all') }}</option>
         {% for option in (storage_location_options or []) %}
           <option value="{{ option.id }}" {% if location_id and option.id == location_id %}selected{% endif %}>{{ option.path_code }}</option>
         {% endfor %}
       </select>
-      <select name="lifecycle_status" class="ui-select w-56">
+      <select name="lifecycle_status" data-submit-on-change="1" class="ui-select w-full md:w-56">
         <option value="">{{ t('lifecycle_filter_all') }}</option>
         {% for option in (lifecycle_status_options or []) %}
           <option value="{{ option.value }}" {% if lifecycle_status and option.value == lifecycle_status %}selected{% endif %}>{{ option.label }}</option>
         {% endfor %}
       </select>
-      <input type="text" name="q" value="{{ q or '' }}" placeholder="{{ t('search_placeholder') }}" class="ui-input w-64">
-      <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-        <input type="checkbox" id="hide-empty-toggle" {% if hide_empty %}checked{% endif %} class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900" onchange="document.getElementById('hide-empty-hidden').value = this.checked ? 'true' : 'false'; document.getElementById('spool-search-form').submit();">
+      <input type="text" name="q" value="{{ q or '' }}" placeholder="{{ t('search_placeholder') }}" class="ui-input w-full md:w-64">
+      <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 w-full md:w-auto md:whitespace-nowrap">
+        <input type="checkbox" id="hide-empty-toggle" data-persist-key="spool_hide_empty" {% if hide_empty %}checked{% endif %} class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900">
         <span>{{ t('hide_empty_spools') }}</span>
       </label>
-      <button class="ui-btn ui-btn-secondary">{{ t('search') }}</button>
+      <button class="ui-btn ui-btn-secondary w-full md:w-auto">{{ t('search') }}</button>
     </form>
   </div>
 
-  <div class="flex items-center justify-between gap-3 mb-4">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
     <div class="text-xs text-slate-500">{{ format_number_compact(current_total_count, 0, lang) }} {{ t('entries_label') }}</div>
-    <form method="get" action="{{ current_list_base }}" class="flex items-center gap-2">
+    <form method="get" action="{{ current_list_base }}" class="flex flex-wrap md:flex-nowrap items-center gap-2 w-full md:w-auto md:justify-end">
       <input type="hidden" name="q" value="{{ q or '' }}">
       <input type="hidden" name="location_id" value="{{ location_id or '' }}">
       <input type="hidden" name="lifecycle_status" value="{{ lifecycle_status or '' }}">
@@ -207,7 +260,7 @@
       <input type="hidden" name="sort" value="{{ current_sort }}">
       <input type="hidden" name="dir" value="{{ current_sort_dir }}">
       <input type="hidden" name="page" value="1">
-      <label for="page-size-select" class="text-xs text-slate-500">{{ t('rows_per_page') }}</label>
+      <label for="page-size-select" class="text-xs text-slate-500 w-full md:w-auto md:whitespace-nowrap">{{ t('rows_per_page') }}</label>
       <select id="page-size-select" name="page_size" onchange="this.form.submit()" class="ui-select py-1">
         {% for option in current_page_size_options %}
           <option value="{{ option }}" {% if option == current_page_size %}selected{% endif %}>{{ option }}</option>
@@ -217,7 +270,7 @@
   </div>
 
   <div class="overflow-auto max-h-[70vh]">
-    <table class="ui-table">
+    <table class="ui-table ui-table-bulk">
       <thead>
         <tr class="ui-thead-row">
           <th class="ui-th-sticky">
@@ -253,7 +306,7 @@
           <th class="ui-th-sticky">
             <a href="{{ request.url.include_query_params(sort='status', dir='asc' if current_sort != 'status' or current_sort_dir == 'desc' else 'desc', page=1) }}">{{ t('status') }}</a>
           </th>
-          <th class="text-right ui-th-sticky">{{ t('actions') }}</th>
+          <th class="ui-th-sticky ui-th-actions text-right">{{ t('actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -302,17 +355,21 @@
               {% set lifecycle_badge_class = 'ui-badge-inuse' %}
             {% elif lifecycle_value == 'humidity_risk' %}
               {% set lifecycle_badge_class = 'ui-badge-low' %}
+            {% elif lifecycle_value == 'drying' %}
+              {% set lifecycle_badge_class = 'ui-badge-meta' %}
+            {% elif lifecycle_value == 'brittle' %}
+              {% set lifecycle_badge_class = 'ui-badge-low' %}
             {% elif lifecycle_value == 'empty' %}
               {% set lifecycle_badge_class = 'ui-badge-empty' %}
+            {% elif lifecycle_value == 'recycled' %}
+              {% set lifecycle_badge_class = 'ui-badge-idle' %}
             {% elif lifecycle_value == 'archived' %}
               {% set lifecycle_badge_class = 'ui-badge-idle' %}
             {% endif %}
             <span class="ui-badge {{ lifecycle_badge_class }}">{{ t('lifecycle_' ~ lifecycle_value) }}</span>
           </td>
           <td class="ui-td">
-            {% if spool.remaining_g <= 0 %}
-              <span class="ui-badge ui-badge-empty">{{ t('empty') }}</span>
-            {% elif spool.is_low_stock %}
+            {% if spool.is_low_stock %}
               <span class="ui-badge ui-badge-low">{{ t('low_stock') }}</span>
             {% elif spool.in_use %}
               <span class="ui-badge ui-badge-inuse">{{ t('in_use') }}</span>
@@ -320,14 +377,14 @@
               <span class="ui-badge ui-badge-idle">{{ t('idle') }}</span>
             {% endif %}
           </td>
-          <td class="ui-td text-right">
-            <div class="inline-flex items-center gap-2">
+          <td class="ui-td ui-td-actions text-right">
+            <div class="flex items-center justify-end gap-2">
               <form method="post" action="/spools/{{ spool.id }}/toggle-use">
                 <input type="hidden" name="next_url" value="{{ current_return_url }}">
                 <button class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('toggle_use') }}</button>
               </form>
               <a href="/spools/{{ spool.id }}/edit?next_url={{ current_return_url|urlencode }}" class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('edit') }}</a>
-              <a href="/spools/{{ spool.id }}/qr" class="ui-btn ui-btn-secondary ui-btn-sm">{{ t('qr') }}</a>
+              <a href="/spools/{{ spool.id }}/qr" class="ui-btn ui-btn-secondary ui-btn-sm" data-qr-popup-link="1">{{ t('qr') }}</a>
               <form method="post" action="/spools/{{ spool.id }}/delete" onsubmit="return confirm('{{ t('confirm_delete') }}');">
                 <input type="hidden" name="next_url" value="{{ current_return_url }}">
                 <button class="ui-btn ui-btn-danger ui-btn-sm">{{ t('delete') }}</button>
@@ -362,4 +419,54 @@
   </div>
 </div>
 {% endif %}
+
+<script>
+function initHideEmptyToggle() {
+  const toggle = document.getElementById('hide-empty-toggle');
+  const hidden = document.getElementById('hide-empty-hidden');
+  const form = document.getElementById('spool-search-form');
+  if (!(toggle instanceof HTMLInputElement) || !(hidden instanceof HTMLInputElement) || !(form instanceof HTMLFormElement)) {
+    return;
+  }
+  if (toggle.dataset.hideEmptyInit === '1') {
+    return;
+  }
+
+  const syncHidden = () => {
+    hidden.value = toggle.checked ? 'true' : 'false';
+  };
+
+  const submitForm = () => {
+    if (typeof form.requestSubmit === 'function') {
+      form.requestSubmit();
+      return;
+    }
+    form.submit();
+  };
+
+  const serverHideEmpty = String(hidden.value || '').toLowerCase() === 'true';
+  if (typeof globalThis.__uiPersistLoadBoolean === 'function') {
+    const persisted = globalThis.__uiPersistLoadBoolean('spool_hide_empty', null);
+    if (typeof persisted === 'boolean') {
+      toggle.checked = persisted;
+    }
+  }
+
+  syncHidden();
+
+  toggle.addEventListener('change', () => {
+    syncHidden();
+    submitForm();
+  });
+  toggle.dataset.hideEmptyInit = '1';
+
+  const hasHideEmptyQuery = new URLSearchParams(globalThis.location.search).has('hide_empty');
+  if (!hasHideEmptyQuery && toggle.checked !== serverHideEmpty) {
+    submitForm();
+  }
+}
+
+initHideEmptyToggle();
+document.addEventListener('ui:after-soft-refresh', initHideEmptyToggle);
+</script>
 {% endblock %}
