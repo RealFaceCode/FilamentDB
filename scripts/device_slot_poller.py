@@ -854,11 +854,45 @@ def _parse_bambu_printers_env() -> list[dict[str, Any]]:
     return result
 
 
+def _load_bambu_printers_from_db() -> list[dict[str, Any]]:
+    project = _normalize_text(os.getenv("SLOT_STATE_PROJECT") or "private", 40) or "private"
+    rows: list[dict[str, Any]] = []
+
+    with SessionLocal() as db:
+        printers = (
+            db.query(Printer)
+            .filter(Printer.project == project)
+            .filter(Printer.is_active.is_(True))
+            .all()
+        )
+
+        for printer in printers:
+            name = _normalize_text(printer.name, 120)
+            host = _normalize_text(printer.host, 255)
+            serial = _normalize_text(printer.serial, 120)
+            access_code = _normalize_text(printer.access_code, 120)
+            if not name or not host or not serial or not access_code:
+                continue
+            rows.append(
+                {
+                    "name": name,
+                    "host": host,
+                    "serial": serial,
+                    "access_code": access_code,
+                    "port": int(printer.port or 8883),
+                }
+            )
+
+    return rows
+
+
 def _load_payload_bambu_mqtt() -> Any:
     if mqtt is None:
         raise RuntimeError("paho-mqtt not installed")
 
     printers = _parse_bambu_printers_env()
+    if not printers:
+        printers = _load_bambu_printers_from_db()
     if not printers:
         return None
 
