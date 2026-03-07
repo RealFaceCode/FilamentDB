@@ -63,18 +63,18 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     {% for printer in printers %}
     {% set status = printer.status or 'unknown' %}
-    {% set status_badge = 'bg-slate-100 border-slate-300 text-slate-700' %}
+    {% set status_badge = 'bg-slate-100 border-slate-300 text-slate-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200' %}
     {% set status_dot = 'bg-slate-400' %}
     {% if status == 'online' %}
-      {% set status_badge = 'bg-emerald-100 border-emerald-300 text-emerald-800' %}
+      {% set status_badge = 'bg-emerald-100 border-emerald-300 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-700 dark:text-emerald-200' %}
       {% set status_dot = 'bg-emerald-500' %}
     {% elif status == 'offline' %}
-      {% set status_badge = 'bg-rose-100 border-rose-300 text-rose-800' %}
+      {% set status_badge = 'bg-rose-100 border-rose-300 text-rose-800 dark:bg-rose-900/40 dark:border-rose-700 dark:text-rose-200' %}
       {% set status_dot = 'bg-rose-500' %}
     {% endif %}
     <button
       type="button"
-      class="ui-card text-left w-full min-h-[240px] px-5 py-4 flex flex-col gap-4 border border-slate-200 hover:border-slate-300 hover:translate-y-[-1px] transition"
+      class="ui-card text-left w-full min-h-[240px] px-5 py-4 flex flex-col gap-4 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:translate-y-[-1px] transition"
       data-printer-open="printer-modal-{{ printer.id }}"
     >
       <div class="flex items-start justify-between gap-4">
@@ -93,7 +93,7 @@
           <span>{{ t('printer_progress') }}</span>
           <span class="font-semibold text-slate-800">{% if printer.progress is not none %}{{ '%.1f'|format(printer.progress) }}%{% else %}-{% endif %}</span>
         </div>
-        <div class="mt-2 h-2 rounded-full bg-slate-200 overflow-hidden">
+        <div class="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
           <div
             class="h-2 rounded-full {% if status == 'online' %}bg-emerald-500{% elif status == 'offline' %}bg-rose-500{% else %}bg-slate-500{% endif %}"
             style="width:{% if printer.progress is not none %}{{ [printer.progress, 100]|min|round(0, 'floor') }}{% else %}0{% endif %}%"
@@ -133,7 +133,7 @@
         </div>
       </div>
 
-      <div class="text-sm text-slate-500 mt-auto pt-3.5 border-t border-slate-200">
+      <div class="text-sm text-slate-500 mt-auto pt-3.5 border-t border-slate-200 dark:border-slate-700">
         {{ t('printer_last_seen') }}: {% if printer.last_seen_at %}{{ printer.last_seen_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}
       </div>
     </button>
@@ -174,35 +174,35 @@
       <div data-printer-panels-container class="h-full">
         <div data-printer-panel="device" class="h-full overflow-y-auto">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-5">
-            <div class="rounded-xl border border-slate-200 p-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
               <div class="text-xs text-slate-500">{{ t('printer_status') }}</div>
               <div class="font-medium mt-1">{{ printer.status_label }}</div>
             </div>
-            <div class="rounded-xl border border-slate-200 p-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
               <div class="text-xs text-slate-500">{{ t('printer_last_seen') }}</div>
               <div class="font-medium mt-1">{% if printer.last_seen_at %}{{ printer.last_seen_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</div>
             </div>
-            <div class="rounded-xl border border-slate-200 p-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
               <div class="text-xs text-slate-500">{{ t('printer_job') }}</div>
               <div class="font-medium mt-1 truncate" title="{{ printer.job_label or '-' }}">{{ printer.job_label or '-' }}</div>
             </div>
-            <div class="rounded-xl border border-slate-200 p-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
               <div class="text-xs text-slate-500">{{ t('printer_progress') }}</div>
               <div class="font-medium mt-1">{% if printer.progress is not none %}{{ '%.1f'|format(printer.progress) }}%{% else %}-{% endif %}</div>
             </div>
-            <div class="rounded-xl border border-slate-200 p-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
               <div class="text-xs text-slate-500">{{ t('printer_temps') }}</div>
               <div class="font-medium mt-1 truncate" title="{{ printer.temps or '-' }}">{{ printer.temps or '-' }}</div>
             </div>
-            <div class="rounded-xl border border-slate-200 p-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
               <div class="text-xs text-slate-500">{{ t('printer_firmware') }}</div>
               <div class="font-medium mt-1 truncate" title="{{ printer.firmware or '-' }}">{{ printer.firmware or '-' }}</div>
             </div>
-            <div class="rounded-xl border border-slate-200 p-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
               <div class="text-xs text-slate-500">{{ t('printer_source') }}</div>
               <div class="font-medium mt-1 truncate" title="{{ printer.source or '-' }}">{{ printer.source or '-' }}</div>
             </div>
-            <div class="rounded-xl border border-slate-200 p-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
               <div class="text-xs text-slate-500">{{ t('printer_error') }}</div>
               <div class="font-medium mt-1 truncate" title="{{ printer.error or '-' }}">{{ printer.error or '-' }}</div>
             </div>
@@ -220,7 +220,7 @@
             </div>
             <div class="md:col-span-2">
               <label for="printer-host-edit-{{ printer.id }}" class="text-xs text-slate-500">{{ t('printer_host') }}</label>
-              <input id="printer-host-edit-{{ printer.id }}" name="host" value="{{ printer.host or '' }}" class="mt-1 ui-input privacy-sensitive font-medium font-mono text-slate-900" placeholder="192.168.0.42">
+              <input id="printer-host-edit-{{ printer.id }}" name="host" value="{{ printer.host or '' }}" class="mt-1 ui-input privacy-sensitive font-medium font-mono text-slate-900 dark:text-slate-100" placeholder="192.168.0.42">
             </div>
             <div class="md:col-span-1">
               <label for="printer-port-edit-{{ printer.id }}" class="text-xs text-slate-500">{{ t('printer_port') }}</label>
@@ -251,11 +251,11 @@
           <h4 class="text-sm font-semibold mb-2">{{ t('printer_ams_title') }}</h4>
           <div class="mb-3">
             {% if printer.external_spool_active %}
-            <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border border-amber-300 bg-amber-100 text-amber-800">
+            <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
               {{ t('printer_external_spool') }}: {{ printer.external_spool_label }}
             </span>
             {% else %}
-            <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border border-slate-300 bg-slate-100 text-slate-700">
+            <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
               {{ t('printer_external_spool') }}: {{ printer.external_spool_label }}
             </span>
             {% endif %}
@@ -265,7 +265,7 @@
             {% for group in printer.ams_slot_groups %}
             <div>
               <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <div class="text-sm font-medium text-slate-700" data-ams-group-label data-ams-unit="{{ group.ams_unit }}">{{ group.label }} · U{{ group.ams_unit }}</div>
+                <div class="text-sm font-medium text-slate-700 dark:text-slate-200" data-ams-group-label data-ams-unit="{{ group.ams_unit }}">{{ group.label }} · U{{ group.ams_unit }}</div>
                 <form method="post" action="/printers/{{ printer.id }}/ams-mapping" class="flex items-center gap-2" data-ams-mapping-form>
                   <input type="hidden" name="ams_unit" value="{{ group.ams_unit }}">
                   <input type="hidden" name="open_printer_tab" value="ams">
@@ -335,7 +335,7 @@
             </table>
           </div>
           {% else %}
-          <div class="rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-500">{{ t('printer_ams_empty') }}</div>
+          <div class="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-3 text-sm text-slate-500 dark:text-slate-300">{{ t('printer_ams_empty') }}</div>
           {% endif %}
         </div>
       </div>
@@ -344,7 +344,7 @@
   </dialog>
   {% endfor %}
   {% else %}
-  <div class="py-8 text-center text-slate-500 border border-slate-200 rounded-xl">{{ t('printers_none') }}</div>
+  <div class="py-8 text-center text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl">{{ t('printers_none') }}</div>
   {% endif %}
 </div>
 

@@ -36,6 +36,7 @@ htmlcov/
 *.log
 *.tmp
 *.temp
+.tmp_visual_regression/
 
 # Build/distribution artifacts
 build/

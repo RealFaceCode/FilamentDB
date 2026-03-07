@@ -1142,30 +1142,7 @@
         }
       };
 
-      const restoreOverlayState = () => {
-        let raw = null;
-        let shouldApply = false;
-        try {
-          shouldApply = globalThis.sessionStorage.getItem(UI_STATE_APPLY_KEY) === '1';
-          raw = globalThis.sessionStorage.getItem(UI_STATE_KEY);
-          globalThis.sessionStorage.removeItem(UI_STATE_APPLY_KEY);
-          globalThis.sessionStorage.removeItem(UI_STATE_KEY);
-        } catch (_error) {
-          raw = null;
-        }
-        if (!shouldApply) {
-          return;
-        }
-        if (!raw) {
-          return;
-        }
-
-        let parsed = null;
-        try {
-          parsed = JSON.parse(raw);
-        } catch (_error) {
-          parsed = null;
-        }
+      const applyOverlayState = (parsed) => {
         if (!parsed || typeof parsed !== 'object') {
           return;
         }
@@ -1214,9 +1191,38 @@
         });
       };
 
+      const restoreOverlayState = () => {
+        let raw = null;
+        let shouldApply = false;
+        try {
+          shouldApply = globalThis.sessionStorage.getItem(UI_STATE_APPLY_KEY) === '1';
+          raw = globalThis.sessionStorage.getItem(UI_STATE_KEY);
+          globalThis.sessionStorage.removeItem(UI_STATE_APPLY_KEY);
+          globalThis.sessionStorage.removeItem(UI_STATE_KEY);
+        } catch (_error) {
+          raw = null;
+        }
+        if (!shouldApply) {
+          return;
+        }
+        if (!raw) {
+          return;
+        }
+
+        let parsed = null;
+        try {
+          parsed = JSON.parse(raw);
+        } catch (_error) {
+          parsed = null;
+        }
+        applyOverlayState(parsed);
+      };
+
       restoreOverlayState();
       globalThis.__persistUiOverlayState = persistOverlayState;
       globalThis.__restoreUiOverlayState = restoreOverlayState;
+      globalThis.__captureUiOverlayState = collectOverlayState;
+      globalThis.__applyUiOverlayState = applyOverlayState;
     })();
 
     (function () {
@@ -1278,10 +1284,14 @@
         }
 
         const currentUrl = new URL(window.location.href);
+        const windowScroll = {
+          x: window.scrollX,
+          y: window.scrollY,
+        };
         const dialogState = captureDialogRuntimeState();
-        if (typeof globalThis.__persistUiOverlayState === 'function') {
-          globalThis.__persistUiOverlayState();
-        }
+        const overlayState = typeof globalThis.__captureUiOverlayState === 'function'
+          ? globalThis.__captureUiOverlayState()
+          : null;
 
         const nextMain = nextDoc.querySelector('main');
         const currentMain = document.querySelector('main');
@@ -1315,8 +1325,8 @@
           window.history.replaceState({}, '', targetPath);
         }
 
-        if (typeof globalThis.__restoreUiOverlayState === 'function') {
-          globalThis.__restoreUiOverlayState();
+        if (typeof globalThis.__applyUiOverlayState === 'function' && overlayState) {
+          globalThis.__applyUiOverlayState(overlayState);
         }
         restoreDialogRuntimeState(dialogState);
         if (typeof globalThis.__setLiveRefreshIndicator === 'function') {
@@ -1324,6 +1334,16 @@
         }
 
         document.dispatchEvent(new CustomEvent('ui:after-soft-refresh'));
+
+        // Reapply state after per-page re-initializers run.
+        if (typeof globalThis.__applyUiOverlayState === 'function' && overlayState) {
+          globalThis.__applyUiOverlayState(overlayState);
+        }
+        restoreDialogRuntimeState(dialogState);
+
+        window.requestAnimationFrame(() => {
+          window.scrollTo(windowScroll.x, windowScroll.y);
+        });
       };
 
       globalThis.__softRefreshMainFromHtml = async (html, targetUrl = null) => {
@@ -1885,6 +1905,21 @@
 
     (function () {
       const ORIGINAL_DISPLAY_ATTR = 'data-dropdown-original-display';
+      let enhancedSelectCounter = 0;
+
+      function ensureElementId(el, prefix) {
+        if (!(el instanceof HTMLElement)) {
+          return '';
+        }
+        const existing = String(el.id || '').trim();
+        if (existing) {
+          return existing;
+        }
+        enhancedSelectCounter += 1;
+        const generated = `${prefix}${enhancedSelectCounter}`;
+        el.id = generated;
+        return generated;
+      }
       const instances = [];
       const instanceBySelect = new WeakMap();
 
@@ -2065,6 +2100,15 @@
 
         const menu = createMenuLayer();
         menu.tabIndex = -1;
+        const selectId = ensureElementId(select, 'ui-select-');
+        if (selectId) {
+          const triggerId = `${selectId}-trigger`;
+          const menuId = `${selectId}-menu`;
+          trigger.id = triggerId;
+          trigger.setAttribute('aria-controls', menuId);
+          menu.id = menuId;
+          menu.setAttribute('aria-labelledby', triggerId);
+        }
         const instance = { select, wrapper, trigger, triggerText, menu, optionButtons: [], activeIndex: -1 };
 
         function getEnabledButtons() {

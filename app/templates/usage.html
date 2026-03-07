@@ -189,7 +189,7 @@
               <span class="font-medium">{{ item.spool_index_label }}</span>
               · {{ item.brand or '-' }} · {{ item.material or '-' }} · {{ item.color or '-' }}
             </span>
-            <span class="shrink-0 font-medium text-rose-600 tabular-nums font-mono text-left sm:text-right w-full sm:w-[170px]">-{{ format_number_compact(item.deducted_g, 1, lang) }} g</span>
+            <span class="shrink-0 font-medium text-rose-600 dark:text-rose-300 tabular-nums font-mono text-left sm:text-right w-full sm:w-[170px]">-{{ format_number_compact(item.deducted_g, 1, lang) }} g</span>
           </div>
           {% endfor %}
         </div>
@@ -200,7 +200,7 @@
             <div class="border-t border-slate-300"></div>
             <div class="mt-0.5 border-t-2 border-slate-400 pt-1">
               <p class="text-[11px] text-slate-500 uppercase tracking-wide">{{ t('usage_total') }}</p>
-              <p class="text-base font-semibold text-rose-600 tabular-nums font-mono text-right w-[170px] ml-auto">-{{ format_number_compact(row.total_deducted_g, 1, lang) }} g</p>
+              <p class="text-base font-semibold text-rose-600 dark:text-rose-300 tabular-nums font-mono text-right w-[170px] ml-auto">-{{ format_number_compact(row.total_deducted_g, 1, lang) }} g</p>
             </div>
           </div>
         </div>

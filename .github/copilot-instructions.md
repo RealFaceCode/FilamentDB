@@ -121,6 +121,7 @@ docker compose exec -e PYTHONPATH=/app web pytest -q tests/test_supplies_page.py
 - Keep dialog sizing predictable and consistent (small/medium/large patterns).
 - Keep interaction feedback explicit (hover, focus, disabled, loading).
 - Preserve current page state across reload and soft reload (for example filters, expanded sections, open dialogs, selected tabs, and in-page context where feasible).
+- Soft-refresh handlers must be idempotent and must not leave stale event listeners behind; re-initialization logic must clean up or replace prior bindings (for example via `AbortController`, explicit unbind, or guard patterns).
 
 ## 7) API Design Rules
 - Keep routes resource-oriented and naming consistent with existing FastAPI style.

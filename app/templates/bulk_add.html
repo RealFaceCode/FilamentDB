@@ -117,6 +117,8 @@
 <script>
   const colorMap = {{ (presets.color_map or {}) | tojson }};
   const genericColors = {{ (presets.colors or []) | tojson }};
+  const BULK_ADD_ROWS_STORAGE_KEY = 'ui:bulk_add:rows:v1';
+  let bulkAddBindingsController = null;
 
   function resolveColors(brand, material) {
     const brandMap = colorMap && colorMap[brand] ? colorMap[brand] : {};
@@ -156,17 +158,121 @@
     populateColorsForRow(row);
   }
 
+  function serializeBulkRows(tbody) {
+    if (!(tbody instanceof HTMLElement)) {
+      return [];
+    }
+    return Array.from(tbody.querySelectorAll('tr')).map((row) => {
+      const get = (selector) => {
+        const field = row.querySelector(selector);
+        return field instanceof HTMLInputElement || field instanceof HTMLSelectElement
+          ? String(field.value || '')
+          : '';
+      };
+      return {
+        brand: get('select[name="brand"]'),
+        material: get('select[name="material"]'),
+        color: get('select[name="color"]'),
+        storage_sub_location_id: get('select[name="storage_sub_location_id"]'),
+        weight_g: get('input[name="weight_g"]'),
+        remaining_g: get('input[name="remaining_g"]'),
+        lifecycle_status: get('select[name="lifecycle_status"]'),
+        price: get('input[name="price"]'),
+        quantity: get('input[name="quantity"]') || '1',
+      };
+    });
+  }
+
+  function persistBulkRows(tbody) {
+    try {
+      const rows = serializeBulkRows(tbody);
+      if (!rows.length) {
+        globalThis.sessionStorage.removeItem(BULK_ADD_ROWS_STORAGE_KEY);
+        return;
+      }
+      globalThis.sessionStorage.setItem(BULK_ADD_ROWS_STORAGE_KEY, JSON.stringify(rows));
+    } catch (_error) {
+    }
+  }
+
+  function restoreBulkRows(tbody, baseRowTemplate) {
+    if (!(tbody instanceof HTMLElement) || !baseRowTemplate) {
+      return;
+    }
+
+    let raw = null;
+    try {
+      raw = globalThis.sessionStorage.getItem(BULK_ADD_ROWS_STORAGE_KEY);
+    } catch (_error) {
+      raw = null;
+    }
+    if (!raw) {
+      return;
+    }
+
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_error) {
+      parsed = null;
+    }
+    if (!Array.isArray(parsed) || !parsed.length) {
+      return;
+    }
+
+    tbody.innerHTML = '';
+    parsed.forEach((rowData) => {
+      const tempBody = document.createElement('tbody');
+      tempBody.innerHTML = baseRowTemplate;
+      const row = tempBody.querySelector('tr');
+      if (!row) {
+        return;
+      }
+
+      const assign = (selector, value) => {
+        const field = row.querySelector(selector);
+        if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement)) {
+          return;
+        }
+        field.value = String(value || '');
+      };
+
+      assign('select[name="brand"]', rowData.brand);
+      assign('select[name="material"]', rowData.material);
+      attachRowHandlers(row);
+      assign('select[name="color"]', rowData.color);
+      assign('select[name="storage_sub_location_id"]', rowData.storage_sub_location_id);
+      assign('input[name="weight_g"]', rowData.weight_g);
+      assign('input[name="remaining_g"]', rowData.remaining_g);
+      assign('select[name="lifecycle_status"]', rowData.lifecycle_status);
+      assign('input[name="price"]', rowData.price);
+      assign('input[name="quantity"]', rowData.quantity || '1');
+
+      tbody.appendChild(row);
+    });
+  }
+
   function initBulkAddForm() {
     const addRowButton = document.getElementById('add-row');
     const tbody = document.getElementById('bulk-body');
     const scrollArea = document.getElementById('bulk-scroll-area');
+    const form = addRowButton ? addRowButton.closest('form') : null;
     const baseRowTemplate = tbody && tbody.querySelector('tr') ? tbody.querySelector('tr').outerHTML : '';
     if (!addRowButton || !tbody) {
       return;
     }
-    if (addRowButton.dataset.bulkInit === '1') {
-      return;
+
+    if (bulkAddBindingsController) {
+      bulkAddBindingsController.abort();
     }
+    bulkAddBindingsController = new AbortController();
+    const { signal } = bulkAddBindingsController;
+
+    restoreBulkRows(tbody, baseRowTemplate);
+
+    tbody.querySelectorAll('tr').forEach((row) => {
+      attachRowHandlers(row);
+    });
 
     addRowButton.addEventListener('click', () => {
       if (!baseRowTemplate) {
@@ -186,13 +292,30 @@
       if (quantityInput) quantityInput.value = '1';
       tbody.appendChild(clone);
       attachRowHandlers(clone);
+      persistBulkRows(tbody);
       if (scrollArea) {
         scrollArea.scrollTop = scrollArea.scrollHeight;
       }
-    });
+    }, { signal });
 
-    addRowButton.dataset.bulkInit = '1';
-    attachRowHandlers(tbody.querySelector('tr'));
+    tbody.addEventListener('input', () => {
+      persistBulkRows(tbody);
+    }, { signal, capture: true });
+
+    tbody.addEventListener('change', () => {
+      persistBulkRows(tbody);
+    }, { signal, capture: true });
+
+    if (form instanceof HTMLFormElement) {
+      form.addEventListener('submit', () => {
+        try {
+          globalThis.sessionStorage.removeItem(BULK_ADD_ROWS_STORAGE_KEY);
+        } catch (_error) {
+        }
+      }, { signal, capture: true });
+    }
+
+    persistBulkRows(tbody);
   }
 
   initBulkAddForm();

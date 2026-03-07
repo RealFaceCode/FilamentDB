@@ -41,19 +41,19 @@
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
     <div class="ui-panel">
       <p class="text-xs text-slate-500">{{ t('slot_state_ok') }}</p>
-      <p class="text-xl font-semibold text-emerald-700">{{ slot_summary.ok or 0 }}</p>
+      <p class="text-xl font-semibold text-emerald-700 dark:text-emerald-300">{{ slot_summary.ok or 0 }}</p>
     </div>
     <div class="ui-panel">
       <p class="text-xs text-slate-500">{{ t('slot_state_mismatch') }}</p>
-      <p class="text-xl font-semibold text-rose-700">{{ slot_summary.mismatch or 0 }}</p>
+      <p class="text-xl font-semibold text-rose-700 dark:text-rose-300">{{ slot_summary.mismatch or 0 }}</p>
     </div>
     <div class="ui-panel">
       <p class="text-xs text-slate-500">{{ t('slot_state_missing') }}</p>
-      <p class="text-xl font-semibold text-amber-700">{{ slot_summary.missing or 0 }}</p>
+      <p class="text-xl font-semibold text-amber-700 dark:text-amber-300">{{ slot_summary.missing or 0 }}</p>
     </div>
     <div class="ui-panel">
       <p class="text-xs text-slate-500">{{ t('slot_state_stale') }}</p>
-      <p class="text-xl font-semibold text-orange-700">{{ slot_summary.stale or 0 }}</p>
+      <p class="text-xl font-semibold text-orange-700 dark:text-orange-300">{{ slot_summary.stale or 0 }}</p>
     </div>
     <div class="ui-panel">
       <p class="text-xs text-slate-500">{{ t('slot_state_unknown') }}</p>
