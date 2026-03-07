@@ -1,0 +1,153 @@
+.print-sheet {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+body {
+  color: #0f172a !important;
+  background: #fff !important;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media print {
+  header, footer, .print-controls {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-sheet {
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .print-grid {
+    gap: 0 !important;
+    grid-template-columns: repeat(var(--print-cols), minmax(0, var(--cell-w))) !important;
+  }
+
+  .label-card {
+    border: 0.28mm solid #94a3b8 !important;
+    border-radius: 2.4mm !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .label-qr {
+    border: 0.22mm solid #64748b !important;
+    border-radius: 1.1mm !important;
+    background: transparent !important;
+  }
+
+  .label-line {
+    color: #000 !important;
+  }
+}
+
+.print-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--cell-w), var(--cell-w)));
+  gap: 4mm;
+  justify-content: flex-start;
+  background: transparent;
+}
+
+.label-card {
+  width: var(--cell-w);
+  height: var(--cell-h);
+  padding: var(--label-padding);
+  column-gap: var(--label-gap);
+  font-size: var(--label-font-size);
+  line-height: var(--label-line-height);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: var(--qr-size) minmax(0, 1fr);
+  align-items: stretch;
+  box-sizing: border-box;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.print-sheet.is-vertical .label-card {
+  grid-template-columns: 1fr;
+  grid-template-rows: var(--qr-size) minmax(0, 1fr);
+  row-gap: calc(var(--label-gap) * 1.05);
+  justify-items: center;
+}
+
+.label-qr {
+  width: var(--qr-size);
+  height: var(--qr-size);
+  min-width: var(--qr-size);
+  min-height: var(--qr-size);
+}
+
+.label-text {
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  font-size: var(--resolved-font, var(--label-font-size));
+  display: flex;
+  flex-direction: column;
+  gap: var(--label-text-gap);
+  justify-content: center;
+  padding-top: 0.55mm;
+  padding-bottom: 0.55mm;
+}
+
+.print-sheet.is-vertical .label-text {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  gap: var(--label-text-gap-vertical);
+  writing-mode: vertical-rl;
+  text-orientation: sideways;
+  width: 100%;
+}
+
+.label-line {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  line-height: 1.16em;
+  padding-block: 0.05em;
+  color: #0f172a;
+}
+
+.print-sheet.is-vertical .label-line {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.22em;
+  padding-block: 0.10em;
+}
+
+.label-title {
+  font-size: 1.18em;
+  line-height: 1.08em;
+  font-weight: 700;
+}
+
+.label-meta {
+  font-size: 0.92em;
+  line-height: 1.08em;
+}
+
+.print-sheet.is-single .label-card {
+  border-radius: 3mm;
+}
+
+.print-sheet.is-single .label-title {
+  margin-top: 0.4mm;
+}

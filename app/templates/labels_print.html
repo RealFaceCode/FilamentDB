@@ -52,29 +52,10 @@
   {% endif %}
 {% endif %}
 
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/labels_print.css">
 <style>
-  .print-sheet {
-    --cols: {{ layout_config.columns }};
-    --cell-w: {{ layout_config.cell_w_mm }}mm;
-    --cell-h: {{ layout_config.cell_h_mm }}mm;
-    --qr-size: {{ qr_mm }}mm;
-    --label-font-size: {{ base_font_px|round(2) }}px;
-    --label-title-size: {{ title_font_px|round(2) }}px;
-    --label-meta-size: {{ meta_font_px|round(2) }}px;
-    --label-line-height: {{ (base_font_px * 1.26)|round(2) }}px;
-    --label-gap: {{ 1.2 if base_font_px <= 9.5 else 1.9 }}mm;
-    --label-padding: {{ 1.2 if base_font_px <= 9.5 else 1.7 }}mm;
-    background: #ffffff;
-    color: #0f172a;
-  }
-  body {
-    color: #0f172a !important;
-    background: #fff !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
   @media print {
-    header, footer, .print-controls { display: none !important; }
     @page {
       {% if is_single_mode %}
       size: {{ layout_config.cell_w_mm }}mm {{ layout_config.cell_h_mm }}mm;
@@ -84,140 +65,19 @@
       margin: 8mm;
       {% endif %}
     }
-    main { max-width: none !important; margin: 0 !important; padding: 0 !important; }
-    .print-sheet {
-      border: 0 !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      background: transparent !important;
-    }
-    .print-grid { gap: 0 !important; }
-    .print-grid {
-      {% if is_single_mode %}
-      grid-template-columns: repeat(1, minmax(0, var(--cell-w))) !important;
-      {% else %}
-      grid-template-columns: repeat(var(--cols), minmax(0, var(--cell-w))) !important;
-      {% endif %}
-    }
-    .label-card {
-      border: 0.28mm solid #94a3b8 !important;
-      border-radius: 2.4mm !important;
-      box-shadow: none !important;
-      background: transparent !important;
-    }
-    .label-qr {
-      border: 0.22mm solid #64748b !important;
-      border-radius: 1.1mm !important;
-      background: transparent !important;
-    }
-    .label-line { color: #000 !important; }
-    .label-card { break-inside: avoid; page-break-inside: avoid; }
   }
-  .print-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--cell-w), var(--cell-w)));
-    gap: 4mm;
-    justify-content: flex-start;
-    background: transparent;
-  }
-  .label-card {
-    width: var(--cell-w);
-    height: var(--cell-h);
-    padding: var(--label-padding);
-    column-gap: var(--label-gap);
-    font-size: var(--label-font-size);
-    line-height: var(--label-line-height);
-    overflow: hidden;
-    display: grid;
-    {% if is_vertical %}
-    grid-template-columns: 1fr;
-    grid-template-rows: var(--qr-size) minmax(0, 1fr);
-    row-gap: calc(var(--label-gap) * 1.05);
-    justify-items: center;
-    {% else %}
-    grid-template-columns: var(--qr-size) minmax(0, 1fr);
-    column-gap: var(--label-gap);
-    {% endif %}
-    align-items: stretch;
-    box-sizing: border-box;
-    color: #0f172a;
-    background: #ffffff;
-  }
-  .label-qr {
-    width: var(--qr-size);
-    height: var(--qr-size);
-    min-width: var(--qr-size);
-    min-height: var(--qr-size);
-  }
-  .label-text {
-    min-width: 0;
-    height: 100%;
-    box-sizing: border-box;
-    font-size: var(--resolved-font, var(--label-font-size));
-    {% if is_vertical %}
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    justify-content: center;
-    gap: {{ 1.1 if is_single_mode else 0.8 }}mm;
-    writing-mode: vertical-rl;
-    text-orientation: sideways;
-    {% else %}
-    display: flex;
-    flex-direction: column;
-    gap: {{ 1.4 if is_single_mode else 1 }}px;
-    justify-content: center;
-    {% endif %}
-    {% if is_vertical %}
-    width: 100%;
-    {% endif %}
-    padding-top: 0.55mm;
-    padding-bottom: 0.55mm;
-  }
-  .label-line {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-    line-height: 1.16em;
-    padding-block: 0.05em;
-    color: #0f172a;
-    {% if is_vertical %}
-    white-space: nowrap;
-    overflow: visible;
-    text-overflow: clip;
-    line-height: 1.22em;
-    padding-block: 0.10em;
-    {% endif %}
-  }
-  .label-title {
-    font-size: 1.18em;
-    line-height: 1.08em;
-    font-weight: 700;
-  }
-  .label-meta {
-    font-size: 0.92em;
-    line-height: 1.08em;
-  }
-
-  {% if is_single_mode %}
-  .label-card {
-    border-radius: 3mm;
-  }
-  .label-title {
-    margin-top: 0.4mm;
-  }
-  {% endif %}
 </style>
+{% endblock %}
 
 <div class="print-controls flex items-center gap-3 mb-4">
   <button onclick="window.print()" class="ui-btn ui-btn-primary">{{ t('label_print_now') }}</button>
   <a href="/labels?view={{ 'location' if label_target == 'location' else ('printer' if label_target == 'printer' else 'spool') }}&target={{ label_target }}" class="ui-btn ui-btn-secondary">{{ t('label_back') }}</a>
 </div>
 
-<div class="print-sheet rounded-2xl shadow-sm border border-slate-200 p-4">
+<div
+  class="print-sheet rounded-2xl shadow-sm border border-slate-200 p-4{% if is_single_mode %} is-single{% endif %}{% if is_vertical %} is-vertical{% endif %}"
+  style="--cols: {{ layout_config.columns }}; --print-cols: {{ 1 if is_single_mode else layout_config.columns }}; --cell-w: {{ layout_config.cell_w_mm }}mm; --cell-h: {{ layout_config.cell_h_mm }}mm; --qr-size: {{ qr_mm }}mm; --label-font-size: {{ base_font_px|round(2) }}px; --label-title-size: {{ title_font_px|round(2) }}px; --label-meta-size: {{ meta_font_px|round(2) }}px; --label-line-height: {{ (base_font_px * 1.26)|round(2) }}px; --label-gap: {{ 1.2 if base_font_px <= 9.5 else 1.9 }}mm; --label-padding: {{ 1.2 if base_font_px <= 9.5 else 1.7 }}mm; --label-text-gap: {{ 1.4 if is_single_mode else 1 }}px; --label-text-gap-vertical: {{ 1.1 if is_single_mode else 0.8 }}mm;"
+>
   <div class="print-grid">
     {% for item in label_items %}
     <div class="label-card border border-slate-300 rounded-lg flex items-center" data-max-font="{{ (base_font_px * (2.35 if is_single_mode else 1.55))|round(1) }}" data-min-font="{{ 10.0 if is_single_mode else 8.8 }}" data-vertical="{{ '1' if is_vertical else '0' }}">
