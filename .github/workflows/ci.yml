@@ -25,7 +25,7 @@ jobs:
 
       - name: Start Docker services
         run: |
-          docker compose up -d --build
+          docker compose --profile slot-poller up -d --build
 
       - name: Wait for PostgreSQL health
         run: |
