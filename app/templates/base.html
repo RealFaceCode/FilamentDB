@@ -816,7 +816,7 @@
             <div class="grid grid-cols-2 gap-2">
               <details id="settings-menu" class="relative col-span-1">
                 <summary class="list-none cursor-pointer ui-btn ui-btn-sm ui-btn-nav w-full text-center">{{ t('settings') }}</summary>
-                <div class="absolute right-0 left-0 md:left-auto mt-2 w-full md:w-64 rounded-xl border border-slate-200 bg-white/80 text-slate-800 shadow-lg p-3 z-30 backdrop-blur-xl dark:bg-slate-900/70">
+                <div id="settings-popover-panel" class="ui-card ui-card-sm absolute right-0 left-0 md:left-auto mt-2 w-full md:w-64 text-slate-800 dark:text-slate-100 z-30">
               <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{{ t('settings_language') }}</p>
               <div class="flex gap-2 mb-3">
                 <form method="post" action="/settings">

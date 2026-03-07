@@ -85,6 +85,14 @@ class UiSoftRefreshThemeRegressionTests(unittest.TestCase):
         self.assertIn("text-amber-700 dark:text-amber-300", response.text)
         self.assertIn("text-orange-700 dark:text-orange-300", response.text)
 
+    def test_settings_popup_has_dark_theme_container_classes(self):
+        response = self.client.get("/dashboard?project=private&lang=en")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("id=\"settings-popover-panel\"", response.text)
+        self.assertIn("ui-card ui-card-sm", response.text)
+        self.assertIn("dark:text-slate-100", response.text)
+
 
 if __name__ == "__main__":
     unittest.main()
