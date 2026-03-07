@@ -64,7 +64,7 @@ FilamentDB supports end-to-end filament operations:
   - `https` (public domain)
   - `https-local` (localhost TLS)
   - `https-lan` (LAN TLS)
-- Optional `slot-poller` profile for periodic slot-state ingestion
+- `slot-poller` profile for periodic slot-state ingestion (included in full-stack startup commands)
 
 ## Operating Model (Mandatory)
 
@@ -74,7 +74,7 @@ FilamentDB supports end-to-end filament operations:
 - After project changes, rebuild/restart with:
 
 ```bash
-docker compose up -d --build
+docker compose --profile slot-poller up -d --build
 ```
 
 ## Quickstart
@@ -113,7 +113,7 @@ Copy-Item .env.example .env
 ### 5) Start services
 
 ```bash
-docker compose up -d --build
+docker compose --profile slot-poller up -d --build
 ```
 
 ### 6) Run migrations
@@ -147,19 +147,19 @@ Important groups:
 Public HTTPS:
 
 ```bash
-docker compose --profile https up -d --build
+docker compose --profile https --profile slot-poller up -d --build
 ```
 
 Localhost TLS:
 
 ```bash
-docker compose --profile https-local up -d --build
+docker compose --profile https-local --profile slot-poller up -d --build
 ```
 
 LAN TLS:
 
 ```bash
-docker compose --profile https-lan up -d --build
+docker compose --profile https-lan --profile slot-poller up -d --build
 ```
 
 Slot poller:
@@ -204,7 +204,7 @@ Typical rollout:
 ```bash
 git pull
 docker compose pull
-docker compose --profile https up -d --build
+docker compose --profile https --profile slot-poller up -d --build
 docker compose exec web alembic upgrade head
 ```
 
@@ -257,7 +257,7 @@ Local slot-state bridge:
 
 ### Use Slot Poller
 
-The slot poller runs as an optional Compose profile and updates slot-state data periodically.
+The slot poller runs as part of the default full-stack runtime profile and updates slot-state data periodically.
 
 1) Configure `.env` (minimum):
 
@@ -351,7 +351,7 @@ Verify `.env` and database settings:
 Then rebuild/restart:
 
 ```bash
-docker compose up -d --build
+docker compose --profile slot-poller up -d --build
 ```
 
 ### Migration fails
@@ -374,7 +374,7 @@ Review:
 Then restart with rebuild:
 
 ```bash
-docker compose up -d --build
+docker compose --profile slot-poller up -d --build
 ```
 
 ### Slot-state data not updating

@@ -41,7 +41,7 @@ Erwartung:
 cd /opt/filament_datenbank
 git pull
 docker compose pull
-docker compose --profile https up -d --build
+docker compose --profile https --profile slot-poller up -d --build
 ```
 
 Erwartung:

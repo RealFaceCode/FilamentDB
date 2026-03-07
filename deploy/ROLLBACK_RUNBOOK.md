@@ -29,7 +29,7 @@ Auf letzten stabilen Commit zurück:
 
 ```bash
 git checkout <STABILER_COMMIT>
-docker compose up -d --build
+docker compose --profile slot-poller up -d --build
 docker compose exec web alembic upgrade head
 curl -fsS http://127.0.0.1:8000/healthz
 ```

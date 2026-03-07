@@ -42,8 +42,8 @@ if ($LASTEXITCODE -ne 0) {
     throw "Docker daemon is not reachable. Start Docker Desktop and wait until 'Engine running' is shown, then retry."
 }
 
-Write-Host "[step] Starting Docker stack (web + postgres)..."
-docker compose up -d --build
+Write-Host "[step] Starting Docker stack (web + postgres + slot-poller)..."
+docker compose --profile slot-poller up -d --build
 if ($LASTEXITCODE -ne 0) {
     throw "docker compose failed (exit code: $LASTEXITCODE)"
 }

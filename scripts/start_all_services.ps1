@@ -9,6 +9,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Default to full-stack startup when the caller does not specify a slot-poller preference.
+if (-not $PSBoundParameters.ContainsKey('IncludeSlotPoller')) {
+    $IncludeSlotPoller = $true
+}
+
 function Get-PrimaryLocalIPv4 {
     $excludeAliasPattern = '^(vEthernet|Loopback|isatap|Teredo|Bluetooth|VMware|VirtualBox|Docker)'
 

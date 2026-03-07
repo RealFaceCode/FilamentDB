@@ -486,21 +486,111 @@ def _first_present_value(*values: Any) -> Any:
 
 _AMS_RAW_ID_TO_UNIT = {
     0: 1,
-    128: 2,
-    129: 3,
-    130: 4,
 }
 
 
-def _resolve_ams_unit(raw_ams_id: int | None, fallback_index: int | None = None) -> int | None:
+def _resolve_ams_unit(
+    raw_ams_id: int | None,
+    fallback_index: int | None = None,
+    *,
+    zero_based_hint: bool = False,
+) -> int | None:
     if raw_ams_id is not None:
         if raw_ams_id in _AMS_RAW_ID_TO_UNIT:
             return _AMS_RAW_ID_TO_UNIT[raw_ams_id]
+        if zero_based_hint and 0 <= raw_ams_id <= 25:
+            return raw_ams_id + 1
         if 1 <= raw_ams_id <= 26:
             return raw_ams_id
+        if 0 <= raw_ams_id <= 25:
+            return raw_ams_id + 1
     if fallback_index is not None and fallback_index > 0:
         return fallback_index
     return None
+
+
+def _build_ams_unit_map(candidates: list[dict[str, Any]]) -> dict[int, int]:
+    """Build a stable raw-id -> logical AMS unit mapping for mixed Bambu payloads.
+
+    Some payloads mix zero-based ids (0,1,2,...) with high ids (128,129,...).
+    We first map the sequential low ids, then append high ids as extra units.
+    """
+    raw_ids: list[int] = []
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        raw_id = _normalize_ams_unit_id(
+            _first_present_value(candidate.get("id"), candidate.get("ams_id"), candidate.get("index"), candidate.get("unit"))
+        )
+        if raw_id is None:
+            continue
+        raw_ids.append(raw_id)
+
+    unique_raw = sorted(set(raw_ids))
+    if not unique_raw:
+        return {}
+
+    mapping: dict[int, int] = {}
+    used_units: set[int] = set()
+
+    has_zero_based = any(raw == 0 for raw in unique_raw)
+    if has_zero_based:
+        for raw in sorted(raw for raw in unique_raw if 0 <= raw < 128):
+            unit = raw + 1
+            if unit not in used_units:
+                mapping[raw] = unit
+                used_units.add(unit)
+    else:
+        for raw in sorted(raw for raw in unique_raw if 1 <= raw <= 26):
+            if raw not in used_units:
+                mapping[raw] = raw
+                used_units.add(raw)
+
+    next_unit = (max(used_units) + 1) if used_units else 1
+    for raw in sorted(raw for raw in unique_raw if raw >= 128):
+        while next_unit in used_units:
+            next_unit += 1
+        mapping[raw] = next_unit
+        used_units.add(next_unit)
+        next_unit += 1
+
+    for raw in unique_raw:
+        if raw in mapping:
+            continue
+        unit = _resolve_ams_unit(raw, zero_based_hint=has_zero_based)
+        if unit is not None and unit not in used_units:
+            mapping[raw] = unit
+            used_units.add(unit)
+            continue
+        while next_unit in used_units:
+            next_unit += 1
+        mapping[raw] = next_unit
+        used_units.add(next_unit)
+        next_unit += 1
+
+    return mapping
+
+
+def _build_high_raw_id_label_map(candidates: list[dict[str, Any]]) -> dict[int, str]:
+    """Map high raw ids (128+) to human-friendly HT labels in order."""
+    raw_ids: list[int] = []
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        raw_id = _normalize_ams_unit_id(
+            _first_present_value(candidate.get("id"), candidate.get("ams_id"), candidate.get("index"), candidate.get("unit"))
+        )
+        if raw_id is None or raw_id < 128:
+            continue
+        raw_ids.append(raw_id)
+
+    labels: dict[int, str] = {}
+    for index, raw_id in enumerate(sorted(set(raw_ids)), start=1):
+        if 1 <= index <= 26:
+            labels[raw_id] = f"HT-{chr(ord('A') + index - 1)}"
+        else:
+            labels[raw_id] = f"HT-{index}"
+    return labels
 
 
 def _compose_global_slot(ams_unit: int | None, slot_local: int | None) -> int | None:
@@ -546,8 +636,46 @@ def _extract_bambu_ams_units(payload: Any) -> list[dict[str, Any]]:
     ams_root = report.get("ams") if isinstance(report, dict) else None
 
     units: list[dict[str, Any]] = []
+
+    def _collapse_duplicate_units(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        by_unit: dict[int, dict[str, Any]] = {}
+        passthrough: list[dict[str, Any]] = []
+        for row in rows:
+            ams_unit = _normalize_ams_unit_id(row.get("ams_unit"))
+            trays = row.get("trays") if isinstance(row.get("trays"), list) else []
+            if ams_unit is None:
+                passthrough.append(row)
+                continue
+
+            current = by_unit.get(ams_unit)
+            if current is None:
+                by_unit[ams_unit] = row
+                continue
+
+            current_trays = current.get("trays") if isinstance(current.get("trays"), list) else []
+            current_name = _normalize_text(current.get("ams_name"), 120)
+            next_name = _normalize_text(row.get("ams_name"), 120)
+
+            should_replace = len(trays) > len(current_trays)
+            if len(trays) == len(current_trays) and next_name and not current_name:
+                should_replace = True
+            if should_replace:
+                by_unit[ams_unit] = row
+
+        collapsed = sorted(by_unit.values(), key=lambda item: _normalize_ams_unit_id(item.get("ams_unit")) or 999)
+        collapsed.extend(passthrough)
+        return collapsed
     if isinstance(ams_root, list):
         candidates = [item for item in ams_root if isinstance(item, dict)]
+        raw_ids = {
+            _normalize_ams_unit_id(
+                _first_present_value(candidate.get("id"), candidate.get("ams_id"), candidate.get("index"), candidate.get("unit"))
+            )
+            for candidate in candidates
+        }
+        zero_based_hint = 0 in raw_ids
+        raw_to_unit = _build_ams_unit_map(candidates)
+        high_label_map = _build_high_raw_id_label_map(candidates)
         serial_unit_map = _serial_fallback_unit_map(candidates)
         for index, candidate in enumerate(candidates, start=1):
             trays = _extract_trays(candidate)
@@ -563,10 +691,15 @@ def _extract_bambu_ams_units(payload: Any) -> list[dict[str, Any]]:
                 )
             )
             serial_fallback = serial_unit_map.get(candidate_serial) if candidate_serial else None
-            ams_unit = _resolve_ams_unit(raw_ams_id, serial_fallback or index)
+            ams_unit = raw_to_unit.get(raw_ams_id) if raw_ams_id is not None else None
+            if ams_unit is None:
+                ams_unit = _resolve_ams_unit(raw_ams_id, serial_fallback or index, zero_based_hint=zero_based_hint)
             ams_name = _normalize_text(candidate.get("name") or candidate.get("ams_name") or candidate.get("sn"), 120)
             if not ams_name:
-                ams_name = _fallback_ams_name(ams_unit, raw_ams_id)
+                if raw_ams_id is not None and raw_ams_id in high_label_map:
+                    ams_name = high_label_map[raw_ams_id]
+                else:
+                    ams_name = _fallback_ams_name(ams_unit, raw_ams_id)
             units.append({"ams_unit": ams_unit, "ams_name": ams_name, "trays": trays})
     elif isinstance(ams_root, dict):
         raw_units = ams_root.get("ams")
@@ -579,6 +712,16 @@ def _extract_bambu_ams_units(payload: Any) -> list[dict[str, Any]]:
         if not candidates and isinstance(ams_root.get("tray"), list):
             candidates = [ams_root]
 
+        raw_ids = {
+            _normalize_ams_unit_id(
+                _first_present_value(candidate.get("id"), candidate.get("ams_id"), candidate.get("index"), candidate.get("unit"))
+            )
+            for candidate in candidates
+        }
+        zero_based_hint = 0 in raw_ids
+        raw_to_unit = _build_ams_unit_map(candidates)
+        high_label_map = _build_high_raw_id_label_map(candidates)
+
         serial_unit_map = _serial_fallback_unit_map(candidates)
 
         for index, candidate in enumerate(candidates, start=1):
@@ -595,14 +738,19 @@ def _extract_bambu_ams_units(payload: Any) -> list[dict[str, Any]]:
                 )
             )
             serial_fallback = serial_unit_map.get(candidate_serial) if candidate_serial else None
-            ams_unit = _resolve_ams_unit(raw_ams_id, serial_fallback or index)
+            ams_unit = raw_to_unit.get(raw_ams_id) if raw_ams_id is not None else None
+            if ams_unit is None:
+                ams_unit = _resolve_ams_unit(raw_ams_id, serial_fallback or index, zero_based_hint=zero_based_hint)
             ams_name = _normalize_text(candidate.get("name") or candidate.get("ams_name") or candidate.get("sn"), 120)
             if not ams_name:
-                ams_name = _fallback_ams_name(ams_unit, raw_ams_id)
+                if raw_ams_id is not None and raw_ams_id in high_label_map:
+                    ams_name = high_label_map[raw_ams_id]
+                else:
+                    ams_name = _fallback_ams_name(ams_unit, raw_ams_id)
             units.append({"ams_unit": ams_unit, "ams_name": ams_name, "trays": trays})
 
     if units:
-        return units
+        return _collapse_duplicate_units(units)
 
     trays: list[dict[str, Any]] = []
     for ams in _iter_ams_objects(payload):
@@ -736,6 +884,18 @@ def _merge_ams_names_into_slots(slots: list[dict[str, Any]], name_map: dict[int,
                 item["ams_name"] = name_map[ams_unit]
         merged.append(item)
     return merged
+
+
+def _score_bambu_slots(slots: list[dict[str, Any]]) -> tuple[int, int]:
+    """Prefer snapshots with more AMS units first, then more total slots."""
+    ams_units: set[int] = set()
+    for slot in slots:
+        if not isinstance(slot, dict):
+            continue
+        ams_unit = _normalize_ams_unit_id(slot.get("ams_unit"))
+        if ams_unit is not None:
+            ams_units.add(ams_unit)
+    return (len(ams_units), len(slots))
 
 
 def _publish_bambu_refresh_requests(client: Any, serial: str) -> None:
@@ -902,10 +1062,21 @@ def _load_payload_bambu_mqtt() -> Any:
     except ValueError:
         timeout_sec = 10
 
+    settle_raw = str(os.getenv("SLOT_STATE_BAMBU_SETTLE_SEC", "2.0")).strip()
+    try:
+        settle_sec = max(0.2, float(settle_raw))
+    except ValueError:
+        settle_sec = 2.0
+    settle_sec = min(settle_sec, float(timeout_sec))
+
     printer_rows: list[dict[str, Any]] = []
 
     for printer in printers:
         message_holder: dict[str, Any] = {"payload": None, "payloads": []}
+        best_slots: list[dict[str, Any]] = []
+        best_slot_score: tuple[int, int] = (0, 0)
+        best_payload: dict[str, Any] | None = None
+        first_slots_at: float | None = None
 
         def on_connect(client, _userdata, _flags, rc):
             if rc == 0:
@@ -939,7 +1110,7 @@ def _load_payload_bambu_mqtt() -> Any:
             started = time.time()
             while time.time() - started < timeout_sec:
                 payload = message_holder.get("payload")
-                if payload is not None:
+                if isinstance(payload, dict):
                     slots = _extract_bambu_slots(payload)
                     if slots:
                         ams_name_map: dict[int, str] = {}
@@ -947,17 +1118,30 @@ def _load_payload_bambu_mqtt() -> Any:
                             if isinstance(item, dict):
                                 ams_name_map.update(_extract_bambu_ams_name_map(item))
                         slots = _merge_ams_names_into_slots(slots, ams_name_map)
-                        telemetry = _extract_bambu_telemetry(payload)
-                        printer_rows.append(
-                            {
-                                "printer": printer["name"],
-                                "serial": printer.get("serial"),
-                                "slots": slots,
-                                "telemetry": telemetry,
-                            }
-                        )
-                        break
+
+                        score = _score_bambu_slots(slots)
+                        if score > best_slot_score:
+                            best_slot_score = score
+                            best_slots = slots
+                            best_payload = payload
+                        if first_slots_at is None:
+                            first_slots_at = time.time()
+
+                        # Bambu printers can emit partial AMS frames first; wait briefly for a fuller frame.
+                        if first_slots_at is not None and (time.time() - first_slots_at) >= settle_sec:
+                            break
                 time.sleep(0.2)
+
+            if best_slots and best_payload is not None:
+                telemetry = _extract_bambu_telemetry(best_payload)
+                printer_rows.append(
+                    {
+                        "printer": printer["name"],
+                        "serial": printer.get("serial"),
+                        "slots": best_slots,
+                        "telemetry": telemetry,
+                    }
+                )
         finally:
             try:
                 client.loop_stop()

@@ -44,9 +44,9 @@
         <p class="text-xs text-slate-500">{{ t('stat_empty_spools') }}</p>
         <p class="text-2xl font-semibold">{{ format_number_compact(stats.empty_spools, 0, lang) }}</p>
       </div>
-      <div class="p-4 rounded-xl bg-amber-50 border border-amber-200">
-        <p class="text-xs text-amber-700">{{ t('stat_low_stock_spools') }}</p>
-        <p class="text-2xl font-semibold text-amber-800">{{ format_number_compact(stats.low_stock_spools, 0, lang) }}</p>
+      <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-700">
+        <p class="text-xs text-amber-700 dark:text-amber-300">{{ t('stat_low_stock_spools') }}</p>
+        <p class="text-2xl font-semibold text-amber-800 dark:text-amber-200">{{ format_number_compact(stats.low_stock_spools, 0, lang) }}</p>
       </div>
     </div>
 
