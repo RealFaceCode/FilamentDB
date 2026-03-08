@@ -200,6 +200,75 @@ class CustomLabelLayoutTests(unittest.TestCase):
         self.assertNotRegex(labels_page.text, r'name="show_remaining"[^>]*\schecked')
         self.assertNotRegex(labels_page.text, r'name="show_location"[^>]*\schecked')
 
+    def test_label_print_includes_preview_url_for_soft_refresh(self):
+        print_page = self.client.post(
+            "/labels",
+            data={
+                "label_target": "spool",
+                "layout": "a4_3x8_63_5x33_9",
+                "print_mode": "sheet",
+                "label_orientation": "horizontal",
+                "show_spool_id": "1",
+                "spool_ids": str(self.spool_id),
+            },
+        )
+        self.assertEqual(print_page.status_code, 200)
+        self.assertIn('const LABEL_PREVIEW_URL = "/labels?preview=1', print_page.text)
+        self.assertIn(f"spool_ids={self.spool_id}", print_page.text)
+
+        preview_page = self.client.get(
+            f"/labels?preview=1&target=spool&view=spool&layout=a4_3x8_63_5x33_9&print_mode=sheet&label_orientation=horizontal&show_spool_id=1&spool_ids={self.spool_id}"
+        )
+        self.assertEqual(preview_page.status_code, 200)
+        self.assertIn("print-sheet", preview_page.text)
+        self.assertNotIn('id="labels-page"', preview_page.text)
+
+    def test_label_print_qr_cap_does_not_expand_to_legacy_oversize(self):
+        print_page = self.client.post(
+            "/labels",
+            data={
+                "label_target": "spool",
+                "layout": "a4_3x8_63_5x33_9",
+                "print_mode": "single",
+                "label_orientation": "horizontal",
+                "spool_ids": str(self.spool_id),
+            },
+        )
+        self.assertEqual(print_page.status_code, 200)
+        self.assertNotIn("--qr-size: 80mm", print_page.text)
+        self.assertIn("data-max-font=", print_page.text)
+
+    def test_labels_form_disables_hidden_content_inputs(self):
+        response = self.client.get("/labels")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("function setContentPanelInputsEnabled(panel, enabled)", response.text)
+        self.assertIn("field.disabled = !enabled;", response.text)
+
+    def test_label_print_contains_dynamic_page_margin_and_hover_size_tooltip(self):
+        print_page = self.client.post(
+            "/labels",
+            data={
+                "label_target": "spool",
+                "layout": "a4_2x8_99_1x33_9",
+                "print_mode": "sheet",
+                "label_orientation": "horizontal",
+                "spool_ids": str(self.spool_id),
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(print_page.status_code, 200)
+        self.assertIn("margin: 8mm", print_page.text)
+        self.assertIn("id=\"label-size-tooltip\"", print_page.text)
+        self.assertIn("data-label-size=", print_page.text)
+
+    def test_single_print_mode_has_full_page_css_guard(self):
+        css_response = self.client.get("/static/css/labels_print.css")
+        self.assertEqual(css_response.status_code, 200)
+        self.assertIn(".print-sheet.is-single", css_response.text)
+        self.assertIn("position: fixed !important;", css_response.text)
+        self.assertIn("inset: 0 !important;", css_response.text)
+        self.assertIn("grid-template-columns: minmax(0, 1fr) !important;", css_response.text)
+
 
 if __name__ == "__main__":
     unittest.main()

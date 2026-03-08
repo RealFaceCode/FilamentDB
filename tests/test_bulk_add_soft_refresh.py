@@ -52,6 +52,10 @@ class BulkAddSoftRefreshTests(unittest.TestCase):
         self.assertIn("restoreBulkRows(tbody, baseRowTemplate)", response.text)
         self.assertIn("bulkAddBindingsController.abort()", response.text)
         self.assertIn("persistBulkRows(tbody)", response.text)
+        self.assertIn("isHardReloadNavigation()", response.text)
+        self.assertIn("clearPersistedBulkRows()", response.text)
+        self.assertIn("id=\"bulk-cancel\"", response.text)
+        self.assertIn("globalThis.addEventListener('pagehide'", response.text)
 
 
 if __name__ == "__main__":

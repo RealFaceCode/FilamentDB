@@ -51,6 +51,46 @@ body {
   .label-line {
     color: #000 !important;
   }
+
+  /* Some OS print dialogs/drivers ignore custom paper size and keep A4.
+     In single mode, force the label canvas to occupy the full printable page. */
+  .print-sheet.is-single {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .print-sheet.is-single .print-grid {
+    width: 100% !important;
+    height: 100% !important;
+    gap: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+
+  .print-sheet.is-single .label-card {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    /* Skalierende Variablen für Single-Label-Print: Inhalt wächst mit Seite */
+    --qr-size: 22vw !important;
+    --label-font-size: 4.2vw !important;
+    --label-title-size: 5vw !important;
+    --label-meta-size: 3.5vw !important;
+    --label-line-height: 1.22em !important;
+    --label-gap: 1.8vw !important;
+    --label-padding: 1.6vw !important;
+    --label-text-gap: 1vw !important;
+    --label-text-gap-vertical: 1vw !important;
+    font-size: var(--label-font-size) !important;
+    /* Optional: Schriftgrößen-Override für alle Kinder */
+    * { font-size: inherit !important; }
+  }
 }
 
 .print-grid {
@@ -150,4 +190,23 @@ body {
 
 .print-sheet.is-single .label-title {
   margin-top: 0.4mm;
+}
+
+.label-size-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: min(92vw, 42rem);
+  pointer-events: none;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.45rem;
+  border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  box-shadow: 0 8px 22px rgba(2, 6, 23, 0.35);
+}
+
+.label-size-tooltip.hidden {
+  display: none;
 }

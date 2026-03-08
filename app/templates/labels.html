@@ -281,6 +281,17 @@
       button.setAttribute('aria-selected', isActive ? 'true' : 'false');
     }
 
+    function setContentPanelInputsEnabled(panel, enabled) {
+      if (!(panel instanceof HTMLElement)) {
+        return;
+      }
+      panel.querySelectorAll('input, select, textarea').forEach((field) => {
+        if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
+          field.disabled = !enabled;
+        }
+      });
+    }
+
     function initLabelsPage() {
       const pageRoot = document.getElementById('labels-page');
       if (!(pageRoot instanceof HTMLElement)) {
@@ -367,7 +378,14 @@
           contentPanelSpool.classList.toggle('hidden', !isSpool);
           contentPanelLocation.classList.toggle('hidden', !isLocation);
           contentPanelPrinter.classList.toggle('hidden', !isPrinter);
+          setContentPanelInputsEnabled(contentPanelSpool, isSpool);
+          setContentPanelInputsEnabled(contentPanelLocation, isLocation);
+          setContentPanelInputsEnabled(contentPanelPrinter, isPrinter);
           queueAutoSave();
+        } else {
+          setContentPanelInputsEnabled(contentPanelSpool, false);
+          setContentPanelInputsEnabled(contentPanelLocation, false);
+          setContentPanelInputsEnabled(contentPanelPrinter, false);
         }
       }
 

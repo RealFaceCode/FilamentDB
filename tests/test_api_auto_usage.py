@@ -74,7 +74,7 @@ class AutoUsageApiTests(unittest.TestCase):
         )
 
     def test_auto_usage_dry_run_does_not_change_db(self):
-        with patch("app.main.parse_3mf_filament_usage", return_value=self._parser_result(25.0)):
+        with patch("app.utils.usage_parsing.parse_3mf_filament_usage", return_value=self._parser_result(25.0)):
             response = self.client.post(
                 "/api/usage/auto-from-3mf",
                 data={"project": "private", "dry_run": "1", "job_id": "job-dryrun-1"},
@@ -111,7 +111,7 @@ class AutoUsageApiTests(unittest.TestCase):
             [{"material": "PLA", "grams": 30.0, "slot": 2}],
         )
 
-        with patch("app.main.parse_3mf_filament_usage", return_value=parser_result):
+        with patch("app.utils.usage_parsing.parse_3mf_filament_usage", return_value=parser_result):
             first = self.client.post(
                 "/api/usage/auto-from-3mf",
                 data={
@@ -195,7 +195,7 @@ class AutoUsageApiTests(unittest.TestCase):
         self.assertEqual(dashboard_before.status_code, 200)
         self.assertIn("4.00 €", dashboard_before.text)
 
-        with patch("app.main.parse_3mf_filament_usage", return_value=self._parser_result(50.0)):
+        with patch("app.utils.usage_parsing.parse_3mf_filament_usage", return_value=self._parser_result(50.0)):
             apply_usage = self.client.post(
                 "/api/usage/auto-from-3mf",
                 data={"project": "private", "job_id": "job-value-1"},
@@ -227,7 +227,7 @@ class AutoUsageApiTests(unittest.TestCase):
             spool.location = sub_location.path_code
             db.commit()
 
-        with patch("app.main.parse_3mf_filament_usage", return_value=self._parser_result(200.0)):
+        with patch("app.utils.usage_parsing.parse_3mf_filament_usage", return_value=self._parser_result(200.0)):
             response = self.client.post(
                 "/api/usage/auto-from-3mf",
                 data={"project": "private", "job_id": "job-empty-1"},
@@ -285,7 +285,7 @@ class AutoUsageApiTests(unittest.TestCase):
             [{"material": "PLA", "grams": 20.0, "slot": 4}],
         )
 
-        with patch("app.main.parse_3mf_filament_usage", return_value=parser_result):
+        with patch("app.utils.usage_parsing.parse_3mf_filament_usage", return_value=parser_result):
             response = self.client.post(
                 "/api/usage/auto-from-3mf",
                 data={"project": "private", "job_id": "job-slot-1", "printer": "P1S-01"},
@@ -325,7 +325,7 @@ class AutoUsageApiTests(unittest.TestCase):
             [{"material": "PLA", "grams": 15.0, "slot": 9}],
         )
 
-        with patch("app.main.parse_3mf_filament_usage", return_value=parser_result):
+        with patch("app.utils.usage_parsing.parse_3mf_filament_usage", return_value=parser_result):
             response = self.client.post(
                 "/api/usage/auto-from-3mf",
                 data={"project": "private", "job_id": "job-slot-fallback-1", "printer": "P1S-01"},

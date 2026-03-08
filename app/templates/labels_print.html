@@ -2,21 +2,30 @@
 {% block content %}
 {% set cell_w = (layout_config.cell_w_mm or 0)|float %}
 {% set cell_h = (layout_config.cell_h_mm or 0)|float %}
+{% set sheet_columns = (layout_config.columns or 1)|int %}
 {% set is_single_mode = (print_mode == 'single') %}
 {% set is_vertical = (label_orientation == 'vertical') %}
+{% set sheet_content_width_mm = (sheet_columns * cell_w) %}
+{% set sheet_side_margin_mm = ((210.0 - sheet_content_width_mm) / 2.0) %}
+{% if sheet_side_margin_mm < 0 %}
+  {% set sheet_side_margin_mm = 0 %}
+{% endif %}
+{% if sheet_side_margin_mm > 12 %}
+  {% set sheet_side_margin_mm = 12 %}
+{% endif %}
 
 {% if is_single_mode %}
-  {% set base_font_px = (cell_h * 0.52) %}
+  {% set base_font_px = (cell_h * 0.64) %}
 {% else %}
-  {% set base_font_px = (cell_h * 0.38) %}
+  {% set base_font_px = (cell_h * 0.46) %}
 {% endif %}
-{% if cell_w < 55 and base_font_px > 10.2 %}
-  {% set base_font_px = 10.2 %}
+{% if cell_w < 55 and base_font_px > 12.0 %}
+  {% set base_font_px = 12.0 %}
 {% endif %}
-{% if base_font_px < 8.8 %}
-  {% set base_font_px = 8.8 %}
-{% elif base_font_px > 26.0 %}
-  {% set base_font_px = 26.0 %}
+{% if base_font_px < 10.0 %}
+  {% set base_font_px = 10.0 %}
+{% elif base_font_px > 30.0 %}
+  {% set base_font_px = 30.0 %}
 {% endif %}
 {% set title_font_px = (base_font_px * 1.18) %}
 {% if title_font_px > 34.0 %}
@@ -45,15 +54,24 @@
 {% if qr_mm < 9 %}
   {% set qr_mm = 9 %}
 {% elif qr_mm > 44 %}
-  {% if is_single_mode %}
-    {% set qr_mm = 80 %}
-  {% else %}
-    {% set qr_mm = 44 %}
-  {% endif %}
+  {% set qr_mm = 44 %}
 {% endif %}
 
 {% block head_extra %}
 <link rel="stylesheet" href="/static/css/labels_print.css">
+{% set print_side_margin_mm = 0.0 %}
+{% if not is_single_mode %}
+  {% set print_sheet_columns = (layout_config.columns or 1)|int %}
+  {% set print_cell_w_mm = (layout_config.cell_w_mm or 0)|float %}
+  {% set print_content_width_mm = (print_sheet_columns * print_cell_w_mm) %}
+  {% set print_side_margin_mm = ((210.0 - print_content_width_mm) / 2.0) %}
+  {% if print_side_margin_mm < 0 %}
+    {% set print_side_margin_mm = 0 %}
+  {% endif %}
+  {% if print_side_margin_mm > 12 %}
+    {% set print_side_margin_mm = 12 %}
+  {% endif %}
+{% endif %}
 <style>
   @media print {
     @page {
@@ -62,7 +80,7 @@
       margin: 0;
       {% else %}
       size: A4 portrait;
-      margin: 8mm;
+      margin: 8mm {{ print_side_margin_mm|float|round(2) }}mm;
       {% endif %}
     }
   }
@@ -80,7 +98,7 @@
 >
   <div class="print-grid">
     {% for item in label_items %}
-    <div class="label-card border border-slate-300 rounded-lg flex items-center" data-max-font="{{ (base_font_px * (2.35 if is_single_mode else 1.55))|round(1) }}" data-min-font="{{ 10.0 if is_single_mode else 8.8 }}" data-vertical="{{ '1' if is_vertical else '0' }}">
+    <div class="label-card border border-slate-300 rounded-lg flex items-center" data-max-font="{{ (base_font_px * (2.8 if is_single_mode else 1.9))|round(1) }}" data-min-font="{{ 11.0 if is_single_mode else 9.8 }}" data-vertical="{{ '1' if is_vertical else '0' }}" data-label-size="{{ cell_w|round(2) }} x {{ cell_h|round(2) }} mm" data-print-mode="{{ print_mode }}" data-orientation="{{ label_orientation }}" data-columns="{{ layout_config.columns }}" data-layout="{{ layout }}">
       <img src="{{ item.qr_src }}" alt="QR" class="label-qr shrink-0 rounded border border-slate-200">
       <div class="label-text">
         {% if label_target == 'location' %}
@@ -130,7 +148,25 @@
   </div>
 </div>
 
+<div id="label-size-tooltip" class="label-size-tooltip hidden" aria-hidden="true"></div>
+
 <script>
+  const LABEL_PREVIEW_URL = {{ (preview_url or '') | tojson }};
+
+  function applyLabelPreviewUrl() {
+    if (!LABEL_PREVIEW_URL) {
+      return;
+    }
+    try {
+      const next = new URL(LABEL_PREVIEW_URL, globalThis.location.origin);
+      const current = new URL(globalThis.location.href);
+      if (`${next.pathname}${next.search}` !== `${current.pathname}${current.search}`) {
+        globalThis.history.replaceState({}, '', `${next.pathname}${next.search}${next.hash}`);
+      }
+    } catch (_error) {
+    }
+  }
+
   function fitLabelText() {
     const cards = document.querySelectorAll('.label-card');
     cards.forEach((card) => {
@@ -141,38 +177,89 @@
       const minFont = Number(card.dataset.minFont || 9);
       const isVertical = card.dataset.vertical === '1';
 
-      const fits = () => (text.scrollHeight <= text.clientHeight + 0.5 && text.scrollWidth <= text.clientWidth + 0.5);
-
-      let size = maxFont;
-      text.style.fontSize = `${size}px`;
-
-      for (let i = 0; i < 180; i += 1) {
-        if (fits() || size <= minFont) {
-          break;
+      const hasOverflow = () => {
+        const verticalOverflow = text.scrollHeight > text.clientHeight + 0.5;
+        const horizontalOverflow = text.scrollWidth > text.clientWidth + 0.5;
+        if (isVertical) {
+          return verticalOverflow || horizontalOverflow;
         }
-        size -= 0.5;
-        text.style.fontSize = `${size}px`;
-      }
+        // Horizontal labels use ellipsis by design, so fit against block overflow only.
+        return verticalOverflow;
+      };
 
-      for (let i = 0; i < 80; i += 1) {
-        const candidate = size + 0.25;
-        if (candidate > maxFont) {
-          break;
-        }
+      let low = minFont;
+      let high = maxFont;
+      let size = minFont;
+
+      for (let i = 0; i < 22; i += 1) {
+        const candidate = (low + high) / 2;
         text.style.fontSize = `${candidate}px`;
-        if (!fits()) {
-          text.style.fontSize = `${size}px`;
-          break;
+        if (hasOverflow()) {
+          high = candidate;
+        } else {
+          size = candidate;
+          low = candidate;
         }
-        size = candidate;
       }
 
+      text.style.fontSize = `${Math.max(size, minFont)}px`;
       text.style.lineHeight = isVertical ? '1.22em' : '1.16em';
       card.style.setProperty('--resolved-font', `${Math.max(size, minFont)}px`);
     });
   }
 
-  window.addEventListener('load', fitLabelText);
+  function initLabelPrintRuntime() {
+    applyLabelPreviewUrl();
+    fitLabelText();
+
+    document.querySelectorAll('.label-qr').forEach((img) => {
+      if (img instanceof HTMLImageElement && !img.complete) {
+        img.addEventListener('load', fitLabelText, { once: true });
+      }
+    });
+
+    if (globalThis.ResizeObserver) {
+      const observer = new ResizeObserver(() => fitLabelText());
+      document.querySelectorAll('.label-card').forEach((card) => observer.observe(card));
+    }
+
+    if (document.fonts && typeof document.fonts.ready === 'object') {
+      document.fonts.ready.then(fitLabelText).catch(() => {});
+    }
+
+    const tooltip = document.getElementById('label-size-tooltip');
+    if (tooltip instanceof HTMLElement) {
+      const moveTooltip = (event) => {
+        const x = Number(event.clientX || 0) + 12;
+        const y = Number(event.clientY || 0) + 12;
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${y}px`;
+      };
+
+      document.querySelectorAll('.label-card').forEach((card) => {
+        card.addEventListener('mouseenter', (event) => {
+          const size = String(card.getAttribute('data-label-size') || '').trim();
+          const mode = String(card.getAttribute('data-print-mode') || '').trim();
+          const orientation = String(card.getAttribute('data-orientation') || '').trim();
+          const columns = String(card.getAttribute('data-columns') || '').trim();
+          const layout = String(card.getAttribute('data-layout') || '').trim();
+          tooltip.textContent = `Label: ${size} | Layout: ${layout} | Mode: ${mode} | Ausrichtung: ${orientation} | Spalten: ${columns}`;
+          tooltip.classList.remove('hidden');
+          tooltip.setAttribute('aria-hidden', 'false');
+          moveTooltip(event);
+        });
+
+        card.addEventListener('mousemove', moveTooltip);
+
+        card.addEventListener('mouseleave', () => {
+          tooltip.classList.add('hidden');
+          tooltip.setAttribute('aria-hidden', 'true');
+        });
+      });
+    }
+  }
+
+  window.addEventListener('load', initLabelPrintRuntime);
   document.addEventListener('ui:after-soft-refresh', fitLabelText);
   globalThis.addEventListener('beforeprint', fitLabelText);
 </script>

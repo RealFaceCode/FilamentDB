@@ -39,7 +39,6 @@ class StorageLocationsQrTests(unittest.TestCase):
         self.client = TestClient(app, base_url="https://testserver")
 
         self.project_scope = "private"
-            self.project_scope = "private"
 
     def tearDown(self):
         main_module.COOKIE_SECURE = self._orig_cookie_secure

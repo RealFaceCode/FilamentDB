@@ -17,7 +17,6 @@ import time
 import unicodedata
 from pathlib import Path
 from io import BytesIO
-import shutil
 import tempfile
 from typing import Optional
 from urllib.parse import urlencode, urlparse
@@ -49,12 +48,83 @@ from .models import (
     StorageArea,
     StorageSubLocation,
 )
+from .utils.app_constants import LABEL_LAYOUTS, TRANSLATIONS
 from .utils.config_helpers import (
     env_csv_list as _env_csv_list,
     env_truthy as _env_truthy,
     get_configured_lan_host as _get_configured_lan_host,
     merge_allowed_hosts as _merge_allowed_hosts,
     resolve_mobile_entry_url as _resolve_mobile_entry_url,
+)
+from .utils.audit_import import (
+    audit_log as _audit_log,
+    default_import_alias_map as _default_import_alias_map,
+    load_import_mapping_profile as _load_import_mapping_profile,
+    normalize_col_name as _normalize_col_name,
+    save_import_mapping_profile as _save_import_mapping_profile,
+)
+from .utils.analysis_helpers import (
+    analysis_printer_slot_usage as _analysis_printer_slot_usage,
+    analysis_top_usage as _analysis_top_usage,
+    analysis_usage_and_cost_in_period as _analysis_usage_and_cost_in_period,
+    analysis_usage_cost_trend as _analysis_usage_cost_trend,
+    bounded_int as _bounded_int,
+)
+from .utils.storage_helpers import (
+    normalize_storage_area_code as _normalize_storage_area_code,
+    normalize_storage_code as _normalize_storage_code,
+    normalize_storage_sub_code as _normalize_storage_sub_code,
+    normalize_storage_sub_location_id as _normalize_storage_sub_location_id,
+    resolve_storage_sub_location as _resolve_storage_sub_location,
+    spool_location_display as _spool_location_display,
+    storage_location_map_by_id as _storage_location_map_by_id,
+    storage_location_options as _storage_location_options,
+    storage_path_code as _storage_path_code,
+)
+from .utils.lifecycle_helpers import (
+    enforce_empty_lifecycle as _enforce_empty_lifecycle,
+    lifecycle_status_options as _build_lifecycle_status_options,
+    normalize_lifecycle_status as _normalize_lifecycle_status_value,
+)
+from .utils.backup_runtime import (
+    backup_mode as _backup_mode,
+    build_backup_filename as _build_backup_filename,
+    clamp_int as _clamp_int,
+    cleanup_temp_file as _cleanup_temp_file,
+    configure_backup_runtime,
+    create_backup_snapshot as _create_backup_snapshot,
+    ensure_backup_storage_dir as _ensure_backup_storage_dir,
+    is_postgresql_database as _is_postgresql_database,
+    is_sqlite_database as _is_sqlite_database,
+    list_backup_files as _list_backup_files,
+    pg_tools_available as _pg_tools_available,
+    postgres_connection_args as _postgres_connection_args,
+    postgres_subprocess_env as _postgres_subprocess_env,
+    resolve_backup_file_path as _resolve_backup_file_path,
+    restore_from_backup_path as _restore_from_backup_path,
+    run_postgres_backup_to_path as _run_postgres_backup_to_path,
+    run_sqlite_backup_to_path as _run_sqlite_backup_to_path,
+    sqlite_db_path as _sqlite_db_path,
+)
+from .utils.backup_policy import (
+    build_backup_context as _build_backup_context_impl,
+    delete_all_database_rows as _delete_all_database_rows_impl,
+    load_backup_auto_settings as _load_backup_auto_settings_impl,
+    prune_old_backup_files as _prune_old_backup_files_impl,
+    save_backup_auto_settings as _save_backup_auto_settings_impl,
+)
+from .utils.slot_status_helpers import (
+    build_slot_remap_plan as _build_slot_remap_plan_impl,
+    build_slot_status_rows as _build_slot_status_rows_impl,
+    extract_slot_state_entries as _extract_slot_state_entries_impl,
+    migrate_slot_format_to_canonical as _migrate_slot_format_to_canonical_impl,
+    summarize_slot_data_freshness as _summarize_slot_data_freshness_impl,
+    upsert_slot_state_entries as _upsert_slot_state_entries_impl,
+)
+from .utils.qr_payload import (
+    extract_location_path_from_qr_payload as _extract_location_path_from_qr_payload,
+    extract_printer_id_from_qr_payload as _extract_printer_id_from_qr_payload,
+    extract_spool_id_from_qr_payload as _extract_spool_id_from_qr_payload,
 )
 from .utils.formatting import (
     format_currency_text,
@@ -65,7 +135,37 @@ from .utils.formatting import (
     format_weight_display,
     format_weight_text,
 )
-from .utils.three_mf import parse_3mf_filament_usage
+from .utils.printer_ams import (
+    compose_ams_global_slot as _compose_ams_global_slot,
+    equivalent_ams_slots as _equivalent_ams_slots,
+    find_ams_slot_conflict as _find_ams_slot_conflict,
+    first_present_value as _first_present_value,
+    format_printer_temperatures as _format_printer_temperatures,
+    humanize_observed_color as _humanize_observed_color,
+    infer_ams_slot_parts as _infer_ams_slot_parts,
+    normalize_ams_raw_id as _normalize_ams_raw_id,
+    normalize_ams_slot as _normalize_ams_slot,
+    normalize_ams_slot_canonical as _normalize_ams_slot_canonical,
+    normalize_printer_name as _normalize_printer_name,
+    normalize_printer_port as _normalize_printer_port,
+    normalize_printer_serial as _normalize_printer_serial,
+    normalize_printer_status as _normalize_printer_status,
+    parse_ams_name_mapping as _parse_ams_name_mapping,
+    parse_slot_tokens as _parse_slot_tokens,
+    resolve_ams_label as _resolve_ams_label,
+    resolve_ams_slots as _resolve_ams_slots,
+    resolve_ams_unit as _resolve_ams_unit,
+    resolve_or_create_printer as _resolve_or_create_printer,
+    serialize_ams_name_mapping as _serialize_ams_name_mapping,
+    serialize_ams_slots as _serialize_ams_slots,
+    slot_scoped_spools as _slot_scoped_spools,
+)
+from .utils.usage_parsing import (
+    matches_any as _matches_any,
+    parse_optional_bool as _parse_optional_bool,
+    parse_optional_float as _parse_optional_float,
+    parse_usage_from_print_file as _parse_usage_from_print_file,
+)
 from .utils.qr import generate_qr_png
 
 
@@ -102,7 +202,6 @@ CUSTOM_LABEL_LAYOUT_SETTING_PREFIX = "custom_label_layout:"
 CUSTOM_LABEL_LAYOUT_DELETED_PREFIX = "custom_label_layout_deleted:"
 PRINTABLE_WIDTH_MM = 190.0
 LABEL_GRID_GAP_MM = 4.0
-STORAGE_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
 LIFECYCLE_STATUS_VALUES = ["new", "opened", "dry_stored", "humidity_risk", "drying", "brittle", "empty", "recycled", "archived"]
 BACKUP_STORAGE_DIR = Path(os.getenv("BACKUP_STORAGE_DIR", "/home/appuser/backups")).resolve()
 BACKUP_AUTO_ENABLED_SETTING_KEY = "backup_auto_enabled"
@@ -119,6 +218,8 @@ BACKUP_LOCK_STALE_SECONDS = 10 * 60
 BACKUP_AUTO_CHECK_COOLDOWN_SECONDS = 30
 _AUTO_BACKUP_CHECK_LOCK = threading.Lock()
 _AUTO_BACKUP_LAST_CHECK_AT = 0.0
+
+configure_backup_runtime(engine, BACKUP_STORAGE_DIR)
 
 
 APP_ENV = str(os.getenv("APP_ENV", "development")).strip().lower()
@@ -164,87 +265,6 @@ if ALLOWED_HOSTS:
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 if FORCE_HTTPS_REDIRECT:
     app.add_middleware(HTTPSRedirectMiddleware)
-
-LABEL_LAYOUTS = {
-    "a4_3x8_63_5x33_9": {
-        "label_de": "A4 Etiketten 24 (3×8, 63,5×33,9 mm · Avery/Zweckform kompatibel)",
-        "label_en": "A4 labels 24 (3×8, 63.5×33.9 mm · Avery/Zweckform compatible)",
-        "columns": 3,
-        "cell_w_mm": 63.5,
-        "cell_h_mm": 33.9,
-    },
-    "a4_3x7_63_5x38_1": {
-        "label_de": "A4 Etiketten 21 (3×7, 63,5×38,1 mm · Avery L7160)",
-        "label_en": "A4 labels 21 (3×7, 63.5×38.1 mm · Avery L7160)",
-        "columns": 3,
-        "cell_w_mm": 63.5,
-        "cell_h_mm": 38.1,
-    },
-    "a4_2x8_99_1x33_9": {
-        "label_de": "A4 Etiketten 16 (2×8, 99,1×33,9 mm · Avery L7162)",
-        "label_en": "A4 labels 16 (2×8, 99.1×33.9 mm · Avery L7162)",
-        "columns": 2,
-        "cell_w_mm": 99.1,
-        "cell_h_mm": 33.9,
-    },
-    "a4_2x7_99_1x38_1": {
-        "label_de": "A4 Etiketten 14 (2×7, 99,1×38,1 mm · Avery L7163)",
-        "label_en": "A4 labels 14 (2×7, 99.1×38.1 mm · Avery L7163)",
-        "columns": 2,
-        "cell_w_mm": 99.1,
-        "cell_h_mm": 38.1,
-    },
-    "a4_2x4_99_1x67_7": {
-        "label_de": "A4 Etiketten 8 (2×4, 99,1×67,7 mm · Avery L7165)",
-        "label_en": "A4 labels 8 (2×4, 99.1×67.7 mm · Avery L7165)",
-        "columns": 2,
-        "cell_w_mm": 99.1,
-        "cell_h_mm": 67.7,
-    },
-    "a4_1x10_189_9x25_4": {
-        "label_de": "A4 Etiketten 10 (1×10, 189,9×25,4 mm · Avery L7651)",
-        "label_en": "A4 labels 10 (1×10, 189.9×25.4 mm · Avery L7651)",
-        "columns": 1,
-        "cell_w_mm": 189.9,
-        "cell_h_mm": 25.4,
-    },
-    "a4_2x2_105x74_25": {
-        "label_de": "A4 Etiketten 4 (2×2, 105×74,25 mm)",
-        "label_en": "A4 labels 4 (2×2, 105×74.25 mm)",
-        "columns": 2,
-        "cell_w_mm": 105.0,
-        "cell_h_mm": 74.25,
-    },
-    "a4_4x12_48_5x25_4": {
-        "label_de": "A4 Etiketten 48 (4×12, 48,5×25,4 mm)",
-        "label_en": "A4 labels 48 (4×12, 48.5×25.4 mm)",
-        "columns": 4,
-        "cell_w_mm": 48.5,
-        "cell_h_mm": 25.4,
-    },
-    "a4_4x16_48_5x16_9": {
-        "label_de": "A4 Etiketten 64 (4×16, 48,5×16,9 mm · Avery L4732)",
-        "label_en": "A4 labels 64 (4×16, 48.5×16.9 mm · Avery L4732)",
-        "columns": 4,
-        "cell_w_mm": 48.5,
-        "cell_h_mm": 16.9,
-    },
-    "a4_cards_2x5": {
-        "label_de": "A4 Karten (2 Spalten, flexibel)",
-        "label_en": "A4 cards (2 columns, flexible)",
-        "columns": 2,
-        "cell_w_mm": 99.0,
-        "cell_h_mm": 52.0,
-    },
-    "a4_full_page": {
-        "label_de": "A4 Vollseite (1 Etikett · Avery J8167)",
-        "label_en": "A4 full page (1 label · Avery J8167)",
-        "columns": 1,
-        "cell_w_mm": 190.0,
-        "cell_h_mm": 277.0,
-    },
-}
-
 
 templates.env.globals["format_weight_display"] = format_weight_display
 templates.env.globals["format_weight_text"] = format_weight_text
@@ -300,1122 +320,6 @@ def save_presets(presets: dict):
 def save_color_map(color_map: dict):
     with COLOR_MAP_PATH.open("w", encoding="utf-8") as f:
         json.dump(color_map, f, ensure_ascii=False, indent=2)
-
-TRANSLATIONS = {
-    "de": {
-        "app_title": "Filament Datenbank",
-        "app_subtitle": "Deine Filamentspulen im Blick",
-        "footer_text": "Lokale Filament-Verwaltung",
-        "stats_title": "Statistiken",
-        "stat_total_spools": "Spulen gesamt",
-        "stat_total_weight": "Gesamtgewicht",
-        "stat_total_remaining": "Restmenge",
-        "stat_total_value": "Warenwert",
-        "stat_empty_spools": "Leere Spulen",
-        "stat_low_stock_spools": "Niedriger Bestand",
-        "kpi_month_usage": "Monatsverbrauch",
-        "kpi_month_cost": "Kosten (Monat)",
-        "kpi_usage_trend": "Verbrauch pro Monat",
-        "kpi_cost_trend": "Kosten pro Monat",
-        "kpi_top_material_trend": "Top-Material je Monat",
-        "kpi_top_color_trend": "Top-Farbe je Monat",
-        "kpi_last_months": "letzte 6 Monate",
-        "kpi_no_usage_data": "Keine Verbrauchsdaten vorhanden.",
-        "top5_materials": "Top 5 Materialien",
-        "top5_colors": "Top 5 Farben",
-        "top5_remaining_share": "Anteil Restmenge",
-        "settings": "Einstellungen",
-        "nav_booking": "Buchung",
-        "nav_tracking": "Tracking",
-        "nav_slot_status": "Slotstatus",
-        "nav_printers": "Drucker",
-        "nav_storage_locations": "Lagerorte",
-        "nav_supplies": "Verbrauchsmaterial",
-        "nav_menu": "Menü",
-        "nav_home": "Dashboard",
-        "settings_language": "Sprache",
-        "settings_theme": "Theme",
-        "settings_project": "Projekt",
-        "settings_privacy_blur": "Datenschutz-Blur",
-        "settings_privacy_blur_enable": "Blur aktivieren",
-        "settings_privacy_blur_disable": "Blur deaktivieren",
-        "live_updated": "Live aktualisiert",
-        "live_updated_now": "gerade eben",
-        "settings_auto_refresh": "Auto-Aktualisierung",
-        "auto_refresh_off": "Aus",
-        "auto_refresh_5s": "5 Sekunden",
-        "auto_refresh_10s": "10 Sekunden",
-        "auto_refresh_30s": "30 Sekunden",
-        "project_private": "Privat",
-        "project_business": "Geschäftlich",
-        "theme_light": "Hell",
-        "theme_dark": "Dunkel",
-        "theme_system": "System",
-        "landing_title": "Willkommen bei der Filament Datenbank",
-        "landing_subtitle": "Verwalte Bestand, Lagerorte und Verbrauch zentral.",
-        "landing_auth_hint": "Die Authentifizierung ist vorbereitet und kann im nächsten Schritt mit echter Benutzerverwaltung verbunden werden.",
-        "landing_cta_login": "Anmelden",
-        "landing_cta_register": "Registrieren",
-        "landing_cta_dashboard": "Zum Dashboard",
-        "auth_email": "E-Mail",
-        "auth_password": "Passwort",
-        "auth_name": "Name",
-        "login_title": "Anmeldung",
-        "login_hint": "Melde dich mit deinem Konto an.",
-        "register_title": "Registrierung",
-        "register_hint": "Erstelle ein neues Konto.",
-        "auth_submit_login": "Anmelden",
-        "auth_submit_register": "Konto erstellen",
-        "auth_coming_soon": "Authentifizierung ist vorbereitet. Backend-Anbindung folgt im nächsten Schritt.",
-        "auth_logout": "Abmelden",
-        "auth_login_success": "Erfolgreich angemeldet.",
-        "auth_register_success": "Konto erstellt und angemeldet.",
-        "auth_invalid_credentials": "Ungültige E-Mail oder Passwort.",
-        "auth_email_exists": "Diese E-Mail ist bereits registriert.",
-        "auth_password_too_short": "Passwort muss mindestens 8 Zeichen haben.",
-        "auth_required": "Bitte zuerst anmelden.",
-        "quick_actions": "Schnellzugriff",
-        "data_section": "Daten",
-        "backup_restore": "Backup / Restore",
-        "analysis_tab": "Analyse",
-        "audit_tab": "Audit-Log",
-        "thresholds_tab": "Schwellenwerte",
-        "analysis_title": "Analyse",
-        "audit_title": "Audit-Log",
-        "thresholds_title": "Schwellenwerte",
-        "thresholds_hint": "Übersicht aller gesetzten Low-Stock-Schwellenwerte.",
-        "thresholds_material_defaults": "Material-Standardschwellen",
-        "thresholds_spool_overrides": "Spulen-spezifische Schwellen",
-        "thresholds_none_material": "Keine Material-Schwellenwerte gesetzt.",
-        "thresholds_none_spool": "Keine Spulen-Schwellenwerte gesetzt.",
-        "analysis_hint": "Bestände gruppiert nach Marke, Material, Farbe und Lagerort.",
-        "analysis_by_brand": "Nach Marke",
-        "analysis_by_material": "Nach Material",
-        "analysis_by_color": "Nach Farbe",
-        "analysis_by_location": "Nach Lagerort",
-        "analysis_count": "Anzahl",
-        "analysis_share": "Anteil Restmenge",
-        "analysis_period_days": "Zeitraum (Tage)",
-        "analysis_trend_months": "Trend (Monate)",
-        "analysis_apply_filters": "Filter anwenden",
-        "analysis_kpi_usage_period": "Verbrauch im Zeitraum",
-        "analysis_kpi_cost_period": "Kosten im Zeitraum",
-        "analysis_kpi_low_stock_count": "Niedrigbestand (aktuell)",
-        "analysis_kpi_top_material_usage": "Top-Verbrauch Material",
-        "analysis_kpi_top_color_usage": "Top-Verbrauch Farbe",
-        "analysis_kpi_printer_slot_usage": "Verbrauch pro Drucker/Slot",
-        "analysis_chart_usage_cost": "Verbrauch & Kosten im Trend",
-        "analysis_low_stock_items": "Kritische Spulen",
-        "analysis_no_data": "Keine Daten im gewählten Zeitraum.",
-        "audit_hint": "Revisionssichere Historie kritischer Aktionen (wer/was/wann).",
-        "audit_action": "Aktion",
-        "audit_period_days": "Zeitraum (Tage)",
-        "audit_actor": "Akteur",
-        "audit_entity": "Objekt",
-        "audit_details": "Details",
-        "audit_all_actions": "Alle Aktionen",
-        "audit_no_data": "Keine Audit-Einträge im gewählten Zeitraum.",
-        "add_spool": "Neue Spule",
-        "import_data": "Import",
-        "import_export": "Import / Export",
-        "export_csv": "CSV exportieren",
-        "export_excel": "Excel exportieren",
-        "spool_list": "Spulenliste",
-        "search_placeholder": "Suchen nach Marke, Material, Farbe, Lagerort",
-        "hide_empty_spools": "Leere Spulen ausblenden",
-        "rows_per_page": "Zeilen pro Seite",
-        "entries_label": "Einträge",
-        "page_label": "Seite",
-        "prev_page": "Zurück",
-        "next_page": "Weiter",
-        "all_colors": "Alle Farben",
-        "search": "Suchen",
-        "spool_index": "Index",
-        "brand": "Marke",
-        "material": "Material",
-        "color": "Farbe",
-        "bulk_add": "Mehrfach hinzufügen",
-        "bulk_add_hint": "Mehrere Spulen in einem Schritt anlegen.",
-        "add_row": "Zeile hinzufügen",
-        "save_all": "Alle speichern",
-        "quantity": "Anzahl",
-        "quantity_hint": "Erstellt mehrere identische Spulen.",
-        "manage_presets": "Vorgaben verwalten",
-        "presets_title": "Vorgaben",
-        "add_brand": "Hersteller hinzufügen",
-        "add_material": "Material hinzufügen",
-        "add_color": "Farbe hinzufügen",
-        "add_color_map": "Farben zuweisen",
-        "presets_basic_title": "Grunddaten hinzufügen",
-        "presets_basic_hint": "Hersteller, Material oder Farben schnell ergänzen.",
-        "assign_colors_title": "Farben zuordnen",
-        "assign_colors_hint": "Wähle Hersteller und Material, dann Farben (kommagetrennt).",
-        "import_colors": "Farben importieren",
-        "import_colors_hint": "CSV/Excel mit Spalten: brand, material, color",
-        "select_brand": "Hersteller wählen",
-        "select_material": "Material wählen",
-        "colors_list": "Farben (kommagetrennt)",
-        "brand_hint": "Mehrere Hersteller mit Komma trennen",
-        "material_hint": "Mehrere Materialien mit Komma trennen",
-        "color_hint": "Mehrere Farben mit Komma trennen",
-        "material_group": "Materialgruppe",
-        "weight": "Gewicht",
-        "remaining": "Restmenge",
-        "threshold": "Schwelle",
-        "price": "Preis",
-        "location": "Lagerort",
-        "storage_location": "Strukturierter Lagerort",
-        "storage_location_none": "Kein strukturierter Lagerort",
-        "storage_locations_title": "Lagerorte",
-        "storage_locations_hint": "Verwalte Lagerbereiche und Fächer (z. B. REGAL1/FACH_A).",
-        "storage_locations_add": "Lagerort hinzufügen",
-        "storage_area_code": "Bereichscode",
-        "storage_area_name": "Bereichsname",
-        "storage_sub_code": "Fachcode",
-        "storage_sub_name": "Fachname",
-        "storage_path": "Pfad",
-        "storage_usage": "Belegte Spulen",
-        "storage_delete": "Lagerort löschen",
-        "storage_none": "Keine Lagerorte vorhanden.",
-        "storage_invalid_code": "Ungültiger Code. Erlaubt: Buchstaben/Zahlen sowie - und _.",
-        "storage_location_exists": "Dieser Lagerort existiert bereits.",
-        "storage_location_saved": "Lagerort wurde gespeichert.",
-        "storage_location_deleted": "Lagerort wurde gelöscht.",
-        "storage_location_in_use": "Lagerort ist noch Spulen zugewiesen und kann nicht gelöscht werden.",
-        "storage_location_invalid": "Ausgewählter Lagerort ist ungültig.",
-        "storage_filter": "Lagerort-Filter",
-        "storage_filter_all": "Alle Lagerorte",
-        "supplies_title": "Verbrauchsmaterial",
-        "supplies_hint": "Einfacher Bestand für Verbrauchsmaterial wie Kleber, Düsen oder Reinigungsmittel.",
-        "supplies_add": "Eintrag hinzufügen",
-        "supplies_category_add": "Kategorie hinzufügen",
-        "supplies_category_exists": "Kategorie existiert bereits.",
-        "supplies_category_saved": "Kategorie wurde gespeichert.",
-        "supplies_name": "Name",
-        "supplies_category": "Kategorie",
-        "supplies_quantity": "Menge",
-        "supplies_unit": "Einheit",
-        "supplies_min_quantity": "Mindestbestand",
-        "supplies_notes": "Notiz",
-        "supplies_adjust": "Zu-/Abbuchung",
-        "supplies_adjust_hint": "Wert mit + oder - eingeben, z. B. -1 oder +2.",
-        "supplies_none": "Noch kein Verbrauchsmaterial erfasst.",
-        "supplies_category_none": "Keine Kategorie",
-        "supplies_saved": "Eintrag wurde gespeichert.",
-        "supplies_updated": "Eintrag wurde aktualisiert.",
-        "supplies_deleted": "Eintrag wurde gelöscht.",
-        "supplies_adjusted": "Bestand wurde angepasst.",
-        "supplies_invalid": "Bitte einen Namen und eine gültige Menge angeben.",
-        "supplies_invalid_adjust": "Bitte eine gültige Zu-/Abbuchung angeben.",
-        "supplies_default_category": "Verbrauchsmaterial",
-        "supplies_default_unit": "Stk",
-        "ams_printer": "AMS Drucker",
-        "ams_slot": "AMS Slot",
-        "status": "Status",
-        "lifecycle_status": "Lebenszyklus",
-        "lifecycle_filter_all": "Alle Lebenszyklus-Status",
-        "lifecycle_new": "Neu",
-        "lifecycle_opened": "Geöffnet",
-        "lifecycle_dry_stored": "Trocken gelagert",
-        "lifecycle_humidity_risk": "Feuchterisiko",
-        "lifecycle_drying": "Wird getrocknet",
-        "lifecycle_brittle": "Spröde",
-        "lifecycle_empty": "Leer",
-        "lifecycle_recycled": "Recycelt",
-        "lifecycle_archived": "Archiviert",
-        "actions": "Aktionen",
-        "in_use": "In Nutzung",
-        "empty": "Leer",
-        "low_stock": "Niedrig",
-        "idle": "Inaktiv",
-        "threshold_source_spool": "Spule",
-        "threshold_source_material": "Material",
-        "threshold_none": "-",
-        "low_stock_threshold": "Low-Stock Schwelle",
-        "material_thresholds_title": "Material-Schwellwerte",
-        "material_thresholds_hint": "Standard-Schwellwert pro Spule nach Material in Gramm.",
-        "material_total_threshold": "Material-Gesamtschwelle",
-        "material_total_thresholds_title": "Material-Gesamtschwellen",
-        "material_total_thresholds_hint": "Schwellwert auf Gesamtbestand pro Material in Gramm.",
-        "reorder_list_title": "Nachbestellung erforderlich",
-        "reorder_none": "Aktuell keine Nachbestellung nötig.",
-        "reorder_missing": "Fehlmenge",
-        "reorder_min_order": "Mindestmenge",
-        "reorder_critical_only": "Nur kritische Einträge",
-        "reorder_show_all": "Alle Einträge anzeigen",
-        "reorder_needed": "Nachbestellen",
-        "reorder_ok": "OK",
-        "forecast_card_30": "Bestandsreichweite (30 Tage Verbrauch)",
-        "forecast_card_90": "Bestandsreichweite (90 Tage Verbrauch)",
-        "forecast_days": "Tage",
-        "forecast_daily_usage": "Ø Verbrauch/Tag",
-        "forecast_no_data": "Keine Verbrauchsdaten",
-        "import_profile_use": "Import-Mapping-Profil verwenden",
-        "import_profile_none": "Kein Profil",
-        "import_profile_save_as": "Mapping als Profil speichern",
-        "import_map_brand": "Spalte für Marke",
-        "import_map_material": "Spalte für Material",
-        "import_map_color": "Spalte für Farbe",
-        "import_map_weight": "Spalte für Gewicht (g)",
-        "import_map_remaining": "Spalte für Restmenge (g)",
-        "import_map_threshold": "Spalte für Low-Stock Schwelle",
-        "import_map_price": "Spalte für Preis",
-        "import_map_location": "Spalte für Lagerort",
-        "toggle_use": "Toggle",
-        "edit": "Bearbeiten",
-        "delete": "Löschen",
-        "qr": "QR",
-        "confirm_delete": "Spule wirklich löschen?",
-        "no_spools": "Keine Spulen vorhanden.",
-        "save": "Speichern",
-        "cancel": "Abbrechen",
-        "usage_upload": "Buchung",
-        "booking_area_title": "Buchung",
-        "booking_section_book": "Buchen",
-        "booking_section_tracking": "Tracking",
-        "usage_hint": "Lade eine 3MF-Datei hoch. Falls Gramm nicht erkannt werden, gib sie manuell an.",
-        "select_spools": "Spulen auswählen",
-        "upload_3mf": "3MF-Datei",
-        "manual_grams": "Manuelle Grammangabe",
-        "manual_grams_hint": "Nur nötig, wenn die 3MF keine Grammangabe enthält.",
-        "usage_no_grams": "In der 3MF wurde keine Grammangabe gefunden. Bitte manuell eingeben.",
-        "usage_no_grams_bambu_unsliced": "In dieser Bambu-3MF sind keine Verbrauchsdaten enthalten (wahrscheinlich nicht gesliced). Bitte in Bambu Studio slicen und erneut speichern oder manuell eintragen.",
-        "usage_no_match": "Keine passende Spule automatisch gefunden. Bitte manuell auswählen.",
-        "usage_breakdown": "Erkannter Materialverbrauch",
-        "usage_total": "Gesamt",
-        "usage_total_length": "Gesamtlänge",
-        "usage_filament_switches": "Filamentwechsel",
-        "usage_estimated_cost": "Kosten",
-        "usage_advanced_title": "Erweiterte Bambu-Statistik",
-        "usage_history_title": "Verbrauchs-Historie",
-        "usage_history_when": "Wann",
-        "usage_history_who": "Wer",
-        "usage_history_slicer": "Slicer",
-        "usage_history_mode": "Modus",
-        "usage_mode_auto": "Automatisch",
-        "usage_mode_manual": "Manuell",
-        "usage_mode_auto_slicer": "Automatisch (Slicer)",
-        "usage_mode_auto_bambu": "Automatisch (Bambu Studio)",
-        "usage_mode_upload_manual": "Datei-Upload (manuell)",
-        "usage_mode_manual_entry": "Manuelle Eingabe",
-        "usage_history_file": "3MF-Datei",
-        "usage_history_spool": "Spule",
-        "usage_history_spools": "Spulen",
-        "usage_history_breakdown": "Aufteilung",
-        "usage_history_spool_id": "Spulen-Index",
-        "usage_history_amount": "Abzug",
-        "usage_history_printer": "Drucker",
-        "usage_history_ams_slots": "AMS-Slots",
-        "ams_slot_conflict": "AMS Slot-Konflikt: Dieser Slot ist bereits einer anderen Spule zugeordnet.",
-        "slot_status_title": "Soll/Ist Slotstatus",
-        "slot_status_hint": "Vergleich zwischen gepflegter Spulenzuordnung und zuletzt gepolltem Gerätestatus.",
-        "slot_status_printer": "Drucker",
-        "slot_status_slot": "Slot",
-        "slot_status_ams": "AMS",
-        "slot_status_expected": "Soll (Spule)",
-        "slot_status_observed": "Ist (Live)",
-        "slot_status_state": "Status",
-        "slot_status_seen": "Zuletzt gesehen",
-        "slot_status_source": "Quelle",
-        "slot_state_ok": "OK",
-        "slot_state_mismatch": "Abweichung",
-        "slot_state_missing": "Fehlt",
-        "slot_state_stale": "Veraltet",
-        "slot_state_unknown": "Unbekannt",
-        "slot_status_no_mapped": "Keine gemappten Slots vorhanden.",
-        "slot_status_no_live": "Keine Live-Slotdaten vorhanden.",
-        "slot_data_health": "Live-Datenstatus",
-        "slot_data_fresh": "Aktuell",
-        "slot_data_stale": "Veraltet",
-        "slot_data_no_data": "Keine Live-Daten",
-        "slot_data_age": "Alter",
-        "slot_remap_action": "AMS-Mapping aus Live-Daten korrigieren",
-        "slot_remap_done": "AMS-Mapping aktualisiert: {updated} Spule(n).",
-        "slot_remap_none": "Keine eindeutigen Korrekturen gefunden.",
-        "slot_remap_no_live": "Keine Live-Slotdaten vorhanden.",
-        "slot_format_migrate_action": "Slot-Format auf 1xx/2xx migrieren",
-        "slot_format_migrate_done": "Slot-Format migriert: Spulen={spools}, Live-Slots={states}, Verläufe={contexts}.",
-        "slot_format_migrate_skip": "Einige Einträge wurden wegen Konflikten übersprungen: {count}.",
-        "printers_title": "Druckerverwaltung",
-        "printers_hint": "Verwalte mehrere Drucker und deren Live-Telemetrie zentral.",
-        "printers_add": "Drucker hinzufügen",
-        "printers_none": "Keine Drucker vorhanden.",
-        "printer_name": "Name",
-        "printer_serial": "Seriennummer",
-        "printer_host": "Host/IP",
-        "printer_port": "Port",
-        "printer_access_code": "Access Code",
-        "printer_ams_name_map": "AMS-Name",
-        "printer_ams_name_map_hint": "z. B. HT-A",
-        "printer_active": "Aktiv",
-        "printer_status": "Status",
-        "printer_last_seen": "Zuletzt gesehen",
-        "printer_job": "Job",
-        "printer_progress": "Fortschritt",
-        "printer_temps": "Temperaturen",
-        "printer_firmware": "Firmware",
-        "printer_source": "Quelle",
-        "printer_error": "Fehler",
-        "printer_external_spool": "Externe Spule",
-        "printer_external_spool_active": "Aktiv",
-        "printer_external_spool_inactive": "Inaktiv",
-        "printer_tab_device": "Druckerdaten",
-        "printer_tab_ams": "AMS-Daten",
-        "printer_ams_title": "AMS (Live-Slots)",
-        "printer_ams_empty": "Keine AMS-Livedaten für diesen Drucker.",
-        "printer_saved": "Drucker wurde gespeichert.",
-        "printer_deleted": "Drucker wurde gelöscht.",
-        "printer_invalid": "Bitte Name und Seriennummer angeben.",
-        "printer_duplicate_serial": "Diese Seriennummer existiert bereits im Projekt.",
-        "printer_duplicate_name": "Dieser Druckername existiert bereits im Projekt.",
-        "printer_status_online": "Online",
-        "printer_status_offline": "Offline",
-        "printer_status_unknown": "Unbekannt",
-        "usage_history_empty": "Noch keine Verbrauchseinträge vorhanden.",
-        "usage_undo_last": "Letzte Abbuchung rückgängig",
-        "usage_undo_done": "Letzte Abbuchung wurde rückgängig gemacht.",
-        "usage_undo_none": "Keine rückgängig machbare Abbuchung gefunden.",
-        "usage_applied": "Verbrauch wurde erfolgreich abgezogen.",
-        "usage_preview": "Verbrauchsvorschau",
-        "usage_detected_spools": "Automatisch erkannte Spulen",
-        "usage_apply_now": "Jetzt anwenden",
-        "usage_manual_needed": "Bitte manuell Gramm und Spulen auswählen.",
-        "usage_manual_mode": "Manueller Modus",
-        "usage_no_file": "Bitte zuerst eine 3MF-Datei auswählen.",
-        "usage_active_spools": "Aktive Spulen",
-        "usage_deduction": "Abzug (g)",
-        "usage_save_manual": "Manuell speichern",
-        "usage_save_auto": "Automatisch speichern",
-        "usage_preview_ready": "Automatische Vorschau bereit.",
-        "apply_usage": "Verbrauch anwenden",
-        "import": "Importieren",
-        "import_hint": "Erlaubt: CSV oder Excel mit Spalten: brand, material, color, weight_g, remaining_g, price, location.",
-        "backup_title": "Backup / Restore",
-        "backup_hint": "Exportiere oder importiere die komplette Datenbank.",
-        "backup_hint_sqlite": "SQLite-Modus: Export/Import als .db-Datei.",
-        "backup_hint_postgres": "PostgreSQL-Modus: Export/Import als .dump-Datei (Custom Format).",
-        "backup_export": "Backup exportieren",
-        "backup_create": "Backup anlegen",
-        "backup_import": "Backup importieren",
-        "backup_import_file": "Backup-Datei",
-        "backup_import_done": "Backup wurde erfolgreich importiert.",
-        "backup_create_done": "Backup wurde erstellt.",
-        "backup_create_failed": "Backup konnte nicht erstellt werden.",
-        "backup_invalid_file": "Ungültige Datei. Bitte eine SQLite-Backup-Datei (.db) hochladen.",
-        "backup_invalid_file_postgres": "Ungültige Datei. Bitte eine PostgreSQL-Backup-Datei (.dump, Custom Format) hochladen.",
-        "backup_import_failed": "Backup konnte nicht importiert werden.",
-        "backup_import_failed_postgres": "PostgreSQL-Backup konnte nicht importiert werden.",
-        "backup_export_failed_postgres": "PostgreSQL-Backup konnte nicht exportiert werden.",
-        "backup_file_restore_done": "Backup wurde zurückgespielt.",
-        "backup_file_restore_failed": "Backup konnte nicht zurückgespielt werden.",
-        "backup_file_delete_done": "Backup wurde gelöscht.",
-        "backup_file_delete_failed": "Backup konnte nicht gelöscht werden.",
-        "backup_file_not_found": "Backup-Datei wurde nicht gefunden.",
-        "backup_storage_unavailable": "Backup-Speicher ist nicht verfügbar.",
-        "backup_tab_manual": "Manuell",
-        "backup_tab_files": "Backups",
-        "backup_tab_auto": "Automatik",
-        "backup_files_title": "Verfügbare Backups",
-        "backup_files_empty": "Noch keine Backups vorhanden.",
-        "backup_file_name": "Datei",
-        "backup_file_size": "Größe",
-        "backup_file_modified": "Geändert",
-        "backup_file_source": "Quelle",
-        "backup_file_source_manual": "Manuell",
-        "backup_file_source_auto": "Automatisch",
-        "backup_download": "Download",
-        "backup_restore_file": "Wiederherstellen",
-        "backup_delete": "Löschen",
-        "backup_auto_title": "Automatische Backups",
-        "backup_auto_enabled": "Auto-Backups aktivieren",
-        "backup_auto_interval_hours": "Intervall (Stunden)",
-        "backup_auto_retention_days": "Aufbewahrung (Tage)",
-        "backup_auto_last_run": "Letzter Lauf",
-        "backup_auto_settings_saved": "Auto-Backup-Einstellungen wurden gespeichert.",
-        "backup_auto_hint": "Automatische Backups werden bei eingehenden App-Requests geprüft und bei Fälligkeit erstellt.",
-        "backup_storage_path": "Speicherpfad",
-        "backup_sqlite_only": "Backup/Restore in der Oberfläche ist aktuell nur mit SQLite verfügbar. Für PostgreSQL nutze bitte pg_dump/pg_restore.",
-        "backup_pg_tools_missing": "PostgreSQL-Backup erfordert pg_dump und pg_restore im App-Container.",
-        "backup_unsupported": "Backup/Restore wird für diesen Datenbanktyp nicht unterstützt.",
-        "backup_reset_title": "Alle Daten löschen",
-        "backup_reset_hint": "Löscht alle Datenbank-Einträge unwiderruflich. Backup-Dateien im Backup-Speicher bleiben erhalten.",
-        "backup_reset_confirm_checkbox": "Ich verstehe, dass alle Datenbank-Einträge gelöscht werden.",
-        "backup_reset_confirm_phrase_label": "Bestätigungstext",
-        "backup_reset_confirm_phrase_hint": "Bitte exakt eingeben: {phrase}",
-        "backup_reset_confirm_phrase_placeholder": "Bestätigungstext eingeben",
-        "backup_reset_action": "Alle Daten jetzt löschen",
-        "backup_reset_create_backup": "Vor dem Löschen ein Backup erstellen",
-        "backup_reset_backup_failed": "Löschen abgebrochen: Backup vor dem Löschen konnte nicht erstellt werden.",
-        "backup_reset_confirm_required": "Löschen abgebrochen: Beide Bestätigungen sind erforderlich.",
-        "backup_reset_done": "Alle Datenbank-Einträge wurden gelöscht ({rows}). Backup-Dateien wurden nicht verändert.",
-        "backup_reset_done_with_backup": "Alle Datenbank-Einträge wurden gelöscht ({rows}). Vorher wurde ein Backup erstellt: {filename}",
-        "backup_reset_failed": "Datenbank konnte nicht vollständig geleert werden.",
-        "upload_too_large": "Datei ist zu groß. Maximum: {max_mb} MB.",
-        "label_print": "Etikettendruck",
-        "label_print_title": "Etikettendruck",
-        "label_print_hint": "Wähle Spulen und ein Drucklayout (A4 oder Labelbogen).",
-        "label_target": "Etikett-Typ",
-        "label_target_spool": "Spulen",
-        "label_target_location": "Lagerorte",
-        "label_target_printer": "Drucker",
-        "label_select_printers": "Drucker auswählen",
-        "label_printer_none_selected": "Bitte mindestens einen Drucker auswählen.",
-        "label_select_locations": "Lagerorte auswählen",
-        "label_location_none_selected": "Bitte mindestens einen Lagerort auswählen.",
-        "label_layout": "Layout",
-        "label_custom_title": "Eigenes Label-Format",
-        "label_custom_hint": "Eigenes Layout mit Spalten und Etikettgröße (mm) speichern.",
-        "label_custom_name": "Name",
-        "label_custom_columns": "Spalten",
-        "label_custom_width": "Breite (mm)",
-        "label_custom_height": "Höhe (mm)",
-        "label_custom_columns_auto": "Spalten werden beim Generieren automatisch bestimmt.",
-        "label_custom_add": "Format speichern",
-        "label_custom_saved": "Eigenes Label-Format wurde gespeichert.",
-        "label_custom_existing": "Gespeicherte Formate",
-        "label_custom_deleted": "Eigenes Label-Format wurde gelöscht.",
-        "label_custom_error_delete_builtin": "Standard-Layout kann nicht gelöscht werden.",
-        "label_custom_error_name": "Bitte einen gültigen Namen angeben.",
-        "label_custom_error_columns": "Spalten müssen zwischen 1 und 8 liegen.",
-        "label_custom_error_size": "Breite und Höhe müssen größer als 0 sein.",
-        "label_custom_error_exists": "Ein Label-Format mit diesem Namen existiert bereits.",
-        "label_custom_error_delete_failed": "Eigenes Label-Format konnte nicht gelöscht werden.",
-        "label_layout_a4": "A4 (Karten)",
-        "label_layout_sheet": "Labelbogen (3×8)",
-        "label_select_spools": "Spulen auswählen",
-        "label_print_mode": "Druckmodus",
-        "label_print_mode_sheet": "A4-Bogen",
-        "label_print_mode_single": "Einzelnes Etikett (volle Größe)",
-        "label_orientation": "Ausrichtung auf dem Etikett",
-        "label_orientation_horizontal": "Horizontal",
-        "label_orientation_vertical": "Vertikal",
-        "label_content": "Inhalt",
-        "label_field_spool_id": "Spulen-ID",
-        "label_field_brand": "Marke",
-        "label_field_material_color": "Material + Farbe",
-        "label_field_weight": "Gewicht",
-        "label_field_remaining": "Restmenge",
-        "label_field_location": "Lagerort",
-        "label_save_defaults": "Als Standard speichern",
-        "label_defaults_saved": "Label-Einstellungen wurden als Standard gespeichert.",
-        "label_generate": "Etiketten erzeugen",
-        "label_none_selected": "Bitte mindestens eine Spule auswählen.",
-        "label_print_now": "Drucken",
-        "label_back": "Zurück",
-        "qr_scan": "QR-Scan",
-        "qr_scan_title": "QR-Scan (Etikett einlesen)",
-        "qr_scan_hint": "Scanne den QR-Code, um Spuleninfos zu öffnen und den Status zu ändern.",
-        "qr_scan_input": "QR-Inhalt",
-        "qr_scan_lookup": "Spule laden",
-        "qr_scan_start_camera": "Kamera starten",
-        "qr_scan_stop_camera": "Kamera stoppen",
-        "qr_scan_camera_unsupported": "Kamera-Scan wird auf diesem Gerät/Brower nicht unterstützt. Du kannst den QR-Inhalt manuell einfügen.",
-        "qr_scan_camera_requires_https": "Kamera benötigt meist HTTPS (oder localhost). Nutze alternativ Bild-Upload.",
-        "qr_scan_upload_image": "QR-Bild hochladen",
-        "qr_scan_decode_image": "Bild einlesen",
-        "qr_scan_image_no_qr": "Im Bild wurde kein QR-Code erkannt.",
-        "qr_scan_invalid": "QR-Code konnte nicht gelesen werden.",
-        "qr_scan_not_found": "Keine passende Spule gefunden.",
-        "qr_scan_location_loaded": "Lagerort wurde geladen.",
-        "qr_scan_printer_loaded": "Drucker wurde geladen.",
-        "qr_scan_loaded": "Spule wurde geladen.",
-        "qr_scan_status": "Status",
-        "qr_scan_action_empty": "Als leer markieren",
-        "qr_scan_action_in_use": "Als in Nutzung markieren",
-        "qr_scan_action_idle": "Als nicht in Nutzung markieren",
-        "qr_scan_lifecycle_label": "Lebenszyklus",
-        "qr_scan_lifecycle_title": "Lebenszyklus",
-        "qr_scan_lifecycle_hint": "Setze den Lebenszyklus direkt nach dem Scan.",
-        "qr_scan_action_set_lifecycle": "Lebenszyklus speichern",
-        "qr_scan_storage_title": "Lagerplatz",
-        "qr_scan_storage_hint": "Setze den strukturierten Lagerplatz direkt nach dem Scan.",
-        "qr_scan_storage_label": "Lagerort",
-        "qr_scan_storage_save": "Lagerplatz speichern",
-        "qr_scan_action_done_empty": "Spule wurde als leer markiert.",
-        "qr_scan_action_done_in_use": "Spule wurde als in Nutzung markiert.",
-        "qr_scan_action_done_idle": "Spule wurde als nicht in Nutzung markiert.",
-        "qr_scan_action_done_lifecycle": "Lebenszyklus wurde aktualisiert.",
-        "qr_scan_action_done_storage": "Lagerplatz wurde aktualisiert.",
-        "qr_scan_mapping_title": "AMS-/Externe-Zuordnung",
-        "qr_scan_mapping_hint": "Ordne die gescannte Spule einem AMS-Slot oder der externen Spule eines Druckers zu.",
-        "qr_scan_mapping_target": "Ziel",
-        "qr_scan_mapping_target_ams": "AMS-Slot",
-        "qr_scan_mapping_target_external": "Externe Spule",
-        "qr_scan_mapping_target_clear": "Zuordnung entfernen",
-        "qr_scan_mapping_printer": "Drucker",
-        "qr_scan_mapping_printer_placeholder": "Bitte wählen",
-        "qr_scan_mapping_slot": "AMS-Slot",
-        "qr_scan_mapping_save": "Zuordnung speichern",
-        "qr_scan_action_done_mapping": "Zuordnung wurde aktualisiert.",
-        "qr_scan_action_invalid_mapping": "Ungültige AMS-/Externe-Zuordnung.",
-        "qr_scan_action_invalid_mapping_printer": "Bitte einen Drucker auswählen.",
-        "qr_scan_action_mapping_conflict": "Zuordnungskonflikt: Ziel ist bereits einer anderen Spule zugeordnet.",
-        "qr_scan_action_invalid_lifecycle": "Ungültiger Lebenszyklus-Status.",
-        "qr_scan_action_invalid": "Unbekannte Aktion.",
-        "qr_scan_manage_title": "Spulenstatus setzen",
-        "qr_scan_manage_hint": "Setze den Status direkt nach dem Scan.",
-        "qr_scan_back_to_scan": "Zurück zum Scanner",
-        "qr_scan_auto_back": "Nach Aktion automatisch zurück zum Scanner",
-        "qr_scan_next_ready": "Status gespeichert. Scanner ist bereit für die nächste Spule.",
-    },
-    "en": {
-        "app_title": "Filament Database",
-        "app_subtitle": "Track your filament spools",
-        "footer_text": "Local filament management",
-        "stats_title": "Statistics",
-        "stat_total_spools": "Total spools",
-        "stat_total_weight": "Total weight",
-        "stat_total_remaining": "Remaining",
-        "stat_total_value": "Inventory value",
-        "stat_empty_spools": "Empty spools",
-        "stat_low_stock_spools": "Low stock",
-        "kpi_month_usage": "Monthly usage",
-        "kpi_month_cost": "Cost (month)",
-        "kpi_usage_trend": "Usage per month",
-        "kpi_cost_trend": "Cost per month",
-        "kpi_top_material_trend": "Top material per month",
-        "kpi_top_color_trend": "Top color per month",
-        "kpi_last_months": "last 6 months",
-        "kpi_no_usage_data": "No usage data available.",
-        "top5_materials": "Top 5 materials",
-        "top5_colors": "Top 5 colors",
-        "top5_remaining_share": "Remaining share",
-        "settings": "Settings",
-        "nav_booking": "Booking",
-        "nav_tracking": "Tracking",
-        "nav_slot_status": "Slot status",
-        "nav_printers": "Printers",
-        "nav_storage_locations": "Storage locations",
-        "nav_supplies": "Supplies",
-        "nav_menu": "Menu",
-        "nav_home": "Dashboard",
-        "settings_language": "Language",
-        "settings_theme": "Theme",
-        "settings_project": "Project",
-        "settings_privacy_blur": "Privacy blur",
-        "settings_privacy_blur_enable": "Enable blur",
-        "settings_privacy_blur_disable": "Disable blur",
-        "live_updated": "Live updated",
-        "live_updated_now": "just now",
-        "settings_auto_refresh": "Auto refresh",
-        "auto_refresh_off": "Off",
-        "auto_refresh_5s": "5 seconds",
-        "auto_refresh_10s": "10 seconds",
-        "auto_refresh_30s": "30 seconds",
-        "project_private": "Private",
-        "project_business": "Business",
-        "theme_light": "Light",
-        "theme_dark": "Dark",
-        "theme_system": "System",
-        "landing_title": "Welcome to Filament Database",
-        "landing_subtitle": "Manage inventory, storage locations, and usage in one place.",
-        "landing_auth_hint": "Authentication is prepared and can be connected to real user management in the next step.",
-        "landing_cta_login": "Sign in",
-        "landing_cta_register": "Register",
-        "landing_cta_dashboard": "Open dashboard",
-        "auth_email": "Email",
-        "auth_password": "Password",
-        "auth_name": "Name",
-        "login_title": "Sign in",
-        "login_hint": "Sign in with your account.",
-        "register_title": "Register",
-        "register_hint": "Create a new account.",
-        "auth_submit_login": "Sign in",
-        "auth_submit_register": "Create account",
-        "auth_coming_soon": "Authentication scaffolding is in place. Backend integration follows in the next step.",
-        "auth_logout": "Sign out",
-        "auth_login_success": "Successfully signed in.",
-        "auth_register_success": "Account created and signed in.",
-        "auth_invalid_credentials": "Invalid email or password.",
-        "auth_email_exists": "This email is already registered.",
-        "auth_password_too_short": "Password must be at least 8 characters.",
-        "auth_required": "Please sign in first.",
-        "quick_actions": "Quick actions",
-        "data_section": "Data",
-        "backup_restore": "Backup / Restore",
-        "analysis_tab": "Analysis",
-        "audit_tab": "Audit log",
-        "thresholds_tab": "Thresholds",
-        "analysis_title": "Analysis",
-        "audit_title": "Audit log",
-        "thresholds_title": "Thresholds",
-        "thresholds_hint": "Overview of all configured low-stock thresholds.",
-        "thresholds_material_defaults": "Material default thresholds",
-        "thresholds_spool_overrides": "Spool-specific thresholds",
-        "thresholds_none_material": "No material thresholds set.",
-        "thresholds_none_spool": "No spool thresholds set.",
-        "analysis_hint": "Inventory grouped by brand, material, color, and location.",
-        "analysis_by_brand": "By brand",
-        "analysis_by_material": "By material",
-        "analysis_by_color": "By color",
-        "analysis_by_location": "By location",
-        "analysis_count": "Count",
-        "analysis_share": "Remaining share",
-        "analysis_period_days": "Period (days)",
-        "analysis_trend_months": "Trend (months)",
-        "analysis_apply_filters": "Apply filters",
-        "analysis_kpi_usage_period": "Usage in period",
-        "analysis_kpi_cost_period": "Cost in period",
-        "analysis_kpi_low_stock_count": "Low stock (current)",
-        "analysis_kpi_top_material_usage": "Top usage by material",
-        "analysis_kpi_top_color_usage": "Top usage by color",
-        "analysis_kpi_printer_slot_usage": "Usage by printer/slot",
-        "analysis_chart_usage_cost": "Usage & cost trend",
-        "analysis_low_stock_items": "Critical spools",
-        "analysis_no_data": "No data in the selected period.",
-        "audit_hint": "Revision-safe history of critical actions (who/what/when).",
-        "audit_action": "Action",
-        "audit_period_days": "Period (days)",
-        "audit_actor": "Actor",
-        "audit_entity": "Entity",
-        "audit_details": "Details",
-        "audit_all_actions": "All actions",
-        "audit_no_data": "No audit entries for the selected period.",
-        "add_spool": "Add spool",
-        "import_data": "Import",
-        "import_export": "Import / Export",
-        "export_csv": "Export CSV",
-        "export_excel": "Export Excel",
-        "spool_list": "Spool list",
-        "search_placeholder": "Search brand, material, color, location",
-        "hide_empty_spools": "Hide empty spools",
-        "rows_per_page": "Rows per page",
-        "entries_label": "entries",
-        "page_label": "Page",
-        "prev_page": "Previous",
-        "next_page": "Next",
-        "all_colors": "All colors",
-        "search": "Search",
-        "spool_index": "Index",
-        "brand": "Brand",
-        "material": "Material",
-        "color": "Color",
-        "bulk_add": "Bulk add",
-        "bulk_add_hint": "Create multiple spools in one step.",
-        "add_row": "Add row",
-        "save_all": "Save all",
-        "quantity": "Quantity",
-        "quantity_hint": "Creates multiple identical spools.",
-        "manage_presets": "Manage presets",
-        "presets_title": "Presets",
-        "add_brand": "Add brand",
-        "add_material": "Add material",
-        "add_color": "Add color",
-        "add_color_map": "Assign colors",
-        "presets_basic_title": "Add basics",
-        "presets_basic_hint": "Quickly add brands, materials, or colors.",
-        "assign_colors_title": "Assign colors",
-        "assign_colors_hint": "Choose brand and material, then add colors (comma-separated).",
-        "import_colors": "Import colors",
-        "import_colors_hint": "CSV/Excel with columns: brand, material, color",
-        "select_brand": "Select brand",
-        "select_material": "Select material",
-        "colors_list": "Colors (comma-separated)",
-        "brand_hint": "Separate multiple brands with commas",
-        "material_hint": "Separate multiple materials with commas",
-        "color_hint": "Separate multiple colors with commas",
-        "material_group": "Material group",
-        "weight": "Weight",
-        "remaining": "Remaining",
-        "threshold": "Threshold",
-        "price": "Price",
-        "location": "Location",
-        "storage_location": "Structured location",
-        "storage_location_none": "No structured location",
-        "storage_locations_title": "Storage locations",
-        "storage_locations_hint": "Manage storage areas and bins (e.g. RACK1/BIN_A).",
-        "storage_locations_add": "Add storage location",
-        "storage_area_code": "Area code",
-        "storage_area_name": "Area name",
-        "storage_sub_code": "Bin code",
-        "storage_sub_name": "Bin name",
-        "storage_path": "Path",
-        "storage_usage": "Assigned spools",
-        "storage_delete": "Delete location",
-        "storage_none": "No storage locations available.",
-        "storage_invalid_code": "Invalid code. Allowed: letters/numbers plus - and _.",
-        "storage_location_exists": "This storage location already exists.",
-        "storage_location_saved": "Storage location was saved.",
-        "storage_location_deleted": "Storage location was deleted.",
-        "storage_location_in_use": "Storage location is still assigned to spools and cannot be deleted.",
-        "storage_location_invalid": "Selected storage location is invalid.",
-        "storage_filter": "Location filter",
-        "storage_filter_all": "All locations",
-        "supplies_title": "Supplies",
-        "supplies_hint": "Simple inventory for consumables like glue, nozzles, or cleaning material.",
-        "supplies_add": "Add item",
-        "supplies_category_add": "Add category",
-        "supplies_category_exists": "Category already exists.",
-        "supplies_category_saved": "Category saved.",
-        "supplies_name": "Name",
-        "supplies_category": "Category",
-        "supplies_quantity": "Quantity",
-        "supplies_unit": "Unit",
-        "supplies_min_quantity": "Minimum stock",
-        "supplies_notes": "Notes",
-        "supplies_adjust": "Adjust",
-        "supplies_adjust_hint": "Enter value with + or -, e.g. -1 or +2.",
-        "supplies_none": "No supplies yet.",
-        "supplies_category_none": "No category",
-        "supplies_saved": "Item saved.",
-        "supplies_updated": "Item updated.",
-        "supplies_deleted": "Item deleted.",
-        "supplies_adjusted": "Stock was adjusted.",
-        "supplies_invalid": "Please provide a name and valid quantity.",
-        "supplies_invalid_adjust": "Please provide a valid adjustment value.",
-        "supplies_default_category": "Consumables",
-        "supplies_default_unit": "pcs",
-        "ams_printer": "AMS printer",
-        "ams_slot": "AMS slot",
-        "status": "Status",
-        "lifecycle_status": "Lifecycle",
-        "lifecycle_filter_all": "All lifecycle statuses",
-        "lifecycle_new": "New",
-        "lifecycle_opened": "Opened",
-        "lifecycle_dry_stored": "Dry stored",
-        "lifecycle_humidity_risk": "Humidity risk",
-        "lifecycle_drying": "Drying",
-        "lifecycle_brittle": "Brittle",
-        "lifecycle_empty": "Empty",
-        "lifecycle_recycled": "Recycled",
-        "lifecycle_archived": "Archived",
-        "actions": "Actions",
-        "in_use": "In use",
-        "empty": "Empty",
-        "low_stock": "Low stock",
-        "idle": "Idle",
-        "threshold_source_spool": "Spool",
-        "threshold_source_material": "Material",
-        "threshold_none": "-",
-        "low_stock_threshold": "Low-stock threshold",
-        "material_thresholds_title": "Material thresholds",
-        "material_thresholds_hint": "Default per-spool threshold by material in grams.",
-        "material_total_threshold": "Material total threshold",
-        "material_total_thresholds_title": "Material total thresholds",
-        "material_total_thresholds_hint": "Threshold on total inventory per material in grams.",
-        "reorder_list_title": "Reorder needed",
-        "reorder_none": "No reorder needed right now.",
-        "reorder_missing": "Missing",
-        "reorder_min_order": "Min order",
-        "reorder_critical_only": "Critical entries only",
-        "reorder_show_all": "Show all entries",
-        "reorder_needed": "Reorder",
-        "reorder_ok": "OK",
-        "forecast_card_30": "Inventory runway (30-day usage)",
-        "forecast_card_90": "Inventory runway (90-day usage)",
-        "forecast_days": "days",
-        "forecast_daily_usage": "Avg usage/day",
-        "forecast_no_data": "No usage data",
-        "import_profile_use": "Use import mapping profile",
-        "import_profile_none": "No profile",
-        "import_profile_save_as": "Save mapping as profile",
-        "import_map_brand": "Column for brand",
-        "import_map_material": "Column for material",
-        "import_map_color": "Column for color",
-        "import_map_weight": "Column for weight (g)",
-        "import_map_remaining": "Column for remaining (g)",
-        "import_map_threshold": "Column for low-stock threshold",
-        "import_map_price": "Column for price",
-        "import_map_location": "Column for location",
-        "toggle_use": "Toggle",
-        "edit": "Edit",
-        "delete": "Delete",
-        "qr": "QR",
-        "confirm_delete": "Delete this spool?",
-        "no_spools": "No spools found.",
-        "save": "Save",
-        "cancel": "Cancel",
-        "usage_upload": "Booking",
-        "booking_area_title": "Booking",
-        "booking_section_book": "Book",
-        "booking_section_tracking": "Tracking",
-        "usage_hint": "Upload a 3MF file. If grams are missing, enter them manually.",
-        "select_spools": "Select spools",
-        "upload_3mf": "3MF file",
-        "manual_grams": "Manual grams",
-        "manual_grams_hint": "Only needed if the 3MF has no grams metadata.",
-        "usage_no_grams": "No gram value was found in the 3MF. Please enter it manually.",
-        "usage_no_grams_bambu_unsliced": "This Bambu 3MF does not contain usage data (likely not sliced). Slice in Bambu Studio and save again, or enter values manually.",
-        "usage_no_match": "No matching spool was auto-detected. Please select one manually.",
-        "usage_breakdown": "Detected material usage",
-        "usage_total": "Total",
-        "usage_total_length": "Total length",
-        "usage_filament_switches": "Filament switches",
-        "usage_estimated_cost": "Cost",
-        "usage_advanced_title": "Advanced Bambu statistics",
-        "usage_history_title": "Usage history",
-        "usage_history_when": "When",
-        "usage_history_who": "Who",
-        "usage_history_slicer": "Slicer",
-        "usage_history_mode": "Mode",
-        "usage_mode_auto": "Automatic",
-        "usage_mode_manual": "Manual",
-        "usage_mode_auto_slicer": "Automatic (Slicer)",
-        "usage_mode_auto_bambu": "Automatic (Bambu Studio)",
-        "usage_mode_upload_manual": "File upload (manual)",
-        "usage_mode_manual_entry": "Manual entry",
-        "usage_history_file": "3MF file",
-        "usage_history_spool": "Spool",
-        "usage_history_spools": "Spools",
-        "usage_history_breakdown": "Breakdown",
-        "usage_history_spool_id": "Spool index",
-        "usage_history_amount": "Deduction",
-        "usage_history_printer": "Printer",
-        "usage_history_ams_slots": "AMS slots",
-        "ams_slot_conflict": "AMS slot conflict: this slot is already assigned to another spool.",
-        "slot_status_title": "Expected/Live slot status",
-        "slot_status_hint": "Compares configured spool mapping with the latest polled device state.",
-        "slot_status_printer": "Printer",
-        "slot_status_slot": "Slot",
-        "slot_status_ams": "AMS",
-        "slot_status_expected": "Expected (spool)",
-        "slot_status_observed": "Live",
-        "slot_status_state": "State",
-        "slot_status_seen": "Last seen",
-        "slot_status_source": "Source",
-        "slot_state_ok": "OK",
-        "slot_state_mismatch": "Mismatch",
-        "slot_state_missing": "Missing",
-        "slot_state_stale": "Stale",
-        "slot_state_unknown": "Unknown",
-        "slot_status_no_mapped": "No mapped slots found.",
-        "slot_status_no_live": "No live slot data available.",
-        "slot_data_health": "Live data status",
-        "slot_data_fresh": "Current",
-        "slot_data_stale": "Stale",
-        "slot_data_no_data": "No live data",
-        "slot_data_age": "Age",
-        "slot_remap_action": "Fix AMS mapping from live data",
-        "slot_remap_done": "AMS mapping updated: {updated} spool(s).",
-        "slot_remap_none": "No unambiguous corrections found.",
-        "slot_remap_no_live": "No live slot data available.",
-        "slot_format_migrate_action": "Migrate slot format to 1xx/2xx",
-        "slot_format_migrate_done": "Slot format migrated: spools={spools}, live slots={states}, history contexts={contexts}.",
-        "slot_format_migrate_skip": "Some entries were skipped because of conflicts: {count}.",
-        "printers_title": "Printer management",
-        "printers_hint": "Manage multiple printers and their live telemetry in one place.",
-        "printers_add": "Add printer",
-        "printers_none": "No printers configured.",
-        "printer_name": "Name",
-        "printer_serial": "Serial",
-        "printer_host": "Host/IP",
-        "printer_port": "Port",
-        "printer_access_code": "Access code",
-        "printer_ams_name_map": "AMS name",
-        "printer_ams_name_map_hint": "e.g. HT-A",
-        "printer_active": "Active",
-        "printer_status": "Status",
-        "printer_last_seen": "Last seen",
-        "printer_job": "Job",
-        "printer_progress": "Progress",
-        "printer_temps": "Temperatures",
-        "printer_firmware": "Firmware",
-        "printer_source": "Source",
-        "printer_error": "Error",
-        "printer_external_spool": "External spool",
-        "printer_external_spool_active": "Active",
-        "printer_external_spool_inactive": "Inactive",
-        "printer_tab_device": "Printer data",
-        "printer_tab_ams": "AMS data",
-        "printer_ams_title": "AMS (live slots)",
-        "printer_ams_empty": "No AMS live data for this printer.",
-        "printer_saved": "Printer saved.",
-        "printer_deleted": "Printer deleted.",
-        "printer_invalid": "Please provide name and serial.",
-        "printer_duplicate_serial": "This serial already exists in this project.",
-        "printer_duplicate_name": "This printer name already exists in this project.",
-        "printer_status_online": "Online",
-        "printer_status_offline": "Offline",
-        "printer_status_unknown": "Unknown",
-        "usage_history_empty": "No usage entries yet.",
-        "usage_undo_last": "Undo last deduction",
-        "usage_undo_done": "Last deduction was undone.",
-        "usage_undo_none": "No undoable deduction found.",
-        "usage_applied": "Usage was successfully deducted.",
-        "usage_preview": "Usage preview",
-        "usage_detected_spools": "Auto-detected spools",
-        "usage_apply_now": "Apply now",
-        "usage_manual_needed": "Please choose grams and spools manually.",
-        "usage_manual_mode": "Manual mode",
-        "usage_no_file": "Please select a 3MF file first.",
-        "usage_active_spools": "Active spools",
-        "usage_deduction": "Deduction (g)",
-        "usage_save_manual": "Save manual",
-        "usage_save_auto": "Save automatic",
-        "usage_preview_ready": "Automatic preview is ready.",
-        "apply_usage": "Apply usage",
-        "import": "Import",
-        "import_hint": "Allowed: CSV or Excel with columns: brand, material, color, weight_g, remaining_g, price, location.",
-        "backup_title": "Backup / Restore",
-        "backup_hint": "Export or import the complete database.",
-        "backup_hint_sqlite": "SQLite mode: export/import as a .db file.",
-        "backup_hint_postgres": "PostgreSQL mode: export/import as a .dump file (custom format).",
-        "backup_export": "Export backup",
-        "backup_create": "Create backup",
-        "backup_import": "Import backup",
-        "backup_import_file": "Backup file",
-        "backup_import_done": "Backup imported successfully.",
-        "backup_create_done": "Backup created successfully.",
-        "backup_create_failed": "Backup could not be created.",
-        "backup_invalid_file": "Invalid file. Please upload an SQLite backup file (.db).",
-        "backup_invalid_file_postgres": "Invalid file. Please upload a PostgreSQL backup file (.dump, custom format).",
-        "backup_import_failed": "Backup could not be imported.",
-        "backup_import_failed_postgres": "PostgreSQL backup could not be imported.",
-        "backup_export_failed_postgres": "PostgreSQL backup could not be exported.",
-        "backup_file_restore_done": "Backup restored successfully.",
-        "backup_file_restore_failed": "Backup could not be restored.",
-        "backup_file_delete_done": "Backup deleted.",
-        "backup_file_delete_failed": "Backup could not be deleted.",
-        "backup_file_not_found": "Backup file was not found.",
-        "backup_storage_unavailable": "Backup storage is unavailable.",
-        "backup_tab_manual": "Manual",
-        "backup_tab_files": "Backups",
-        "backup_tab_auto": "Automatic",
-        "backup_files_title": "Available backups",
-        "backup_files_empty": "No backups yet.",
-        "backup_file_name": "File",
-        "backup_file_size": "Size",
-        "backup_file_modified": "Modified",
-        "backup_file_source": "Source",
-        "backup_file_source_manual": "Manual",
-        "backup_file_source_auto": "Automatic",
-        "backup_download": "Download",
-        "backup_restore_file": "Restore",
-        "backup_delete": "Delete",
-        "backup_auto_title": "Automatic backups",
-        "backup_auto_enabled": "Enable automatic backups",
-        "backup_auto_interval_hours": "Interval (hours)",
-        "backup_auto_retention_days": "Retention (days)",
-        "backup_auto_last_run": "Last run",
-        "backup_auto_settings_saved": "Automatic backup settings saved.",
-        "backup_auto_hint": "Automatic backups are checked on incoming app requests and created when due.",
-        "backup_storage_path": "Storage path",
-        "backup_sqlite_only": "In-app backup/restore is currently available for SQLite only. For PostgreSQL, use pg_dump/pg_restore.",
-        "backup_pg_tools_missing": "PostgreSQL backup requires pg_dump and pg_restore in the app container.",
-        "backup_unsupported": "Backup/restore is not supported for this database type.",
-        "backup_reset_title": "Delete all data",
-        "backup_reset_hint": "Irreversibly deletes all database records. Backup files in backup storage remain untouched.",
-        "backup_reset_confirm_checkbox": "I understand that all database records will be deleted.",
-        "backup_reset_confirm_phrase_label": "Confirmation text",
-        "backup_reset_confirm_phrase_hint": "Please type exactly: {phrase}",
-        "backup_reset_confirm_phrase_placeholder": "Enter confirmation text",
-        "backup_reset_action": "Delete all data now",
-        "backup_reset_create_backup": "Create a backup before deleting",
-        "backup_reset_backup_failed": "Deletion aborted: pre-delete backup could not be created.",
-        "backup_reset_confirm_required": "Deletion aborted: both confirmations are required.",
-        "backup_reset_done": "All database records were deleted ({rows}). Backup files were not changed.",
-        "backup_reset_done_with_backup": "All database records were deleted ({rows}). A backup was created first: {filename}",
-        "backup_reset_failed": "Database could not be fully cleared.",
-        "upload_too_large": "File is too large. Maximum: {max_mb} MB.",
-        "label_print": "Label printing",
-        "label_print_title": "Label printing",
-        "label_print_hint": "Select spools and a print layout (A4 or label sheet).",
-        "label_target": "Label target",
-        "label_target_spool": "Spools",
-        "label_target_location": "Storage locations",
-        "label_target_printer": "Printers",
-        "label_select_printers": "Select printers",
-        "label_printer_none_selected": "Please select at least one printer.",
-        "label_select_locations": "Select storage locations",
-        "label_location_none_selected": "Please select at least one storage location.",
-        "label_layout": "Layout",
-        "label_custom_title": "Custom label format",
-        "label_custom_hint": "Save your own layout with columns and label size (mm).",
-        "label_custom_name": "Name",
-        "label_custom_columns": "Columns",
-        "label_custom_width": "Width (mm)",
-        "label_custom_height": "Height (mm)",
-        "label_custom_columns_auto": "Columns are determined automatically when generating labels.",
-        "label_custom_add": "Save format",
-        "label_custom_saved": "Custom label format was saved.",
-        "label_custom_existing": "Saved formats",
-        "label_custom_deleted": "Custom label format was deleted.",
-        "label_custom_error_delete_builtin": "Built-in layout cannot be deleted.",
-        "label_custom_error_name": "Please enter a valid name.",
-        "label_custom_error_columns": "Columns must be between 1 and 8.",
-        "label_custom_error_size": "Width and height must be greater than 0.",
-        "label_custom_error_exists": "A label format with this name already exists.",
-        "label_custom_error_delete_failed": "Custom label format could not be deleted.",
-        "label_layout_a4": "A4 (cards)",
-        "label_layout_sheet": "Label sheet (3×8)",
-        "label_select_spools": "Select spools",
-        "label_print_mode": "Print mode",
-        "label_print_mode_sheet": "A4 sheet",
-        "label_print_mode_single": "Single label (full size)",
-        "label_orientation": "Orientation on label",
-        "label_orientation_horizontal": "Horizontal",
-        "label_orientation_vertical": "Vertical",
-        "label_content": "Content",
-        "label_field_spool_id": "Spool ID",
-        "label_field_brand": "Brand",
-        "label_field_material_color": "Material + color",
-        "label_field_weight": "Weight",
-        "label_field_remaining": "Remaining",
-        "label_field_location": "Location",
-        "label_save_defaults": "Save as default",
-        "label_defaults_saved": "Label preferences were saved as default.",
-        "label_generate": "Generate labels",
-        "label_none_selected": "Please select at least one spool.",
-        "label_print_now": "Print",
-        "label_back": "Back",
-        "qr_scan": "QR scan",
-        "qr_scan_title": "QR scan (read label)",
-        "qr_scan_hint": "Scan the QR code to open spool details and update status.",
-        "qr_scan_input": "QR payload",
-        "qr_scan_lookup": "Load spool",
-        "qr_scan_start_camera": "Start camera",
-        "qr_scan_stop_camera": "Stop camera",
-        "qr_scan_camera_unsupported": "Camera scanning is not supported on this device/browser. You can paste the QR payload manually.",
-        "qr_scan_camera_requires_https": "Camera access usually requires HTTPS (or localhost). Use image upload as fallback.",
-        "qr_scan_upload_image": "Upload QR image",
-        "qr_scan_decode_image": "Read image",
-        "qr_scan_image_no_qr": "No QR code detected in image.",
-        "qr_scan_invalid": "Could not parse QR code.",
-        "qr_scan_not_found": "No matching spool found.",
-        "qr_scan_location_loaded": "Storage location loaded.",
-        "qr_scan_printer_loaded": "Printer loaded.",
-        "qr_scan_loaded": "Spool loaded.",
-        "qr_scan_status": "Status",
-        "qr_scan_action_empty": "Mark as empty",
-        "qr_scan_action_in_use": "Mark as in use",
-        "qr_scan_action_idle": "Mark as not in use",
-        "qr_scan_lifecycle_label": "Lifecycle",
-        "qr_scan_lifecycle_title": "Lifecycle",
-        "qr_scan_lifecycle_hint": "Set the lifecycle directly after scanning.",
-        "qr_scan_action_set_lifecycle": "Save lifecycle",
-        "qr_scan_storage_title": "Storage",
-        "qr_scan_storage_hint": "Set the structured storage location directly after scanning.",
-        "qr_scan_storage_label": "Storage location",
-        "qr_scan_storage_save": "Save storage",
-        "qr_scan_action_done_empty": "Spool marked as empty.",
-        "qr_scan_action_done_in_use": "Spool marked as in use.",
-        "qr_scan_action_done_idle": "Spool marked as not in use.",
-        "qr_scan_action_done_lifecycle": "Lifecycle was updated.",
-        "qr_scan_action_done_storage": "Storage location was updated.",
-        "qr_scan_mapping_title": "AMS/external assignment",
-        "qr_scan_mapping_hint": "Assign the scanned spool to an AMS slot or to a printer's external spool.",
-        "qr_scan_mapping_target": "Target",
-        "qr_scan_mapping_target_ams": "AMS slot",
-        "qr_scan_mapping_target_external": "External spool",
-        "qr_scan_mapping_target_clear": "Remove assignment",
-        "qr_scan_mapping_printer": "Printer",
-        "qr_scan_mapping_printer_placeholder": "Please choose",
-        "qr_scan_mapping_slot": "AMS slot",
-        "qr_scan_mapping_save": "Save assignment",
-        "qr_scan_action_done_mapping": "Assignment was updated.",
-        "qr_scan_action_invalid_mapping": "Invalid AMS/external assignment.",
-        "qr_scan_action_invalid_mapping_printer": "Please select a printer.",
-        "qr_scan_action_mapping_conflict": "Assignment conflict: target is already assigned to another spool.",
-        "qr_scan_action_invalid_lifecycle": "Invalid lifecycle status.",
-        "qr_scan_action_invalid": "Unknown action.",
-        "qr_scan_manage_title": "Set spool status",
-        "qr_scan_manage_hint": "Adjust status directly after scanning.",
-        "qr_scan_back_to_scan": "Back to scanner",
-        "qr_scan_auto_back": "Automatically return to scanner after action",
-        "qr_scan_next_ready": "Status saved. Scanner is ready for the next spool.",
-    },
-}
-
 
 def _run_startup_tasks() -> None:
     Base.metadata.create_all(bind=engine)
@@ -2048,199 +952,12 @@ def _normalize_next_url(next_url: Optional[str]) -> str:
     return target
 
 
-def _extract_spool_id_from_qr_payload(payload: Optional[str]) -> Optional[int]:
-    raw = str(payload or "").strip()
-    if not raw:
-        return None
-
-    match = re.search(r"spool:(\d+):", raw, flags=re.IGNORECASE)
-    if match:
-        try:
-            return int(match.group(1))
-        except Exception:
-            return None
-
-    match = re.search(r"\bSP-(\d+)\b", raw, flags=re.IGNORECASE)
-    if match:
-        try:
-            return int(match.group(1))
-        except Exception:
-            return None
-
-    if raw.isdigit():
-        try:
-            return int(raw)
-        except Exception:
-            return None
-    return None
-
-
-def _extract_location_path_from_qr_payload(payload: Optional[str], project: str) -> Optional[str]:
-    raw = str(payload or "").strip()
-    if not raw:
-        return None
-
-    match = re.search(r"location:([a-z0-9_-]+):([^\s]+)", raw, flags=re.IGNORECASE)
-    if not match:
-        return None
-
-    project_key = str(match.group(1) or "").strip().lower()
-    if project_key != str(project or "").strip().lower():
-        return None
-
-    path = str(match.group(2) or "").strip()
-    if "/" not in path:
-        return None
-
-    area_raw, sub_raw = path.split("/", 1)
-    area_code = _normalize_storage_area_code(area_raw)
-    sub_code = _normalize_storage_sub_code(sub_raw)
-    if area_code is None or sub_code is None:
-        return None
-    return _storage_path_code(area_code, sub_code)
-
-
-def _extract_printer_id_from_qr_payload(payload: Optional[str], project: str) -> Optional[int]:
-    raw = str(payload or "").strip()
-    if not raw:
-        return None
-
-    match = re.search(r"printer:([a-z0-9_-]+):(\d+):", raw, flags=re.IGNORECASE)
-    if not match:
-        return None
-
-    project_key = str(match.group(1) or "").strip().lower()
-    if project_key != str(project or "").strip().lower():
-        return None
-
-    try:
-        return int(match.group(2))
-    except Exception:
-        return None
-
-
-def _normalize_storage_code(value: Optional[str]) -> str:
-    return str(value or "").strip().upper()
-
-
-def _normalize_storage_area_code(value: Optional[str]) -> Optional[str]:
-    code = _normalize_storage_code(value)
-    return code if STORAGE_CODE_RE.match(code) else None
-
-
-def _normalize_storage_sub_code(value: Optional[str]) -> Optional[str]:
-    code = _normalize_storage_code(value)
-    return code if STORAGE_CODE_RE.match(code) else None
-
-
-def _normalize_storage_sub_location_id(value: Optional[str]) -> Optional[int]:
-    if value is None:
-        return None
-    raw = str(value).strip()
-    if not raw:
-        return None
-    try:
-        parsed = int(raw)
-    except ValueError:
-        return None
-    return parsed if parsed > 0 else None
-
-
 def _normalize_lifecycle_status(value: Optional[str]) -> str:
-    raw = str(value or "").strip().lower().replace("-", "_")
-    return raw if raw in LIFECYCLE_STATUS_VALUES else "new"
+    return _normalize_lifecycle_status_value(value, LIFECYCLE_STATUS_VALUES)
 
 
 def _lifecycle_status_options(lang: str) -> list[dict]:
-    t = t_factory(lang)
-    return [
-        {
-            "value": status,
-            "label": t(f"lifecycle_{status}"),
-        }
-        for status in LIFECYCLE_STATUS_VALUES
-    ]
-
-
-def _storage_path_code(area_code: str, sub_code: str) -> str:
-    return f"{area_code}/{sub_code}"
-
-
-def _storage_location_options(db: Session, project: str) -> list[dict]:
-    location_filters = [StorageSubLocation.project == project, StorageArea.project == project]
-
-    rows = (
-        db.query(StorageSubLocation, StorageArea)
-        .join(StorageArea, StorageArea.id == StorageSubLocation.area_id)
-        .filter(*location_filters)
-        .order_by(StorageArea.code.asc(), StorageSubLocation.code.asc())
-        .all()
-    )
-    options: list[dict] = []
-    for sub, area in rows:
-        label = sub.path_code
-        if sub.name:
-            label = f"{label} · {sub.name}"
-        elif area.name:
-            label = f"{label} · {area.name}"
-        options.append(
-            {
-                "id": sub.id,
-                "area_code": area.code,
-                "area_name": area.name,
-                "sub_code": sub.code,
-                "sub_name": sub.name,
-                "path_code": sub.path_code,
-                "label": label,
-            }
-        )
-    return options
-
-
-def _storage_location_map_by_id(db: Session, project: str, ids: list[int]) -> dict[int, str]:
-    if not ids:
-        return {}
-    filters = [
-        StorageSubLocation.project == project,
-        StorageSubLocation.id.in_(ids),
-    ]
-
-    rows = (
-        db.query(StorageSubLocation.id, StorageSubLocation.path_code)
-        .filter(*filters)
-        .all()
-    )
-    return {int(location_id): path_code for location_id, path_code in rows}
-
-
-def _spool_location_display(spool: Spool, storage_path_map: dict[int, str]) -> str:
-    if spool.storage_sub_location_id and spool.storage_sub_location_id in storage_path_map:
-        return storage_path_map[spool.storage_sub_location_id]
-    return str(spool.location or "").strip() or "-"
-
-
-def _resolve_storage_sub_location(
-    db: Session,
-    project: str,
-    storage_sub_location_id: Optional[str],
-) -> tuple[Optional[StorageSubLocation], Optional[str]]:
-    normalized_id = _normalize_storage_sub_location_id(storage_sub_location_id)
-    if normalized_id is None:
-        return None, None
-
-    filters = [
-        StorageSubLocation.project == project,
-        StorageSubLocation.id == normalized_id,
-    ]
-
-    sub_location = (
-        db.query(StorageSubLocation)
-        .filter(*filters)
-        .first()
-    )
-    if sub_location is None:
-        return None, "storage_location_invalid"
-    return sub_location, None
+    return _build_lifecycle_status_options(LIFECYCLE_STATUS_VALUES, t_factory(lang))
 
 
 def _spool_status_key(spool: Spool) -> str:
@@ -2256,22 +973,6 @@ def _spool_status_key(spool: Spool) -> str:
     return "idle"
 
 
-def _enforce_empty_lifecycle(spool: Optional[Spool]) -> None:
-    if spool is None:
-        return
-    remaining = float(spool.remaining_g or 0.0)
-    lifecycle_empty = str(spool.lifecycle_status or "").strip().lower() == "empty"
-    if lifecycle_empty and remaining > 0:
-        spool.remaining_g = 0.0
-        remaining = 0.0
-
-    if remaining <= 0:
-        spool.in_use = False
-        spool.lifecycle_status = "empty"
-        spool.storage_sub_location_id = None
-        spool.location = None
-
-
 def t_factory(lang: str):
     def _t(key: str):
         return TRANSLATIONS.get(lang, TRANSLATIONS["de"]).get(key, key)
@@ -2279,268 +980,43 @@ def t_factory(lang: str):
     return _t
 
 
-def _sqlite_db_path() -> Optional[Path]:
-    database = getattr(engine.url, "database", None)
-    if not database:
-        return None
-    return Path(database)
-
-
-def _is_sqlite_database() -> bool:
-    return str(getattr(engine.url, "drivername", "")).startswith("sqlite")
-
-
-def _is_postgresql_database() -> bool:
-    return str(getattr(engine.url, "drivername", "")).startswith("postgresql")
-
-
-def _backup_mode() -> str:
-    if _is_sqlite_database():
-        return "sqlite"
-    if _is_postgresql_database():
-        return "postgresql"
-    return "unsupported"
-
-
-def _pg_tools_available() -> bool:
-    return bool(shutil.which("pg_dump") and shutil.which("pg_restore"))
-
-
-def _postgres_subprocess_env() -> dict[str, str]:
-    env = os.environ.copy()
-    password = getattr(engine.url, "password", None)
-    if password:
-        env["PGPASSWORD"] = str(password)
-    return env
-
-
-def _postgres_connection_args() -> list[str]:
-    args: list[str] = []
-    host = getattr(engine.url, "host", None)
-    port = getattr(engine.url, "port", None)
-    username = getattr(engine.url, "username", None)
-    database = getattr(engine.url, "database", None)
-
-    if host:
-        args.extend(["-h", str(host)])
-    if port:
-        args.extend(["-p", str(port)])
-    if username:
-        args.extend(["-U", str(username)])
-    if database:
-        args.extend(["-d", str(database)])
-    return args
-
-
-def _cleanup_temp_file(path: Path) -> None:
-    try:
-        path.unlink(missing_ok=True)
-    except OSError:
-        pass
-
-
-def _ensure_backup_storage_dir() -> Optional[Path]:
-    try:
-        BACKUP_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-        return BACKUP_STORAGE_DIR
-    except OSError:
-        return None
-
-
-def _backup_file_extension(mode: str) -> str:
-    return ".db" if mode == "sqlite" else ".dump"
-
-
-def _clamp_int(value: object, minimum: int, maximum: int, default: int) -> int:
-    try:
-        parsed = int(float(str(value).strip()))
-    except Exception:
-        parsed = default
-    return max(minimum, min(maximum, parsed))
-
-
 def _load_backup_auto_settings() -> dict[str, object]:
-    enabled = _is_truthy(_load_setting_from_db(BACKUP_AUTO_ENABLED_SETTING_KEY))
-    interval_hours = _clamp_int(
-        _load_setting_from_db(BACKUP_AUTO_INTERVAL_HOURS_SETTING_KEY),
-        BACKUP_MIN_INTERVAL_HOURS,
-        BACKUP_MAX_INTERVAL_HOURS,
-        24,
+    return _load_backup_auto_settings_impl(
+        load_setting_fn=_load_setting_from_db,
+        is_truthy_fn=_is_truthy,
+        clamp_int_fn=_clamp_int,
+        enabled_key=BACKUP_AUTO_ENABLED_SETTING_KEY,
+        interval_key=BACKUP_AUTO_INTERVAL_HOURS_SETTING_KEY,
+        retention_key=BACKUP_AUTO_RETENTION_DAYS_SETTING_KEY,
+        last_run_key=BACKUP_AUTO_LAST_RUN_AT_SETTING_KEY,
+        min_interval_hours=BACKUP_MIN_INTERVAL_HOURS,
+        max_interval_hours=BACKUP_MAX_INTERVAL_HOURS,
+        min_retention_days=BACKUP_MIN_RETENTION_DAYS,
+        max_retention_days=BACKUP_MAX_RETENTION_DAYS,
     )
-    retention_days = _clamp_int(
-        _load_setting_from_db(BACKUP_AUTO_RETENTION_DAYS_SETTING_KEY),
-        BACKUP_MIN_RETENTION_DAYS,
-        BACKUP_MAX_RETENTION_DAYS,
-        14,
-    )
-    last_run_raw = str(_load_setting_from_db(BACKUP_AUTO_LAST_RUN_AT_SETTING_KEY) or "").strip()
-    last_run_at: Optional[datetime] = None
-    if last_run_raw:
-        try:
-            parsed = datetime.fromisoformat(last_run_raw)
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=timezone.utc)
-            last_run_at = parsed.astimezone(timezone.utc)
-        except Exception:
-            last_run_at = None
-    return {
-        "enabled": enabled,
-        "interval_hours": interval_hours,
-        "retention_days": retention_days,
-        "last_run_at": last_run_at,
-    }
 
 
 def _save_backup_auto_settings(enabled: bool, interval_hours: int, retention_days: int) -> None:
-    _save_setting_to_db(BACKUP_AUTO_ENABLED_SETTING_KEY, "1" if enabled else "0")
-    _save_setting_to_db(BACKUP_AUTO_INTERVAL_HOURS_SETTING_KEY, str(interval_hours))
-    _save_setting_to_db(BACKUP_AUTO_RETENTION_DAYS_SETTING_KEY, str(retention_days))
-
-
-def _build_backup_filename(mode: str, source: str) -> str:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    normalized_source = "auto" if str(source).strip().lower() == "auto" else "manual"
-    return f"filament_{mode}_{normalized_source}_{timestamp}{_backup_file_extension(mode)}"
-
-
-def _resolve_backup_file_path(mode: str, filename: str) -> Optional[Path]:
-    storage_dir = _ensure_backup_storage_dir()
-    if storage_dir is None:
-        return None
-
-    raw_name = str(filename or "").strip()
-    safe_name = Path(raw_name).name
-    if not raw_name or safe_name != raw_name:
-        return None
-    if not re.match(r"^[A-Za-z0-9._-]+$", safe_name):
-        return None
-    if not safe_name.endswith(_backup_file_extension(mode)):
-        return None
-
-    candidate = (storage_dir / safe_name).resolve()
-    if candidate.parent != storage_dir.resolve():
-        return None
-    return candidate
-
-
-def _list_backup_files(mode: str) -> list[dict[str, object]]:
-    storage_dir = _ensure_backup_storage_dir()
-    if storage_dir is None:
-        return []
-
-    extension = _backup_file_extension(mode)
-    entries: list[dict[str, object]] = []
-    for path in storage_dir.glob(f"*{extension}"):
-        if not path.is_file():
-            continue
-        try:
-            stat = path.stat()
-        except OSError:
-            continue
-        source = "auto" if "_auto_" in path.name else "manual"
-        entries.append(
-            {
-                "name": path.name,
-                "size_bytes": int(stat.st_size),
-                "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
-                "source": source,
-            }
-        )
-    entries.sort(key=lambda item: item["modified_at"], reverse=True)
-    return entries
+    _save_backup_auto_settings_impl(
+        save_setting_fn=_save_setting_to_db,
+        enabled_key=BACKUP_AUTO_ENABLED_SETTING_KEY,
+        interval_key=BACKUP_AUTO_INTERVAL_HOURS_SETTING_KEY,
+        retention_key=BACKUP_AUTO_RETENTION_DAYS_SETTING_KEY,
+        enabled=enabled,
+        interval_hours=interval_hours,
+        retention_days=retention_days,
+    )
 
 
 def _prune_old_backup_files(mode: str, retention_days: int) -> int:
-    removed = 0
-    cutoff = _utcnow() - timedelta(days=max(BACKUP_MIN_RETENTION_DAYS, int(retention_days)))
-    for item in _list_backup_files(mode):
-        modified_at = item.get("modified_at")
-        if not isinstance(modified_at, datetime):
-            continue
-        if modified_at >= cutoff:
-            continue
-        target = _resolve_backup_file_path(mode, str(item.get("name") or ""))
-        if target is None or not target.exists():
-            continue
-        try:
-            target.unlink(missing_ok=True)
-            removed += 1
-        except OSError:
-            continue
-    return removed
-
-
-def _run_sqlite_backup_to_path(target_path: Path) -> bool:
-    source_path = _sqlite_db_path()
-    if source_path is None or not source_path.exists():
-        return False
-    engine.dispose()
-    with sqlite3.connect(str(source_path)) as source_conn, sqlite3.connect(str(target_path)) as target_conn:
-        source_conn.backup(target_conn)
-    return bool(target_path.exists() and target_path.stat().st_size > 0)
-
-
-def _run_postgres_backup_to_path(target_path: Path) -> bool:
-    if not _pg_tools_available():
-        return False
-    cmd = ["pg_dump", "-Fc", "--no-owner", "--no-privileges", *_postgres_connection_args(), "-f", str(target_path)]
-    result = subprocess.run(cmd, env=_postgres_subprocess_env(), capture_output=True, text=True)
-    return result.returncode == 0 and bool(target_path.exists() and target_path.stat().st_size > 0)
-
-
-def _create_backup_snapshot(mode: str, source: str = "manual") -> tuple[Optional[Path], Optional[str]]:
-    storage_dir = _ensure_backup_storage_dir()
-    if storage_dir is None:
-        return None, "backup_storage_unavailable"
-
-    backup_path = storage_dir / _build_backup_filename(mode, source)
-    success = False
-    try:
-        if mode == "sqlite":
-            success = _run_sqlite_backup_to_path(backup_path)
-        elif mode == "postgresql":
-            success = _run_postgres_backup_to_path(backup_path)
-        else:
-            return None, "backup_unsupported"
-    except Exception:
-        success = False
-
-    if not success:
-        _cleanup_temp_file(backup_path)
-        if mode == "postgresql" and not _pg_tools_available():
-            return None, "backup_pg_tools_missing"
-        return None, "backup_create_failed"
-
-    return backup_path, None
-
-
-def _restore_from_backup_path(mode: str, backup_path: Path) -> bool:
-    if mode == "sqlite":
-        db_path = _sqlite_db_path()
-        if db_path is None or not backup_path.exists():
-            return False
-        engine.dispose()
-        with sqlite3.connect(str(backup_path)) as source_conn, sqlite3.connect(str(db_path)) as target_conn:
-            source_conn.backup(target_conn)
-        return True
-
-    if mode == "postgresql":
-        if not _pg_tools_available():
-            return False
-        engine.dispose()
-        cmd = [
-            "pg_restore",
-            "--clean",
-            "--if-exists",
-            "--no-owner",
-            "--no-privileges",
-            *_postgres_connection_args(),
-            str(backup_path),
-        ]
-        result = subprocess.run(cmd, env=_postgres_subprocess_env(), capture_output=True, text=True)
-        return result.returncode == 0
-
-    return False
+    return _prune_old_backup_files_impl(
+        list_files_fn=_list_backup_files,
+        resolve_file_fn=_resolve_backup_file_path,
+        utcnow_fn=_utcnow,
+        mode=mode,
+        retention_days=retention_days,
+        min_retention_days=BACKUP_MIN_RETENTION_DAYS,
+    )
 
 
 def _acquire_backup_lock_file(storage_dir: Path) -> Optional[Path]:
@@ -2633,765 +1109,20 @@ def _build_backup_context(lang: str, **extra) -> dict:
     backup_files = _list_backup_files(mode) if mode in {"sqlite", "postgresql"} else []
     storage_dir = _ensure_backup_storage_dir()
     storage_dir_display = str(storage_dir) if storage_dir else "-"
-
-    if mode == "sqlite":
-        context = {
-            "backup_supported": True,
-            "backup_notice": None,
-            "backup_accept": ".db",
-            "backup_hint_text": t("backup_hint_sqlite"),
-        }
-    elif mode == "postgresql":
-        context = {
-            "backup_supported": bool(tools_ok),
-            "backup_notice": None if tools_ok else t("backup_pg_tools_missing"),
-            "backup_accept": ".dump,.backup",
-            "backup_hint_text": t("backup_hint_postgres") if tools_ok else t("backup_pg_tools_missing"),
-        }
-    else:
-        context = {
-            "backup_supported": False,
-            "backup_notice": t("backup_unsupported"),
-            "backup_accept": "",
-            "backup_hint_text": t("backup_unsupported"),
-        }
-
-    context.update(extra)
-    context.setdefault("backup_files", backup_files)
-    context.setdefault("backup_storage_dir", storage_dir_display)
-    context.setdefault("backup_auto_enabled", bool(auto_settings.get("enabled")))
-    context.setdefault("backup_auto_interval_hours", int(auto_settings.get("interval_hours") or 24))
-    context.setdefault("backup_auto_retention_days", int(auto_settings.get("retention_days") or 14))
-    context.setdefault("backup_auto_last_run_at", auto_settings.get("last_run_at"))
-    context.setdefault("backup_active_tab", "manual")
-    context.setdefault("backup_reset_confirm_phrase", BACKUP_RESET_CONFIRM_PHRASE)
-    return context
+    return _build_backup_context_impl(
+        translate=t,
+        backup_mode=mode,
+        tools_ok=tools_ok,
+        auto_settings=auto_settings,
+        backup_files=backup_files,
+        storage_dir_display=storage_dir_display,
+        reset_confirm_phrase=BACKUP_RESET_CONFIRM_PHRASE,
+        **extra,
+    )
 
 
 def _delete_all_database_rows() -> int:
-    deleted_rows = 0
-    with engine.begin() as connection:
-        is_sqlite = str(getattr(engine.dialect, "name", "")).lower() == "sqlite"
-        if is_sqlite:
-            connection.execute(text("PRAGMA foreign_keys=OFF"))
-        try:
-            for table in reversed(Base.metadata.sorted_tables):
-                result = connection.execute(table.delete())
-                rowcount = int(result.rowcount or 0)
-                if rowcount > 0:
-                    deleted_rows += rowcount
-        finally:
-            if is_sqlite:
-                connection.execute(text("PRAGMA foreign_keys=ON"))
-    return deleted_rows
-
-
-def _parse_optional_float(value: Optional[str]) -> Optional[float]:
-    if value is None:
-        return None
-    text = str(value).strip()
-    if not text:
-        return None
-    try:
-        return float(text.replace(",", "."))
-    except ValueError:
-        return None
-
-
-def _parse_optional_bool(value: object) -> Optional[bool]:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        if float(value) == 1:
-            return True
-        if float(value) == 0:
-            return False
-        return None
-    normalized = str(value).strip().lower()
-    if not normalized:
-        return None
-    if normalized in {"1", "true", "yes", "on", "active"}:
-        return True
-    if normalized in {"0", "false", "no", "off", "inactive"}:
-        return False
-    return None
-
-
-def _parse_number_list(value: Optional[str]) -> list[float]:
-    if value is None:
-        return []
-    matches = re.findall(r"[-+]?\d+(?:[.,]\d+)?", str(value))
-    numbers: list[float] = []
-    for token in matches:
-        parsed = _parse_optional_float(token)
-        if parsed is not None:
-            numbers.append(float(parsed))
-    return numbers
-
-
-def _split_hint_values(value: Optional[str]) -> list[str]:
-    if value is None:
-        return []
-    parts = re.split(r"[;,|]+", str(value))
-    cleaned: list[str] = []
-    seen = set()
-    for raw in parts:
-        item = raw.strip().strip('"').strip("'").strip()
-        if not item:
-            continue
-        key = item.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        cleaned.append(item)
-    return cleaned
-
-
-def _parse_gcode_filament_usage(file_bytes: bytes):
-    text = file_bytes.decode("utf-8", errors="ignore")
-    metadata: dict[str, str] = {}
-
-    grams_values: list[float] = []
-    mm_values: list[float] = []
-    material_hints: list[str] = []
-    color_hints: list[str] = []
-    brand_hints: list[str] = []
-
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        if not line:
-            continue
-        if line.startswith(";"):
-            line = line[1:].strip()
-        if not line:
-            continue
-
-        match = re.match(r"^([^:=]{1,120})\s*[:=]\s*(.+)$", line)
-        if not match:
-            continue
-
-        raw_key = re.sub(r"\s+", " ", match.group(1).strip().lower())
-        raw_value = match.group(2).strip()
-        if not raw_value:
-            continue
-
-        if "filament used [g]" in raw_key or "filament_used_g" in raw_key or "filament used (g)" in raw_key:
-            values = _parse_number_list(raw_value)
-            if values:
-                grams_values.extend(values)
-                metadata["filament used [g]"] = ";".join(str(v) for v in values)
-            continue
-
-        if "filament used [mm]" in raw_key or "filament_used_mm" in raw_key or "filament used (mm)" in raw_key:
-            values = _parse_number_list(raw_value)
-            if values:
-                mm_values.extend(values)
-                metadata["filament used [mm]"] = ";".join(str(v) for v in values)
-            continue
-
-        if raw_key in {"filament_type", "filament", "material", "filament_settings_id"}:
-            material_hints.extend(_split_hint_values(raw_value))
-            continue
-
-        if raw_key in {"filament_colour", "filament_color", "color", "colour"}:
-            color_hints.extend(_split_hint_values(raw_value))
-            continue
-
-        if raw_key in {"vendor", "filament_vendor", "brand"}:
-            brand_hints.extend(_split_hint_values(raw_value))
-
-    total_grams = round(sum(grams_values), 3) if grams_values else None
-    total_mm = round(sum(mm_values), 3) if mm_values else None
-
-    def _dedupe(values: list[str]) -> list[str]:
-        out: list[str] = []
-        seen = set()
-        for item in values:
-            key = item.lower().strip()
-            if not key:
-                continue
-            if key in seen:
-                continue
-            seen.add(key)
-            out.append(item.strip())
-        return out
-
-    material_hints = _dedupe(material_hints)
-    color_hints = _dedupe(color_hints)
-    brand_hints = _dedupe(brand_hints)
-
-    usage_breakdown: list[dict] = []
-    if grams_values and len(grams_values) > 1:
-        for idx, grams in enumerate(grams_values):
-            material = material_hints[idx] if idx < len(material_hints) else None
-            usage_breakdown.append({"material": material, "grams": round(float(grams), 3)})
-    elif total_grams is not None and material_hints:
-        usage_breakdown = [{"material": material, "grams": None} for material in material_hints]
-
-    filament_hints = {
-        "materials": material_hints,
-        "colors": color_hints,
-        "brands": brand_hints,
-    }
-    return total_grams, total_mm, metadata, filament_hints, usage_breakdown
-
-
-def _parse_usage_from_print_file(filename: Optional[str], file_bytes: bytes):
-    lower_name = str(filename or "").lower()
-    suffixes = [suffix.lower() for suffix in Path(lower_name).suffixes]
-
-    if ".3mf" in suffixes:
-        grams, millimeters, metadata, filament_hints, usage_breakdown = parse_3mf_filament_usage(file_bytes)
-        return grams, millimeters, metadata, filament_hints, usage_breakdown, None
-
-    if any(suffix in {".gcode", ".gco", ".bgcode"} for suffix in suffixes):
-        grams, millimeters, metadata, filament_hints, usage_breakdown = _parse_gcode_filament_usage(file_bytes)
-        return grams, millimeters, metadata, filament_hints, usage_breakdown, None
-
-    if file_bytes.startswith(b"PK"):
-        grams, millimeters, metadata, filament_hints, usage_breakdown = parse_3mf_filament_usage(file_bytes)
-        return grams, millimeters, metadata, filament_hints, usage_breakdown, None
-
-    return None, None, {}, {"materials": [], "colors": [], "brands": []}, [], "unsupported_file"
-
-
-def _matches_any(value: Optional[str], candidates: list[str]) -> bool:
-    if not value or not candidates:
-        return False
-    value_l = value.lower()
-    for candidate in candidates:
-        c = str(candidate).lower()
-        if c and (c in value_l or value_l in c):
-            return True
-    return False
-
-
-def _normalize_printer_name(value: Optional[str]) -> Optional[str]:
-    normalized = str(value or "").strip()
-    return normalized[:120] if normalized else None
-
-
-def _normalize_printer_serial(value: Optional[str]) -> Optional[str]:
-    normalized = str(value or "").strip()
-    return normalized[:120] if normalized else None
-
-
-def _normalize_printer_port(value: Optional[str]) -> int:
-    raw = str(value or "").strip()
-    if not raw:
-        return 8883
-    try:
-        parsed = int(float(raw))
-    except ValueError:
-        return 8883
-    return parsed if 1 <= parsed <= 65535 else 8883
-
-
-def _normalize_printer_status(value: Optional[str]) -> str:
-    normalized = str(value or "").strip().lower()
-    if normalized in {"online", "offline", "unknown"}:
-        return normalized
-    return "unknown"
-
-
-def _format_printer_temperatures(printer: Printer) -> str:
-    values: list[str] = []
-    if printer.telemetry_nozzle_temp is not None:
-        values.append(f"N {round(float(printer.telemetry_nozzle_temp), 1)}°C")
-    if printer.telemetry_bed_temp is not None:
-        values.append(f"B {round(float(printer.telemetry_bed_temp), 1)}°C")
-    if printer.telemetry_chamber_temp is not None:
-        values.append(f"C {round(float(printer.telemetry_chamber_temp), 1)}°C")
-    return " · ".join(values)
-
-
-def _resolve_or_create_printer(
-    db: Session,
-    project: str,
-    printer_name: Optional[str],
-    printer_serial: Optional[str],
-) -> Optional[Printer]:
-    normalized_name = _normalize_printer_name(printer_name)
-    normalized_serial = _normalize_printer_serial(printer_serial)
-
-    printer = None
-    if normalized_serial:
-        printer = (
-            db.query(Printer)
-            .filter(Printer.project == project, Printer.serial == normalized_serial)
-            .first()
-        )
-
-    if printer is None and normalized_name:
-        printer = (
-            db.query(Printer)
-            .filter(Printer.project == project, Printer.name == normalized_name)
-            .first()
-        )
-
-    if printer is None:
-        if not normalized_name and not normalized_serial:
-            return None
-        fallback_name = normalized_name or normalized_serial
-        fallback_serial = normalized_serial or normalized_name
-        if not fallback_name or not fallback_serial:
-            return None
-        printer = Printer(
-            project=project,
-            name=fallback_name,
-            serial=fallback_serial,
-            status="unknown",
-            is_active=True,
-        )
-        db.add(printer)
-        db.flush()
-    else:
-        if normalized_name and printer.name != normalized_name:
-            printer.name = normalized_name
-        if normalized_serial and printer.serial != normalized_serial:
-            printer.serial = normalized_serial
-
-    return printer
-
-
-def _normalize_ams_slot(value: Optional[str]) -> Optional[int]:
-    if value is None:
-        return None
-    raw = str(value).strip()
-    if not raw:
-        return None
-    try:
-        parsed = int(float(raw))
-    except ValueError:
-        return None
-    return parsed if parsed > 0 else None
-
-
-def _normalize_ams_raw_id(value: object) -> Optional[int]:
-    if value is None:
-        return None
-    raw = str(value).strip()
-    if not raw:
-        return None
-    try:
-        return int(float(raw))
-    except ValueError:
-        return None
-
-
-def _first_present_value(*values: object) -> object:
-    for value in values:
-        if value is None:
-            continue
-        if isinstance(value, str) and not value.strip():
-            continue
-        return value
-    return None
-
-
-_AMS_RAW_ID_TO_UNIT = {
-    0: 1,
-    128: 2,
-    129: 3,
-    130: 4,
-}
-
-
-def _resolve_ams_unit(raw_ams_id: Optional[int], fallback_unit: Optional[int] = None) -> Optional[int]:
-    if raw_ams_id is not None:
-        if raw_ams_id in _AMS_RAW_ID_TO_UNIT:
-            return _AMS_RAW_ID_TO_UNIT[raw_ams_id]
-        if 1 <= raw_ams_id <= 26:
-            return raw_ams_id
-    if fallback_unit is not None and fallback_unit > 0:
-        return fallback_unit
-    return None
-
-
-def _compose_ams_global_slot(ams_unit: Optional[int], slot_local: Optional[int]) -> Optional[int]:
-    if slot_local is None:
-        return None
-    if ams_unit is None or ams_unit <= 0:
-        ams_unit = 1
-    return (ams_unit * 100) + slot_local
-
-
-def _infer_ams_slot_parts(global_slot: Optional[int]) -> tuple[Optional[int], Optional[int]]:
-    if global_slot is None or global_slot <= 0:
-        return None, None
-    if global_slot >= 100:
-        ams_unit = global_slot // 100
-        slot_local = global_slot % 100
-        if ams_unit > 0 and slot_local > 0:
-            return ams_unit, slot_local
-    return 1, global_slot
-
-
-def _normalize_ams_slot_canonical(value: Optional[str]) -> Optional[int]:
-    parsed = _normalize_ams_slot(value)
-    if parsed is None:
-        return None
-    ams_unit, slot_local = _infer_ams_slot_parts(parsed)
-    return _compose_ams_global_slot(ams_unit, slot_local)
-
-
-def _equivalent_ams_slots(slot: int) -> set[int]:
-    if slot <= 0:
-        return set()
-    candidates: set[int] = {slot}
-    inferred_unit, inferred_local = _infer_ams_slot_parts(slot)
-    canonical = _compose_ams_global_slot(inferred_unit, inferred_local)
-    if canonical is not None:
-        candidates.add(canonical)
-    if inferred_unit == 1 and inferred_local is not None:
-        candidates.add(inferred_local)
-    if slot < 100:
-        candidates.add(100 + slot)
-    return {value for value in candidates if value > 0}
-
-
-_AMS_ID_NAME_FALLBACK = {
-    0: "HT-A",
-    128: "HT-B",
-    129: "HT-C",
-    130: "HT-D",
-}
-
-
-def _fallback_ams_label(ams_unit: Optional[int], raw_ams_id: Optional[int] = None) -> str:
-    if raw_ams_id is not None and raw_ams_id in _AMS_ID_NAME_FALLBACK:
-        return _AMS_ID_NAME_FALLBACK[raw_ams_id]
-    if ams_unit is not None and ams_unit > 0 and ams_unit <= 26:
-        return f"HT-{chr(ord('A') + ams_unit - 1)}"
-    if ams_unit is not None and ams_unit > 0:
-        return f"AMS {ams_unit}"
-    return "AMS"
-
-
-def _parse_ams_name_mapping(value: Optional[str]) -> dict[int, str]:
-    normalized = str(value or "").strip()
-    if not normalized:
-        return {}
-
-    mapping: dict[int, str] = {}
-    parts = re.split(r"[\n,;]+", normalized)
-    for part in parts:
-        entry = str(part or "").strip()
-        if not entry:
-            continue
-
-        if "=" in entry:
-            key_text, label_text = entry.split("=", 1)
-        elif ":" in entry:
-            key_text, label_text = entry.split(":", 1)
-        else:
-            continue
-
-        key_raw = str(key_text or "").strip().upper()
-        label = str(label_text or "").strip()[:120]
-        if not key_raw or not label:
-            continue
-
-        key_value: Optional[int] = None
-        if key_raw.isdigit():
-            key_value = int(key_raw)
-        elif re.fullmatch(r"HT-[A-Z]", key_raw):
-            key_value = ord(key_raw[-1]) - ord("A") + 1
-        elif re.fullmatch(r"[A-Z]", key_raw):
-            key_value = ord(key_raw) - ord("A") + 1
-
-        if key_value is None or key_value <= 0:
-            continue
-        mapping[key_value] = label
-
-    return mapping
-
-
-def _serialize_ams_name_mapping(mapping: dict[int, str]) -> Optional[str]:
-    if not mapping:
-        return None
-    parts: list[str] = []
-    for unit in sorted(mapping.keys()):
-        label = str(mapping.get(unit) or "").strip()[:120]
-        if not label:
-            continue
-        parts.append(f"{unit}={label}")
-    if not parts:
-        return None
-    return ",".join(parts)
-
-
-def _resolve_ams_label(ams_name: Optional[str], ams_unit: Optional[int], custom_mapping: Optional[dict[int, str]] = None) -> str:
-    if custom_mapping and ams_unit is not None and ams_unit in custom_mapping:
-        return str(custom_mapping[ams_unit]).strip() or _fallback_ams_label(ams_unit)
-
-    normalized = str(ams_name or "").strip()
-    if normalized:
-        matched_id = re.fullmatch(r"AMS[-\s]*ID[-\s]*(\d+)", normalized, flags=re.IGNORECASE)
-        if matched_id:
-            return _fallback_ams_label(ams_unit, int(matched_id.group(1)))
-        if re.fullmatch(r"\d+", normalized):
-            return _fallback_ams_label(ams_unit, int(normalized))
-        return normalized
-    return _fallback_ams_label(ams_unit)
-
-
-def _humanize_observed_color(value: Optional[str]) -> Optional[str]:
-    raw = str(value or "").strip()
-    if not raw:
-        return None
-
-    normalized = raw.upper().lstrip("#")
-    if len(normalized) == 8:
-        normalized = normalized[:6]
-    if len(normalized) != 6 or not re.fullmatch(r"[0-9A-F]{6}", normalized):
-        return raw
-
-    r = int(normalized[0:2], 16)
-    g = int(normalized[2:4], 16)
-    b = int(normalized[4:6], 16)
-
-    if max(r, g, b) - min(r, g, b) <= 12:
-        if r <= 40:
-            return "Black"
-        if r >= 220:
-            return "White"
-        return "Gray"
-
-    if r >= g + 40 and r >= b + 40:
-        return "Red"
-    if g >= r + 40 and g >= b + 40:
-        return "Green"
-    if b >= r + 40 and b >= g + 40:
-        return "Blue"
-    return f"Color #{normalized}"
-
-
-def _slot_scoped_spools(spools: list[Spool], slot: int, printer_name: Optional[str]) -> list[Spool]:
-    normalized_printer = _normalize_printer_name(printer_name)
-    slot_candidates = _equivalent_ams_slots(slot)
-    if normalized_printer:
-        exact = [
-            spool for spool in spools
-            if int(spool.ams_slot or 0) in slot_candidates and (spool.ams_printer or "").strip() == normalized_printer
-        ]
-        if exact:
-            return exact
-        fallback_global = [
-            spool for spool in spools
-            if int(spool.ams_slot or 0) in slot_candidates and not str(spool.ams_printer or "").strip()
-        ]
-        if fallback_global:
-            return fallback_global
-        return []
-
-    return [spool for spool in spools if int(spool.ams_slot or 0) in slot_candidates]
-
-
-def _find_ams_slot_conflict(
-    db: Session,
-    project: str,
-    ams_printer: Optional[str],
-    ams_slot: Optional[int],
-    exclude_spool_id: Optional[int] = None,
-) -> Optional[Spool]:
-    if ams_slot is None:
-        return None
-
-    query = db.query(Spool).filter(Spool.project == project, Spool.ams_slot == ams_slot)
-    normalized_printer = _normalize_printer_name(ams_printer)
-    if normalized_printer:
-        query = query.filter(Spool.ams_printer == normalized_printer)
-    else:
-        query = query.filter(or_(Spool.ams_printer.is_(None), Spool.ams_printer == ""))
-
-    if exclude_spool_id is not None:
-        query = query.filter(Spool.id != exclude_spool_id)
-
-    return query.order_by(Spool.id.asc()).first()
-
-
-def _parse_slot_tokens(raw: Optional[str]) -> list[int]:
-    if raw is None:
-        return []
-
-    values: list[int] = []
-    for token in re.split(r"[\s,;]+", str(raw).strip()):
-        if not token:
-            continue
-        try:
-            value = int(float(token))
-        except ValueError:
-            continue
-        if value <= 0:
-            continue
-        values.append(value)
-
-    seen: set[int] = set()
-    unique_sorted: list[int] = []
-    for value in sorted(values):
-        if value in seen:
-            continue
-        seen.add(value)
-        unique_sorted.append(value)
-    return unique_sorted
-
-
-def _resolve_ams_slots(raw: Optional[str], usage_breakdown: list[dict]) -> list[int]:
-    from_payload = _parse_slot_tokens(raw)
-    if from_payload:
-        return from_payload
-
-    detected: list[int] = []
-    for item in usage_breakdown or []:
-        slot = item.get("slot")
-        if slot is None:
-            continue
-        try:
-            value = int(float(slot))
-        except (TypeError, ValueError):
-            continue
-        if value > 0:
-            detected.append(value)
-
-    seen: set[int] = set()
-    unique_sorted: list[int] = []
-    for value in sorted(detected):
-        if value in seen:
-            continue
-        seen.add(value)
-        unique_sorted.append(value)
-    return unique_sorted
-
-
-def _serialize_ams_slots(slots: list[int]) -> Optional[str]:
-    if not slots:
-        return None
-    return ",".join(str(slot) for slot in slots)
-
-
-def _request_actor(request: Optional[Request]) -> Optional[str]:
-    if request is None or request.client is None:
-        return None
-    host = str(request.client.host or "").strip()
-    return host or None
-
-
-def _to_json_text(payload: object) -> Optional[str]:
-    if payload is None:
-        return None
-    try:
-        return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    except Exception:
-        return None
-
-
-def _audit_log(
-    db: Session,
-    project: str,
-    action: str,
-    *,
-    request: Optional[Request] = None,
-    actor: Optional[str] = None,
-    entity_type: Optional[str] = None,
-    entity_id: Optional[object] = None,
-    details: Optional[dict] = None,
-) -> None:
-    resolved_actor = actor or _request_actor(request)
-    db.add(
-        AuditLog(
-            project=project,
-            actor=(str(resolved_actor).strip()[:120] if resolved_actor else None),
-            action=str(action or "").strip()[:80] or "unknown",
-            entity_type=(str(entity_type).strip()[:80] if entity_type else None),
-            entity_id=(str(entity_id).strip()[:120] if entity_id is not None else None),
-            details_json=_to_json_text(details),
-        )
-    )
-
-
-def _normalize_col_name(raw: object) -> str:
-    return str(raw or "").strip().lower().replace(" ", "_")
-
-
-def _default_import_alias_map() -> dict[str, str]:
-    return {
-        "brand": "brand",
-        "marke": "brand",
-        "material": "material",
-        "color": "color",
-        "farbe": "color",
-        "weight_g": "weight_g",
-        "gewicht": "weight_g",
-        "remaining_g": "remaining_g",
-        "restmenge": "remaining_g",
-        "low_stock_threshold_g": "low_stock_threshold_g",
-        "niedrigbestand_schwelle_g": "low_stock_threshold_g",
-        "price": "price",
-        "preis": "price",
-        "location": "location",
-        "lagerort": "location",
-    }
-
-
-def _load_import_mapping_profile(db: Session, project: str, profile_name: Optional[str]) -> Optional[dict[str, str]]:
-    key = str(profile_name or "").strip()
-    if not key:
-        return None
-    profile = (
-        db.query(ImportMappingProfile)
-        .filter(ImportMappingProfile.project == project, ImportMappingProfile.name == key)
-        .first()
-    )
-    if profile is None:
-        return None
-    try:
-        payload = json.loads(profile.mapping_json or "{}")
-    except Exception:
-        return None
-    if not isinstance(payload, dict):
-        return None
-    normalized: dict[str, str] = {}
-    for source, target in payload.items():
-        src = _normalize_col_name(source)
-        dst = str(target or "").strip()
-        if src and dst:
-            normalized[src] = dst
-    return normalized or None
-
-
-def _save_import_mapping_profile(db: Session, project: str, profile_name: str, mapping: dict[str, str]) -> None:
-    key = str(profile_name or "").strip()
-    if not key:
-        return
-    normalized: dict[str, str] = {}
-    for source, target in (mapping or {}).items():
-        src = _normalize_col_name(source)
-        dst = str(target or "").strip()
-        if src and dst:
-            normalized[src] = dst
-    if not normalized:
-        return
-
-    profile = (
-        db.query(ImportMappingProfile)
-        .filter(ImportMappingProfile.project == project, ImportMappingProfile.name == key)
-        .first()
-    )
-    payload = _to_json_text(normalized) or "{}"
-    if profile is None:
-        db.add(
-            ImportMappingProfile(
-                project=project,
-                name=key[:120],
-                mapping_json=payload,
-            )
-        )
-        return
-    profile.mapping_json = payload
-    profile.updated_at = _utcnow()
+    return _delete_all_database_rows_impl(engine, Base.metadata.sorted_tables)
 
 
 def _compute_inventory_days_left(
@@ -3692,213 +1423,19 @@ def _build_slot_status_rows(
     live_states: list[DeviceSlotState],
     printer_ams_name_maps: Optional[dict[str, dict[int, str]]] = None,
 ) -> tuple[list[dict], dict[str, int]]:
-    printer_has_ams_signal: dict[str, bool] = {}
-    for state in live_states:
-        printer_key = str(state.printer_name or state.printer_serial or "").strip()
-        if not printer_key:
-            continue
-        slot_value = int(state.slot or 0)
-        has_signal = (
-            int(state.ams_unit or 0) > 0
-            or int(state.slot_local or 0) > 0
-            or slot_value >= 100
-        )
-        if has_signal:
-            printer_has_ams_signal[printer_key] = True
-
-    def _canonical_slot_for_status(
-        printer_name: str,
-        slot: int,
-        ams_unit: Optional[int] = None,
-        slot_local: Optional[int] = None,
-    ) -> int:
-        if slot <= 0:
-            return slot
-        should_canonicalize = bool(printer_has_ams_signal.get(printer_name))
-        if not should_canonicalize and slot >= 100:
-            should_canonicalize = True
-        if not should_canonicalize:
-            return slot
-
-        normalized_unit = int(ams_unit or 0) or None
-        normalized_local = int(slot_local or 0) or None
-        inferred_unit, inferred_local = _infer_ams_slot_parts(slot)
-        if normalized_unit is None:
-            normalized_unit = inferred_unit
-        if normalized_local is None:
-            normalized_local = inferred_local
-        canonical = _compose_ams_global_slot(normalized_unit, normalized_local)
-        return int(canonical or slot)
-
-    state_map: dict[tuple[str, int], DeviceSlotState] = {}
-    for state in live_states:
-        printer_key = str(state.printer_name or state.printer_serial or "").strip()
-        slot_value = int(state.slot or 0)
-        canonical_slot = _canonical_slot_for_status(
-            printer_key,
-            slot_value,
-            int(state.ams_unit or 0) or None,
-            int(state.slot_local or 0) or None,
-        )
-        key = (printer_key, canonical_slot)
-        if not key[0] or key[1] <= 0:
-            continue
-        current = state_map.get(key)
-        if current is None:
-            state_map[key] = state
-            continue
-        current_seen = current.observed_at
-        next_seen = state.observed_at
-        if current_seen is None and next_seen is not None:
-            state_map[key] = state
-            continue
-        if current_seen is not None and next_seen is not None and next_seen > current_seen:
-            state_map[key] = state
-
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    stale_seconds = SLOT_STATE_STALE_MINUTES * 60
-    rows: list[dict] = []
-    summary = {
-        "ok": 0,
-        "mismatch": 0,
-        "missing": 0,
-        "stale": 0,
-        "unknown": 0,
-    }
-
-    def _same_text(a: Optional[str], b: Optional[str]) -> bool:
-        return str(a or "").strip().lower() == str(b or "").strip().lower()
-
-    normalized_maps: dict[str, dict[int, str]] = {}
-    for printer_key, mapping in (printer_ams_name_maps or {}).items():
-        normalized_printer = _normalize_printer_name(printer_key)
-        if not normalized_printer or not isinstance(mapping, dict):
-            continue
-        normalized_maps[normalized_printer] = mapping
-
-    def _resolve_ams_label_for_printer(printer_name: Optional[str], ams_unit: Optional[int], ams_name: Optional[str]) -> str:
-        normalized_printer = _normalize_printer_name(printer_name)
-        custom_mapping = normalized_maps.get(normalized_printer) if normalized_printer else None
-        return _resolve_ams_label(ams_name, ams_unit, custom_mapping)
-
-    def _format_ams_descriptor(
-        printer_name: Optional[str],
-        ams_unit: Optional[int],
-        slot_local: Optional[int],
-        ams_name: Optional[str] = None,
-    ) -> str:
-        label = _resolve_ams_label_for_printer(printer_name, ams_unit, ams_name)
-        if slot_local is not None and slot_local > 0:
-            return f"{label} · S{int(slot_local)}"
-        return label
-
-    expected_map: dict[tuple[str, int], Spool] = {}
-    ordered_spools = sorted(
-        mapped_spools,
-        key=lambda spool: ((spool.ams_printer or "").strip().lower(), int(spool.ams_slot or 0), int(spool.id or 0)),
+    return _build_slot_status_rows_impl(
+        mapped_spools=mapped_spools,
+        live_states=live_states,
+        stale_minutes=SLOT_STATE_STALE_MINUTES,
+        printer_ams_name_maps=printer_ams_name_maps,
     )
-    for spool in ordered_spools:
-        printer = str(spool.ams_printer or "").strip()
-        slot = _canonical_slot_for_status(printer, int(spool.ams_slot or 0))
-        if not printer or slot <= 0:
-            continue
-        expected_map.setdefault((printer, slot), spool)
-
-    all_keys = set(expected_map.keys()) | set(state_map.keys())
-    ordered_keys = sorted(all_keys, key=lambda item: (str(item[0]).lower(), int(item[1])))
-
-    for printer, slot in ordered_keys:
-        spool = expected_map.get((printer, slot))
-        state = state_map.get((printer, slot))
-        state_label = "unknown"
-
-        if spool is not None and state is None:
-            state_label = "missing"
-        elif state is not None:
-            observed_at = state.observed_at
-            is_stale = False
-            if observed_at is not None:
-                age_seconds = (now - observed_at).total_seconds()
-                is_stale = age_seconds > stale_seconds
-
-            if is_stale:
-                state_label = "stale"
-            else:
-                observed_material = str(state.observed_material or "").strip()
-                observed_color = str(state.observed_color or "").strip()
-                observed_brand = str(state.observed_brand or "").strip()
-                if not observed_material and not observed_color and not observed_brand:
-                    state_label = "unknown"
-                elif spool is None:
-                    state_label = "unknown"
-                else:
-                    matches = _same_text(spool.material, state.observed_material) and _same_text(spool.color, state.observed_color)
-                    state_label = "ok" if matches else "mismatch"
-
-        summary[state_label] += 1
-        expected_ams = "-"
-        if spool is not None:
-            expected_unit, expected_local = _infer_ams_slot_parts(int(spool.ams_slot or 0))
-            expected_ams = _format_ams_descriptor(printer, expected_unit, expected_local)
-
-        observed_ams = "-"
-        if state is not None:
-            observed_unit = int(state.ams_unit or 0) or None
-            observed_local = int(state.slot_local or 0) or None
-            if observed_unit is None or observed_local is None:
-                inferred_unit, inferred_local = _infer_ams_slot_parts(int(state.slot or 0))
-                observed_unit = observed_unit or inferred_unit
-                observed_local = observed_local or inferred_local
-            observed_ams = _format_ams_descriptor(
-                printer,
-                observed_unit,
-                observed_local,
-                str(state.ams_name or "").strip() or None,
-            )
-
-        rows.append(
-            {
-                "printer": printer,
-                "slot": slot,
-                "expected_ams": expected_ams,
-                "observed_ams": observed_ams,
-                "spool": spool,
-                "observed_brand": state.observed_brand if state else None,
-                "observed_material": state.observed_material if state else None,
-                "observed_color": state.observed_color if state else None,
-                "source": state.source if state else None,
-                "observed_at": state.observed_at if state else None,
-                "state": state_label,
-            }
-        )
-
-    return rows, summary
 
 
 def _summarize_slot_data_freshness(observed_times: list[Optional[datetime]]) -> dict[str, object]:
-    valid_times = [timestamp for timestamp in observed_times if isinstance(timestamp, datetime)]
-    if not valid_times:
-        return {
-            "has_data": False,
-            "status": "no_data",
-            "is_stale": True,
-            "last_seen_at": None,
-            "age_seconds": None,
-        }
-
-    latest_seen = max(valid_times)
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    age_seconds = max(0, int((now - latest_seen).total_seconds()))
-    stale_seconds = int(SLOT_STATE_STALE_MINUTES * 60)
-    is_stale = age_seconds > stale_seconds
-
-    return {
-        "has_data": True,
-        "status": "stale" if is_stale else "fresh",
-        "is_stale": is_stale,
-        "last_seen_at": latest_seen,
-        "age_seconds": age_seconds,
-    }
+    return _summarize_slot_data_freshness_impl(
+        observed_times=observed_times,
+        stale_minutes=SLOT_STATE_STALE_MINUTES,
+    )
 
 
 def _normalize_signature_text(value: Optional[str]) -> str:
@@ -3906,348 +1443,25 @@ def _normalize_signature_text(value: Optional[str]) -> str:
 
 
 def _build_slot_remap_plan(mapped_spools: list[Spool], live_states: list[DeviceSlotState]) -> list[tuple[Spool, int]]:
-    spools_by_printer: dict[str, list[Spool]] = {}
-    for spool in mapped_spools:
-        printer = _normalize_printer_name(spool.ams_printer)
-        slot = int(spool.ams_slot or 0)
-        if not printer or slot <= 0:
-            continue
-        spools_by_printer.setdefault(printer, []).append(spool)
-
-    states_by_printer: dict[str, list[DeviceSlotState]] = {}
-    for state in live_states:
-        printer = _normalize_printer_name(state.printer_name or state.printer_serial)
-        slot = int(state.slot or 0)
-        if not printer or slot <= 0:
-            continue
-        states_by_printer.setdefault(printer, []).append(state)
-
-    plan: list[tuple[Spool, int]] = []
-    for printer, printer_spools in spools_by_printer.items():
-        printer_states = states_by_printer.get(printer, [])
-        if not printer_states:
-            continue
-
-        spool_sig_counts: dict[tuple[str, str], int] = {}
-        state_sig_counts: dict[tuple[str, str], int] = {}
-        state_sig_to_slot: dict[tuple[str, str], int] = {}
-
-        for spool in printer_spools:
-            sig = (_normalize_signature_text(spool.material), _normalize_signature_text(spool.color))
-            if not sig[0] or not sig[1]:
-                continue
-            spool_sig_counts[sig] = int(spool_sig_counts.get(sig, 0)) + 1
-
-        for state in printer_states:
-            sig = (_normalize_signature_text(state.observed_material), _normalize_signature_text(state.observed_color))
-            if not sig[0] or not sig[1]:
-                continue
-            state_sig_counts[sig] = int(state_sig_counts.get(sig, 0)) + 1
-            state_sig_to_slot[sig] = int(state.slot or 0)
-
-        for spool in printer_spools:
-            current_slot = int(spool.ams_slot or 0)
-            sig = (_normalize_signature_text(spool.material), _normalize_signature_text(spool.color))
-            if not sig[0] or not sig[1]:
-                continue
-            if int(spool_sig_counts.get(sig, 0)) != 1:
-                continue
-            if int(state_sig_counts.get(sig, 0)) != 1:
-                continue
-
-            target_slot = int(state_sig_to_slot.get(sig, 0) or 0)
-            if target_slot <= 0 or target_slot == current_slot:
-                continue
-            plan.append((spool, target_slot))
-
-    return plan
+    return _build_slot_remap_plan_impl(mapped_spools, live_states)
 
 
 def _migrate_slot_format_to_canonical(db: Session, project: str) -> dict[str, int]:
-    result = {
-        "spools": 0,
-        "states": 0,
-        "contexts": 0,
-        "skipped": 0,
-    }
-
-    spool_rows = (
-        db.query(Spool)
-        .filter(Spool.project == project, Spool.ams_slot.is_not(None), Spool.ams_slot > 0)
-        .all()
-    )
-    for spool in spool_rows:
-        old_slot = int(spool.ams_slot or 0)
-        ams_unit, slot_local = _infer_ams_slot_parts(old_slot)
-        new_slot = _compose_ams_global_slot(ams_unit, slot_local)
-        if new_slot is None or new_slot == old_slot:
-            continue
-        conflict = (
-            db.query(Spool)
-            .filter(
-                Spool.project == project,
-                Spool.id != spool.id,
-                Spool.ams_printer == spool.ams_printer,
-                Spool.ams_slot == new_slot,
-            )
-            .first()
-        )
-        if conflict is not None:
-            result["skipped"] += 1
-            continue
-        spool.ams_slot = int(new_slot)
-        result["spools"] += 1
-
-    state_rows = (
-        db.query(DeviceSlotState)
-        .filter(DeviceSlotState.project == project, DeviceSlotState.slot.is_not(None), DeviceSlotState.slot > 0)
-        .all()
-    )
-    for state in state_rows:
-        old_slot = int(state.slot or 0)
-        ams_unit = int(state.ams_unit or 0) or None
-        slot_local = int(state.slot_local or 0) or None
-        if ams_unit is None and old_slot < 100:
-            continue
-        if slot_local is None:
-            _, inferred_local = _infer_ams_slot_parts(old_slot)
-            slot_local = inferred_local
-        if ams_unit is None:
-            inferred_unit, _ = _infer_ams_slot_parts(old_slot)
-            ams_unit = inferred_unit
-        new_slot = _compose_ams_global_slot(ams_unit, slot_local)
-        if new_slot is None or new_slot == old_slot:
-            continue
-        conflict = (
-            db.query(DeviceSlotState)
-            .filter(
-                DeviceSlotState.project == project,
-                DeviceSlotState.id != state.id,
-                DeviceSlotState.printer_name == state.printer_name,
-                DeviceSlotState.slot == new_slot,
-            )
-            .first()
-        )
-        if conflict is not None:
-            result["skipped"] += 1
-            continue
-        state.slot = int(new_slot)
-        if state.slot_local is None and slot_local is not None:
-            state.slot_local = int(slot_local)
-        if state.ams_unit is None and ams_unit is not None:
-            state.ams_unit = int(ams_unit)
-        result["states"] += 1
-
-    context_rows = (
-        db.query(UsageBatchContext)
-        .filter(UsageBatchContext.project == project, UsageBatchContext.ams_slots.is_not(None), UsageBatchContext.ams_slots != "")
-        .all()
-    )
-    for context in context_rows:
-        old_slots = _parse_slot_tokens(context.ams_slots)
-        if not old_slots:
-            continue
-        new_slots: list[int] = []
-        changed = False
-        for slot in old_slots:
-            ams_unit, slot_local = _infer_ams_slot_parts(slot)
-            canonical = _compose_ams_global_slot(ams_unit, slot_local)
-            if canonical is None:
-                continue
-            new_slots.append(int(canonical))
-            if int(canonical) != int(slot):
-                changed = True
-        if not changed:
-            continue
-        context.ams_slots = _serialize_ams_slots(new_slots)
-        result["contexts"] += 1
-
-    return result
+    return _migrate_slot_format_to_canonical_impl(db, project)
 
 
 def _extract_slot_state_entries(payload: object) -> list[dict]:
-    if payload is None:
-        return []
-
-    blocks: list[object]
-    if isinstance(payload, dict) and isinstance(payload.get("printers"), list):
-        blocks = payload.get("printers", [])
-    elif isinstance(payload, list):
-        blocks = payload
-    elif isinstance(payload, dict):
-        blocks = [payload]
-    else:
-        return []
-
-    entries: list[dict] = []
-    for block in blocks:
-        if not isinstance(block, dict):
-            continue
-
-        printer_name = _normalize_printer_name(block.get("printer") or block.get("printer_name"))
-        printer_serial = _normalize_printer_serial(block.get("serial") or block.get("printer_serial"))
-        slots_raw = block.get("slots")
-        if not isinstance(slots_raw, list):
-            slots_raw = []
-        if not printer_name and not printer_serial:
-            continue
-
-        telemetry = block.get("telemetry") if isinstance(block.get("telemetry"), dict) else {}
-        telemetry_data = {
-            "status": _normalize_printer_status(telemetry.get("status") or block.get("status")),
-            "job_name": str(telemetry.get("job_name") or telemetry.get("job") or "").strip()[:255] or None,
-            "job_status": str(telemetry.get("job_status") or telemetry.get("state") or "").strip()[:80] or None,
-            "progress": _parse_optional_float(str(telemetry.get("progress") or "").strip() or None),
-            "nozzle_temp": _parse_optional_float(str(telemetry.get("nozzle_temp") or "").strip() or None),
-            "bed_temp": _parse_optional_float(str(telemetry.get("bed_temp") or "").strip() or None),
-            "chamber_temp": _parse_optional_float(str(telemetry.get("chamber_temp") or "").strip() or None),
-            "firmware": str(telemetry.get("firmware") or "").strip()[:120] or None,
-            "error": str(telemetry.get("error") or telemetry.get("error_message") or "").strip()[:255] or None,
-            "external_spool_active": _parse_optional_bool(
-                telemetry.get("external_spool_active")
-                if telemetry.get("external_spool_active") is not None
-                else telemetry.get("external_active_spool")
-            ),
-        }
-
-        if not slots_raw:
-            entries.append(
-                {
-                    "printer_name": printer_name,
-                    "printer_serial": printer_serial,
-                    "slot": None,
-                    "observed_brand": None,
-                    "observed_material": None,
-                    "observed_color": None,
-                    "telemetry": telemetry_data,
-                }
-            )
-            continue
-
-        for row in slots_raw:
-            if not isinstance(row, dict):
-                continue
-
-            slot = _normalize_ams_slot(row.get("slot") or row.get("slot_id"))
-            slot_local = _normalize_ams_slot(_first_present_value(row.get("slot_local"), row.get("ams_slot")))
-            raw_ams_id = _normalize_ams_raw_id(
-                _first_present_value(row.get("ams_id"), row.get("ams_unit"), row.get("ams_index"))
-            )
-            ams_unit = _resolve_ams_unit(raw_ams_id)
-            if ams_unit is None:
-                ams_unit = _normalize_ams_slot(_first_present_value(row.get("ams_unit"), row.get("ams_index")))
-            ams_name = str(row.get("ams_name") or row.get("ams_label") or "").strip()[:120] or None
-
-            if slot_local is None:
-                slot_local = slot
-            if slot is None:
-                slot = _compose_ams_global_slot(ams_unit, slot_local)
-            if slot is None:
-                continue
-
-            if ams_unit is None or slot_local is None:
-                inferred_ams_unit, inferred_slot_local = _infer_ams_slot_parts(slot)
-                if ams_unit is None:
-                    ams_unit = inferred_ams_unit
-                if slot_local is None:
-                    slot_local = inferred_slot_local
-
-            if ams_unit is not None and slot_local is not None:
-                canonical_slot = _compose_ams_global_slot(ams_unit, slot_local)
-                if canonical_slot is not None:
-                    slot = canonical_slot
-
-            ams_name = _resolve_ams_label(ams_name, ams_unit)
-
-            entries.append(
-                {
-                    "printer_name": printer_name,
-                    "printer_serial": printer_serial,
-                    "slot": slot,
-                    "slot_local": slot_local,
-                    "ams_unit": ams_unit,
-                    "ams_name": ams_name,
-                    "observed_brand": str(row.get("brand") or "").strip()[:120] or None,
-                    "observed_material": str(row.get("material") or "").strip()[:80] or None,
-                    "observed_color": str(row.get("color") or "").strip()[:80] or None,
-                    "telemetry": telemetry_data,
-                }
-            )
-
-    return entries
+    return _extract_slot_state_entries_impl(payload)
 
 
 def _upsert_slot_state_entries(db: Session, project: str, source: str, entries: list[dict]) -> int:
-    if not entries:
-        return 0
-
-    now = _utcnow().replace(tzinfo=None)
-    updated = 0
-
-    for entry in entries:
-        printer = _resolve_or_create_printer(
-            db=db,
-            project=project,
-            printer_name=entry.get("printer_name"),
-            printer_serial=entry.get("printer_serial"),
-        )
-        resolved_printer_name = _normalize_printer_name(entry.get("printer_name")) or (printer.name if printer else None)
-        resolved_printer_serial = _normalize_printer_serial(entry.get("printer_serial")) or (printer.serial if printer else None)
-        if not resolved_printer_name:
-            continue
-
-        state_filters = [
-            DeviceSlotState.project == project,
-            DeviceSlotState.printer_name == resolved_printer_name,
-            DeviceSlotState.slot == entry["slot"],
-        ]
-        slot_value = entry.get("slot")
-        if slot_value is not None:
-            state = (
-                db.query(DeviceSlotState)
-                .filter(*state_filters)
-                .first()
-            )
-            if state is None:
-                state = DeviceSlotState(
-                    project=project,
-                    printer_name=resolved_printer_name,
-                    slot=entry["slot"],
-                )
-                db.add(state)
-
-            state.printer_name = resolved_printer_name
-            state.printer_serial = resolved_printer_serial
-            state.ams_unit = entry.get("ams_unit")
-            state.slot_local = entry.get("slot_local")
-            state.ams_name = entry.get("ams_name")
-            state.observed_brand = entry.get("observed_brand")
-            state.observed_material = entry.get("observed_material")
-            state.observed_color = entry.get("observed_color")
-            state.source = source
-            state.observed_at = now
-            state.updated_at = now
-
-        if printer is not None:
-            telemetry = entry.get("telemetry") if isinstance(entry.get("telemetry"), dict) else {}
-            printer.last_seen_at = now
-            printer.last_source = source
-            printer.status = _normalize_printer_status(telemetry.get("status"))
-            printer.telemetry_job_name = telemetry.get("job_name")
-            printer.telemetry_job_status = telemetry.get("job_status")
-            printer.telemetry_progress = telemetry.get("progress")
-            printer.telemetry_nozzle_temp = telemetry.get("nozzle_temp")
-            printer.telemetry_bed_temp = telemetry.get("bed_temp")
-            printer.telemetry_chamber_temp = telemetry.get("chamber_temp")
-            printer.telemetry_firmware = telemetry.get("firmware")
-            printer.telemetry_error = telemetry.get("error")
-            external_spool_active = _parse_optional_bool(telemetry.get("external_spool_active"))
-            if external_spool_active is not None:
-                printer.telemetry_external_spool_active = external_spool_active
-            printer.updated_at = now
-        updated += 1
-
-    return updated
+    return _upsert_slot_state_entries_impl(
+        db=db,
+        project=project,
+        source=source,
+        entries=entries,
+        utcnow_fn=_utcnow,
+    )
 
 
 def render(request: Request, template: str, context: dict, lang: str):
@@ -4817,184 +2031,6 @@ def _render_dashboard(
     )
 
 
-def _bounded_int(value: Optional[int], default: int, minimum: int, maximum: int) -> int:
-    try:
-        parsed = int(value) if value is not None else int(default)
-    except (TypeError, ValueError):
-        parsed = int(default)
-    if parsed < minimum:
-        return minimum
-    if parsed > maximum:
-        return maximum
-    return parsed
-
-
-def _month_key_expr_for_db(db: Session, column):
-    dialect_name = ""
-    if db.bind is not None and getattr(db.bind, "dialect", None) is not None:
-        dialect_name = str(db.bind.dialect.name or "").lower()
-    if dialect_name == "postgresql":
-        return func.to_char(column, "YYYY-MM")
-    if dialect_name in {"mysql", "mariadb"}:
-        return func.date_format(column, "%Y-%m")
-    return func.strftime("%Y-%m", column)
-
-
-def _analysis_month_keys(now: datetime, months: int) -> list[str]:
-    keys: list[str] = []
-    year = int(now.year)
-    month = int(now.month)
-    for _ in range(months):
-        keys.append(f"{year:04d}-{month:02d}")
-        month -= 1
-        if month == 0:
-            month = 12
-            year -= 1
-    keys.reverse()
-    return keys
-
-
-def _analysis_usage_and_cost_in_period(
-    db: Session,
-    usage_scope_filters: list,
-    period_start: datetime,
-    period_end: datetime,
-) -> tuple[float, float]:
-    usage_g = (
-        db.query(func.sum(UsageHistory.deducted_g))
-        .filter(*usage_scope_filters)
-        .filter(UsageHistory.undone.is_(False))
-        .filter(UsageHistory.created_at >= period_start)
-        .filter(UsageHistory.created_at < period_end)
-        .scalar()
-        or 0.0
-    )
-    cost_eur = (
-        db.query(
-            func.sum(
-                UsageHistory.deducted_g
-                * (
-                    func.coalesce(Spool.price, 0.0)
-                    / func.nullif(func.coalesce(Spool.weight_g, 0.0), 0.0)
-                )
-            )
-        )
-        .outerjoin(Spool, Spool.id == UsageHistory.spool_id)
-        .filter(*usage_scope_filters)
-        .filter(UsageHistory.undone.is_(False))
-        .filter(UsageHistory.created_at >= period_start)
-        .filter(UsageHistory.created_at < period_end)
-        .scalar()
-        or 0.0
-    )
-    return round(float(usage_g), 1), round(float(cost_eur), 2)
-
-
-def _analysis_usage_cost_trend(
-    db: Session,
-    usage_scope_filters: list,
-    months: int,
-) -> list[dict]:
-    now = _utcnow()
-    month_keys = _analysis_month_keys(now, months)
-    first_year, first_month = month_keys[0].split("-")
-    trend_start = datetime(int(first_year), int(first_month), 1)
-    month_expr = _month_key_expr_for_db(db, UsageHistory.created_at)
-
-    usage_by_month_rows = (
-        db.query(
-            month_expr.label("month_key"),
-            func.sum(UsageHistory.deducted_g).label("usage_g"),
-        )
-        .filter(*usage_scope_filters)
-        .filter(UsageHistory.undone.is_(False))
-        .filter(UsageHistory.created_at >= trend_start)
-        .group_by(month_expr)
-        .all()
-    )
-    usage_by_month = {
-        row.month_key: round(float(row.usage_g or 0.0), 1)
-        for row in usage_by_month_rows
-    }
-
-    cost_by_month_rows = (
-        db.query(
-            month_expr.label("month_key"),
-            func.sum(
-                UsageHistory.deducted_g
-                * (
-                    func.coalesce(Spool.price, 0.0)
-                    / func.nullif(func.coalesce(Spool.weight_g, 0.0), 0.0)
-                )
-            ).label("cost_eur"),
-        )
-        .outerjoin(Spool, Spool.id == UsageHistory.spool_id)
-        .filter(*usage_scope_filters)
-        .filter(UsageHistory.undone.is_(False))
-        .filter(UsageHistory.created_at >= trend_start)
-        .group_by(month_expr)
-        .all()
-    )
-    cost_by_month = {
-        row.month_key: round(float(row.cost_eur or 0.0), 2)
-        for row in cost_by_month_rows
-    }
-
-    trend: list[dict] = []
-    for month_key in month_keys:
-        year_str, month_str = month_key.split("-")
-        trend.append(
-            {
-                "month_key": month_key,
-                "label": f"{month_str}/{year_str}",
-                "usage_g": usage_by_month.get(month_key, 0.0),
-                "cost_eur": cost_by_month.get(month_key, 0.0),
-            }
-        )
-    return trend
-
-
-def _analysis_top_usage(
-    db: Session,
-    usage_scope_filters: list,
-    period_start: datetime,
-    period_end: datetime,
-    group_by: str,
-    limit: int,
-) -> list[dict]:
-    if group_by == "color":
-        name_expr = func.coalesce(UsageHistory.spool_color, "-")
-    else:
-        name_expr = func.coalesce(UsageHistory.spool_material, "-")
-
-    rows = (
-        db.query(
-            name_expr.label("name"),
-            func.sum(UsageHistory.deducted_g).label("usage_g"),
-        )
-        .filter(*usage_scope_filters)
-        .filter(UsageHistory.undone.is_(False))
-        .filter(UsageHistory.created_at >= period_start)
-        .filter(UsageHistory.created_at < period_end)
-        .group_by(name_expr)
-        .order_by(func.sum(UsageHistory.deducted_g).desc())
-        .limit(limit)
-        .all()
-    )
-    total_usage = sum(float(row.usage_g or 0.0) for row in rows)
-    payload: list[dict] = []
-    for row in rows:
-        usage_g = round(float(row.usage_g or 0.0), 1)
-        payload.append(
-            {
-                "name": row.name if row.name not in (None, "") else "-",
-                "usage_g": usage_g,
-                "share_pct": round((usage_g / total_usage * 100), 1) if total_usage > 0 else 0.0,
-            }
-        )
-    return payload
-
-
 def _analysis_low_stock(
     db: Session,
     spool_scope_filters: list,
@@ -5024,52 +2060,6 @@ def _analysis_low_stock(
         "count": len(items),
         "items": items[:limit],
     }
-
-
-def _analysis_printer_slot_usage(
-    db: Session,
-    usage_scope_filters: list,
-    period_start: datetime,
-    period_end: datetime,
-    limit: int,
-) -> list[dict]:
-    batch_printer_expr = func.coalesce(UsageBatchContext.printer_name, Spool.ams_printer, "-")
-    slot_expr = Spool.ams_slot
-    rows = (
-        db.query(
-            batch_printer_expr.label("printer"),
-            slot_expr.label("slot"),
-            func.sum(UsageHistory.deducted_g).label("usage_g"),
-        )
-        .outerjoin(
-            UsageBatchContext,
-            (UsageBatchContext.project == UsageHistory.project)
-            & (UsageBatchContext.batch_id == UsageHistory.batch_id),
-        )
-        .outerjoin(Spool, Spool.id == UsageHistory.spool_id)
-        .filter(*usage_scope_filters)
-        .filter(UsageHistory.undone.is_(False))
-        .filter(UsageHistory.batch_id.is_not(None))
-        .filter(UsageBatchContext.id.is_not(None))
-        .filter(UsageHistory.created_at >= period_start)
-        .filter(UsageHistory.created_at < period_end)
-        .group_by(batch_printer_expr, slot_expr)
-        .order_by(func.sum(UsageHistory.deducted_g).desc())
-        .limit(limit)
-        .all()
-    )
-    payload: list[dict] = []
-    for row in rows:
-        slot = int(row.slot) if row.slot is not None else None
-        payload.append(
-            {
-                "printer": str(row.printer or "-").strip() or "-",
-                "slot": slot,
-                "slot_label": f"Slot {slot}" if slot is not None else "-",
-                "usage_g": round(float(row.usage_g or 0.0), 1),
-            }
-        )
-    return payload
 
 
 @app.get("/")
@@ -7782,17 +4772,200 @@ def labels_form(request: Request, db: Session = Depends(get_db)):
     )
     requested_view = str(request.query_params.get("view") or "").strip().lower()
     active_label_view = requested_view if requested_view in {"spool", "location", "printer", "formats"} else effective_target
+    layouts_map = _all_label_layouts()
+    prefs = _load_label_print_preferences(request)
+    selected_layout = _normalize_label_layout(request.cookies.get("label_layout") or _load_setting_from_db("label_layout"), layouts_map)
+
+    def _parse_query_int_list(param_name: str) -> list[int]:
+        values = request.query_params.getlist(param_name)
+        parsed: list[int] = []
+        for raw in values:
+            try:
+                value = int(str(raw or "").strip())
+            except (TypeError, ValueError):
+                continue
+            if value > 0:
+                parsed.append(value)
+        return parsed
+
+    def _build_preview_url(
+        *,
+        label_target: str,
+        selected_ids: list[int],
+        selected_location_ids: list[int],
+        selected_printer_ids: list[int],
+        layout: str,
+        print_mode: str,
+        label_orientation: str,
+        label_content: dict,
+    ) -> str:
+        query_params: list[tuple[str, str]] = [
+            ("preview", "1"),
+            ("target", label_target),
+            ("view", label_target),
+            ("layout", layout),
+            ("print_mode", print_mode),
+            ("label_orientation", label_orientation),
+        ]
+
+        for field in ("show_spool_id", "show_brand", "show_material_color", "show_weight", "show_remaining", "show_location"):
+            if _is_truthy(label_content.get(field)):
+                query_params.append((field, "1"))
+
+        for value in selected_ids:
+            query_params.append(("spool_ids", str(value)))
+        for value in selected_location_ids:
+            query_params.append(("storage_location_ids", str(value)))
+        for value in selected_printer_ids:
+            query_params.append(("printer_ids", str(value)))
+
+        return f"/labels?{urlencode(query_params)}"
+
+    def _build_label_items(
+        *,
+        label_target: str,
+        selected_ids: list[int],
+        selected_location_ids: list[int],
+        selected_printer_ids: list[int],
+    ) -> list[dict]:
+        label_items: list[dict] = []
+        if label_target == "location":
+            selected_locations = (
+                db.query(StorageSubLocation)
+                .filter(StorageSubLocation.project == project, StorageSubLocation.id.in_(selected_location_ids))
+                .order_by(StorageSubLocation.path_code.asc())
+                .all()
+            )
+            for location in selected_locations:
+                label_items.append(
+                    {
+                        "qr_src": f"/storage-locations/{location.id}/qr",
+                        "line_title": location.path_code,
+                        "line_brand": location.name or "",
+                        "line_material_color": "",
+                        "line_weight": "",
+                        "line_remaining": "",
+                        "line_location": location.path_code,
+                    }
+                )
+        elif label_target == "printer":
+            selected_printers = (
+                db.query(Printer)
+                .filter(Printer.project == project, Printer.id.in_(selected_printer_ids))
+                .order_by(Printer.name.asc(), Printer.id.asc())
+                .all()
+            )
+            for printer in selected_printers:
+                label_items.append(
+                    {
+                        "qr_src": f"/printers/{printer.id}/qr",
+                        "line_title": printer.name,
+                        "line_brand": printer.serial,
+                        "line_material_color": f"{printer.host or '-'}:{printer.port or '-'}",
+                        "line_weight": "",
+                        "line_remaining": "",
+                        "line_location": "",
+                    }
+                )
+        else:
+            selected_spools = (
+                db.query(Spool)
+                .filter(Spool.project == project, Spool.id.in_(selected_ids))
+                .order_by(Spool.id.asc())
+                .all()
+            )
+            storage_map = _storage_location_map_by_id(
+                db,
+                project,
+                [int(spool.storage_sub_location_id) for spool in selected_spools if spool.storage_sub_location_id],
+            )
+            for spool in selected_spools:
+                label_items.append(
+                    {
+                        "qr_src": f"/spools/{spool.id}/qr",
+                        "line_title": f"SP-{spool.id:04d}",
+                        "line_brand": spool.brand,
+                        "line_material_color": f"{spool.material} · {spool.color}",
+                        "line_weight": format_weight_text(spool.weight_g),
+                        "line_remaining": format_weight_text(spool.remaining_g),
+                        "line_location": _spool_location_display(spool, storage_map),
+                    }
+                )
+        return label_items
+
+    preview_requested = _is_truthy(request.query_params.get("preview"))
+    if preview_requested:
+        preview_target = str(request.query_params.get("target") or effective_target).strip().lower()
+        if preview_target not in {"spool", "location", "printer"}:
+            preview_target = "spool"
+
+        preview_layout = _normalize_label_layout(request.query_params.get("layout") or selected_layout, layouts_map)
+        preview_print_mode = _normalize_label_print_mode(request.query_params.get("print_mode") or prefs["print_mode"])
+        preview_orientation = _normalize_label_orientation(request.query_params.get("label_orientation") or prefs["label_orientation"])
+
+        preview_content = _build_label_content_settings(prefs.get("label_content") or _default_label_content_settings())
+        if any(
+            request.query_params.get(field) is not None
+            for field in ("show_spool_id", "show_brand", "show_material_color", "show_weight", "show_remaining", "show_location")
+        ):
+            preview_content = _build_label_content_settings(
+                {
+                    "show_spool_id": _is_truthy(request.query_params.get("show_spool_id")),
+                    "show_brand": _is_truthy(request.query_params.get("show_brand")),
+                    "show_material_color": _is_truthy(request.query_params.get("show_material_color")),
+                    "show_weight": _is_truthy(request.query_params.get("show_weight")),
+                    "show_remaining": _is_truthy(request.query_params.get("show_remaining")),
+                    "show_location": _is_truthy(request.query_params.get("show_location")),
+                }
+            )
+
+        preview_spool_ids = _parse_query_int_list("spool_ids")
+        preview_location_ids = _parse_query_int_list("storage_location_ids")
+        preview_printer_ids = _parse_query_int_list("printer_ids")
+
+        has_selection = (
+            (preview_target == "spool" and bool(preview_spool_ids))
+            or (preview_target == "location" and bool(preview_location_ids))
+            or (preview_target == "printer" and bool(preview_printer_ids))
+        )
+
+        if has_selection:
+            preview_url = _build_preview_url(
+                label_target=preview_target,
+                selected_ids=preview_spool_ids,
+                selected_location_ids=preview_location_ids,
+                selected_printer_ids=preview_printer_ids,
+                layout=preview_layout,
+                print_mode=preview_print_mode,
+                label_orientation=preview_orientation,
+                label_content=preview_content,
+            )
+            return render(
+                request,
+                "labels_print.html",
+                {
+                    "label_items": _build_label_items(
+                        label_target=preview_target,
+                        selected_ids=preview_spool_ids,
+                        selected_location_ids=preview_location_ids,
+                        selected_printer_ids=preview_printer_ids,
+                    ),
+                    "label_target": preview_target,
+                    "layout": preview_layout,
+                    "print_mode": preview_print_mode,
+                    "label_orientation": preview_orientation,
+                    "label_content": preview_content,
+                    "layout_config": _resolve_label_layout_for_print(layouts_map[preview_layout]),
+                    "preview_url": preview_url,
+                },
+                lang,
+            )
+
     spools = (
         db.query(Spool)
         .filter(Spool.project == project)
         .order_by(Spool.id.asc())
         .all()
-    )
-    layouts_map = _all_label_layouts()
-    prefs = _load_label_print_preferences(request)
-    selected_layout = _normalize_label_layout(
-        request.cookies.get("label_layout") or _load_setting_from_db("label_layout"),
-        layouts_map,
     )
     return render(
         request,
@@ -8068,16 +5241,29 @@ def labels_print(
     normalized_label_target = str(label_target or "").strip().lower()
     if normalized_label_target not in {"spool", "location", "printer"}:
         normalized_label_target = "spool"
-    label_content = _build_label_content_settings(
-        {
-            "show_spool_id": _is_truthy(show_spool_id),
-            "show_brand": _is_truthy(show_brand),
-            "show_material_color": _is_truthy(show_material_color),
-            "show_weight": _is_truthy(show_weight),
-            "show_remaining": _is_truthy(show_remaining),
-            "show_location": _is_truthy(show_location),
-        }
-    )
+    base_label_content = _load_label_print_preferences(request).get("label_content", _default_label_content_settings())
+    label_content = _build_label_content_settings(base_label_content)
+    if any(
+        field is not None
+        for field in (
+            show_spool_id,
+            show_brand,
+            show_material_color,
+            show_weight,
+            show_remaining,
+            show_location,
+        )
+    ):
+        label_content = _build_label_content_settings(
+            {
+                "show_spool_id": _is_truthy(show_spool_id),
+                "show_brand": _is_truthy(show_brand),
+                "show_material_color": _is_truthy(show_material_color),
+                "show_weight": _is_truthy(show_weight),
+                "show_remaining": _is_truthy(show_remaining),
+                "show_location": _is_truthy(show_location),
+            }
+        )
 
     selected_location_ids = [int(value) for value in storage_location_ids if value]
     selected_printer_ids = [int(value) for value in printer_ids if value]
@@ -8190,6 +5376,26 @@ def labels_print(
         _save_setting_to_db("label_layout", valid_layout)
         return response
 
+    def _build_preview_url() -> str:
+        query_params: list[tuple[str, str]] = [
+            ("preview", "1"),
+            ("target", normalized_label_target),
+            ("view", normalized_label_target),
+            ("layout", valid_layout),
+            ("print_mode", valid_print_mode),
+            ("label_orientation", valid_label_orientation),
+        ]
+        for field in ("show_spool_id", "show_brand", "show_material_color", "show_weight", "show_remaining", "show_location"):
+            if _is_truthy(label_content.get(field)):
+                query_params.append((field, "1"))
+        for value in selected_ids:
+            query_params.append(("spool_ids", str(value)))
+        for value in selected_location_ids:
+            query_params.append(("storage_location_ids", str(value)))
+        for value in selected_printer_ids:
+            query_params.append(("printer_ids", str(value)))
+        return f"/labels?{urlencode(query_params)}"
+
     label_items: list[dict] = []
     if normalized_label_target == "location":
         selected_locations = (
@@ -8254,20 +5460,7 @@ def labels_print(
                 }
             )
 
-    response = render(
-        request,
-        "labels_print.html",
-        {
-            "label_items": label_items,
-            "label_target": normalized_label_target,
-            "layout": valid_layout,
-            "print_mode": valid_print_mode,
-            "label_orientation": valid_label_orientation,
-            "label_content": label_content,
-            "layout_config": _resolve_label_layout_for_print(layouts_map[valid_layout]),
-        },
-        lang,
-    )
+    response = RedirectResponse(_build_preview_url(), status_code=303)
     _set_cookie(response, LABEL_TARGET_SETTING_KEY, normalized_label_target, request=request)
     _set_cookie(response, "label_layout", valid_layout)
     _save_setting_to_db(LABEL_TARGET_SETTING_KEY, normalized_label_target)
