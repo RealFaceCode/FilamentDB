@@ -148,7 +148,13 @@
   </div>
 </div>
 
+
 <div id="label-size-tooltip" class="label-size-tooltip hidden" aria-hidden="true"></div>
+
+<div class="mt-4 text-center text-amber-700 text-sm print:hidden">
+  <strong>Hinweis:</strong> Damit das Label korrekt gedruckt wird, wähle im Druckdialog das Papierformat <span class="font-mono">{{ layout_config.cell_w_mm }}mm × {{ layout_config.cell_h_mm }}mm</span> (oder das passende Label-Format) aus.<br>
+  Bei falschem Format (z.B. A4) ist die Skalierung nicht korrekt!
+</div>
 
 <script>
   const LABEL_PREVIEW_URL = {{ (preview_url or '') | tojson }};

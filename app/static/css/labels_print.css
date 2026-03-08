@@ -55,14 +55,22 @@ body {
   /* Some OS print dialogs/drivers ignore custom paper size and keep A4.
      In single mode, force the label canvas to occupy the full printable page. */
   .print-sheet.is-single {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
+    /* Vorschau und Druck: Label exakt in mm anzeigen */
+    width: var(--cell-w) !important;
+    height: var(--cell-h) !important;
+    min-width: var(--cell-w) !important;
+    min-height: var(--cell-h) !important;
+    max-width: var(--cell-w) !important;
+    max-height: var(--cell-h) !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     border: 0 !important;
     box-shadow: none !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
   }
 
   .print-sheet.is-single .print-grid {
@@ -71,24 +79,28 @@ body {
     gap: 0 !important;
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: minmax(0, 1fr) !important;
+    justify-content: center;
+    align-items: center;
   }
 
   .print-sheet.is-single .label-card {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    /* Skalierende Variablen für Single-Label-Print: Inhalt wächst mit Seite */
-    --qr-size: 22vw !important;
-    --label-font-size: 4.2vw !important;
-    --label-title-size: 5vw !important;
-    --label-meta-size: 3.5vw !important;
+    width: var(--cell-w) !important;
+    height: var(--cell-h) !important;
+    min-width: var(--cell-w) !important;
+    min-height: var(--cell-h) !important;
+    max-width: var(--cell-w) !important;
+    max-height: var(--cell-h) !important;
+    /* Skalierende Variablen für Single-Label-Print: Inhalt wächst mit Seite, aber in mm! */
+    --qr-size: calc(var(--cell-w) * 0.46) !important;
+    --label-font-size: calc(var(--cell-h) * 0.18) !important;
+    --label-title-size: calc(var(--cell-h) * 0.21) !important;
+    --label-meta-size: calc(var(--cell-h) * 0.14) !important;
     --label-line-height: 1.22em !important;
-    --label-gap: 1.8vw !important;
-    --label-padding: 1.6vw !important;
-    --label-text-gap: 1vw !important;
-    --label-text-gap-vertical: 1vw !important;
+    --label-gap: calc(var(--cell-h) * 0.03) !important;
+    --label-padding: calc(var(--cell-h) * 0.025) !important;
+    --label-text-gap: calc(var(--cell-h) * 0.012) !important;
+    --label-text-gap-vertical: calc(var(--cell-h) * 0.011) !important;
     font-size: var(--label-font-size) !important;
-    /* Optional: Schriftgrößen-Override für alle Kinder */
     * { font-size: inherit !important; }
   }
 }
